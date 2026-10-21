@@ -1,5 +1,5 @@
 // Live check against the real Nemotron model. Not part of `npm test`.
-// Run with: scripts/live-injection-check (needs NEBIUS_API_KEY or `ownit key set`).
+// Run with: scripts/live-injection-check (needs a Nebius key: DEMO_NEBIUS_KEY in .env, NEBIUS_API_KEY, or `ownit key set`).
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -17,7 +17,7 @@ function apiKey(): string {
     const config = JSON.parse(readFileSync(join(process.env.OWNIT_HOME || join(homedir(), '.ownit'), 'config.json'), 'utf8'));
     if (config.nebiusKey) return config.nebiusKey;
   } catch {}
-  throw new Error('Set NEBIUS_API_KEY or run "ownit key set" first.');
+  throw new Error('No Nebius key: set DEMO_NEBIUS_KEY in .env, export NEBIUS_API_KEY, or run "ownit key set".');
 }
 
 const model = nebiusModel(BASE_URL, MODEL, apiKey());

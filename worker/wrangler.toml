@@ -18,8 +18,7 @@ GITHUB_APP_ID = ""
 GITHUB_APP_SLUG = ""
 GITHUB_CLIENT_ID = ""
 
-# Secrets (set with `wrangler secret put <NAME>`; locally they come from the repo's .env,
-# see .env.example, loaded by `npm run dev`):
+# Secrets (set with `wrangler secret put <NAME>`; locally from the repo's .env via `npm run dev`):
 #   SESSION_SECRET          random string used to seal debrief state between requests
 #   GITHUB_APP_PRIVATE_KEY  the App's private key (PEM, PKCS#1 or PKCS#8)
 #   GITHUB_WEBHOOK_SECRET   the App's webhook secret

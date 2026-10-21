@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --env-file ../.env",
+    "dev": "wrangler dev --env-file ../.env --var DEV_LOCAL_TRUST:1",
     "db:migrate:local": "wrangler d1 migrations apply ownit --local",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

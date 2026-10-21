@@ -39,7 +39,7 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 - Private repos: the public page hides question text (stats and statuses still show).
 - Auth: `/auth/device/start|poll` proxy GitHub's device flow; the worker reads `GET /user`, discards the GitHub token, and issues `ownit_…` session tokens (SHA-256 stored, 90 days). Every `/api/*` route needs one. Repo routes check push access (admin, maintain, write) with the installation token, cached for 5 minutes per isolate. Registration needs the App installed.
 - Debrief sessions are bound to the user who started them; a push owned by another user cannot be taken over.
-- `DEV_LOCAL_TRUST=1` (a var, not a secret) skips the push-access check only for requests to localhost/127.0.0.1. `worker/scripts/dev-login.mjs` mints a local session.
+- `DEV_LOCAL_TRUST=1` (a var, not a secret; `npm run dev` sets it) skips the push-access check only for requests to localhost/127.0.0.1. `worker/scripts/dev-login.mjs` mints a local session.
 - The hook script exits 0 unless `pre-push.local` fails. Coding-agent env vars (`CLAUDECODE`, `CI`, …) count as no TTY. The Y/n prompt times out after 120 s and becomes pending.
 - Test seam: `OWNIT_TTY_DEVICE` replaces `/dev/tty` in the hook script.
 
@@ -52,9 +52,9 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 
 ```sh
 npm install                      # at the repo root (npm workspaces)
-cp .env.example .env            # then fill in SESSION_SECRET (and MODEL_BACKEND=fixture for no Nebius calls)
+cp .env.example .env            # then fill in SESSION_SECRET
 cd worker && npx wrangler d1 migrations apply ownit --local
-npm run dev -- --test-scheduled  # wrangler dev with the repo's .env loaded
+npm run dev -- --test-scheduled  # add --var MODEL_BACKEND:fixture for the offline fake model
 # in another terminal:
 cd worker && node scripts/dev-login.mjs yourlogin | node ../cli/dist/index.js login --with-token --server http://127.0.0.1:8787
 cd ../cli && npm run build

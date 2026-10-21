@@ -1,0 +1,81 @@
+import { readConfig, serverUrl, type Config } from './config.js';
+
+export type Kind = 'why' | 'how' | 'next';
+export type PushStatus = 'verified' | 'skipped' | 'pending' | 'provider_error';
+
+export interface PublicQuestion {
+  idx: number;
+  kind: Kind;
+  text: string;
+}
+
+export interface StartResponse {
+  push_id: number;
+  total: number;
+  session: string;
+  questions: PublicQuestion[];
+}
+
+export interface AnswerResponse {
+  pass: boolean;
+  feedback: string;
+  done: boolean;
+  status: PushStatus;
+  followup: PublicQuestion | null;
+  session: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    /** HTTP status, or 0 when the server could not be reached. */
+    public status: number,
+    public code: string,
+    public body: Record<string, unknown> = {},
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+
+  get isProviderError() {
+    return this.code === 'provider_error';
+  }
+}
+
+export interface ApiClient {
+  request<T>(method: string, path: string, body?: unknown): Promise<T>;
+  server: string;
+}
+
+export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv = process.env): ApiClient {
+  const server = serverUrl(config, env);
+  const nebiusKey = env.NEBIUS_API_KEY || config.nebiusKey;
+  return {
+    server,
+    async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+      const headers: Record<string, string> = { accept: 'application/json', 'user-agent': 'getownit-cli' };
+      if (body !== undefined) headers['content-type'] = 'application/json';
+      if (config.token) headers.authorization = `Bearer ${config.token}`;
+      // Only debrief calls need the key; the worker uses it for that request and discards it.
+      if (nebiusKey && path.startsWith('/api/interview/')) headers['x-nebius-key'] = nebiusKey;
+      let response: Response;
+      try {
+        response = await fetch(`${server}${path}`, {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+          signal: AbortSignal.timeout(180_000),
+        });
+      } catch (error) {
+        const reason = error instanceof Error && error.name === 'TimeoutError' ? 'timed out' : 'unreachable';
+        throw new ApiError(`Ownit server ${reason} (${server})`, 0, 'network');
+      }
+      const json = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!response.ok) {
+        const message = typeof json.message === 'string' ? json.message : `Ownit server returned ${response.status}`;
+        throw new ApiError(message, response.status, typeof json.error === 'string' ? json.error : 'http', json);
+      }
+      return json as T;
+    },
+  };
+}

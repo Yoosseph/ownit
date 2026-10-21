@@ -1,0 +1,126 @@
+import { describe, expect, it, vi } from 'vitest';
+import { gradeAnswer, parseJsonReply, validateGrade, validateQuestions, writeFollowUp, writeQuestions } from '../src/debrief';
+import { nebiusModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
+import { countChangedLines, questionCount } from '../src/questionCount';
+import { SAMPLE_DIFF } from './helpers/env';
+
+const push = { commits: [{ sha: 'a'.repeat(40), message: 'Round totals' }], diff: SAMPLE_DIFF, truncated: false };
+const q = (kind: string) => ({ kind, question: `A question about the ${kind} of it?`, reference: 'A good answer mentions rounding.' });
+
+function scripted(...replies: string[]): ChatModel & { calls: number } {
+  const model = {
+    calls: 0,
+    async complete() {
+      return replies[Math.min(model.calls++, replies.length - 1)]!;
+    },
+  };
+  return model;
+}
+
+describe('questionCount', () => {
+  it('scales with changed lines', () => {
+    expect(questionCount(0)).toBe(1);
+    expect(questionCount(49)).toBe(1);
+    expect(questionCount(50)).toBe(2);
+    expect(questionCount(300)).toBe(2);
+    expect(questionCount(301)).toBe(3);
+    expect(questionCount(1_000_000)).toBe(3);
+  });
+
+  it('counts added and removed lines, not file headers', () => {
+    expect(countChangedLines(SAMPLE_DIFF)).toBe(3);
+  });
+});
+
+describe('model JSON validation', () => {
+  it('parses plain, fenced, and prose-wrapped JSON', () => {
+    expect(parseJsonReply('{"a":1}')).toEqual({ a: 1 });
+    expect(parseJsonReply('```json\n{"a":1}\n```')).toEqual({ a: 1 });
+    expect(parseJsonReply('Sure! {"a":1} Hope that helps')).toEqual({ a: 1 });
+    expect(parseJsonReply('not json')).toBeUndefined();
+  });
+
+  it('requires n valid questions and assigns kinds in order', () => {
+    const value = { questions: [q('how'), q('why'), q('next')] };
+    expect(validateQuestions(value, 2)?.map((x) => x.kind)).toEqual(['why', 'how']);
+    expect(validateQuestions({ questions: [q('why')] }, 2)).toBeUndefined();
+    expect(validateQuestions({ questions: [{ kind: 'why', question: '', reference: 'x'.repeat(20) }] }, 1)).toBeUndefined();
+    expect(validateQuestions({ questions: [{ ...q('why'), kind: 'what' }] }, 1)).toBeUndefined();
+    expect(validateQuestions(undefined, 1)).toBeUndefined();
+  });
+
+  it('validates grades strictly', () => {
+    expect(validateGrade({ pass: true, feedback: 'Nice.' })).toEqual({ pass: true, feedback: 'Nice.' });
+    expect(validateGrade({ pass: 'true', feedback: 'Nice.' })).toBeUndefined();
+    expect(validateGrade({ pass: true })).toBeUndefined();
+  });
+});
+
+describe('model calls', () => {
+  it('retries once on invalid JSON, then succeeds', async () => {
+    const model = scripted('oops', JSON.stringify({ questions: [q('why')] }));
+    const questions = await writeQuestions(model, 1, push);
+    expect(questions).toHaveLength(1);
+    expect(model.calls).toBe(2);
+  });
+
+  it('becomes a provider error after two invalid replies', async () => {
+    const model = scripted('oops', '{"questions": []}');
+    await expect(writeQuestions(model, 1, push)).rejects.toMatchObject({ kind: 'bad_output' });
+    expect(model.calls).toBe(2);
+  });
+
+  it('fails an empty answer without calling the model', async () => {
+    const model = scripted('{"pass":true,"feedback":"x"}');
+    const grade = await gradeAnswer(model, q('why') as any, '   ');
+    expect(grade.pass).toBe(false);
+    expect(model.calls).toBe(0);
+  });
+
+  it('keeps the missed kind on a follow-up', async () => {
+    const model = scripted(JSON.stringify({ questions: [q('why')] }));
+    const followUp = await writeFollowUp(model, push, q('next') as any, 'Missing the edge cases.');
+    expect(followUp.kind).toBe('next');
+  });
+});
+
+describe('nebius client', () => {
+  const prompt = { system: 's', user: 'u' };
+
+  it('sends the server-chosen model with JSON response format and strips thinking', async () => {
+    const fetcher = vi.fn(async () =>
+      Response.json({ choices: [{ message: { content: '<think>hmm</think>\n{"pass":true,"feedback":"ok"}' } }] }),
+    );
+    const model = nebiusModel('https://api.example/v1/', 'nvidia/x', 'key-123', fetcher as any);
+    expect(await model.complete(prompt, 100)).toBe('{"pass":true,"feedback":"ok"}');
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.example/v1/chat/completions');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer key-123');
+    const body = JSON.parse(init.body as string);
+    expect(body.model).toBe('nvidia/x');
+    expect(body.response_format).toEqual({ type: 'json_object' });
+  });
+
+  it.each([
+    [401, '', 'invalid_key'],
+    [403, '', 'invalid_key'],
+    [402, '', 'no_credit'],
+    [400, '{"detail":"Insufficient balance"}', 'no_credit'],
+    [429, 'slow down', 'rate_limited'],
+    [503, '', 'unavailable'],
+  ])('maps HTTP %i to %s', async (status, body, kind) => {
+    const model = nebiusModel('https://api.example/v1', 'm', 'k', (async () => new Response(body, { status })) as any);
+    await expect(model.complete(prompt, 10)).rejects.toMatchObject({ kind });
+  });
+
+  it('maps network failures to unavailable', async () => {
+    const model = nebiusModel('https://api.example/v1', 'm', 'k', (async () => {
+      throw new TypeError('fetch failed');
+    }) as any);
+    await expect(model.complete(prompt, 10)).rejects.toBeInstanceOf(ProviderError);
+  });
+
+  it('strips multiple think blocks', () => {
+    expect(stripThinking('<think>a</think>{"x":1}<think>b</think>')).toBe('{"x":1}');
+  });
+});

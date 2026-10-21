@@ -1,0 +1,38 @@
+name = "ownit"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# The server, not the client, picks the model endpoint and model.
+# Model list: https://tokenfactory.nebius.com/model-catalog.md
+[vars]
+NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
+NEBIUS_MODEL = "nvidia/nemotron-3-super-120b-a12b"
+# "nebius" for real calls, "fixture" for the offline test backend.
+MODEL_BACKEND = "nebius"
+# Daily cap on model calls paid for by DEMO_NEBIUS_KEY (only used when a request carries no key).
+DEMO_DAILY_CALL_CAP = "300"
+# Public origin of this worker, used in links printed by the CLI and check runs.
+PUBLIC_URL = ""
+# Fill these in after creating the GitHub App (docs/github-app.md).
+GITHUB_APP_ID = ""
+GITHUB_APP_SLUG = ""
+GITHUB_CLIENT_ID = ""
+
+# Secrets (set with `wrangler secret put <NAME>`, or in .dev.vars locally):
+#   SESSION_SECRET          random string used to seal debrief state between requests
+#   GITHUB_APP_PRIVATE_KEY  the App's private key (PEM, PKCS#1 or PKCS#8)
+#   GITHUB_WEBHOOK_SECRET   the App's webhook secret
+#   DEMO_NEBIUS_KEY         optional shared key for judges, capped by DEMO_DAILY_CALL_CAP
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ownit"
+# Replace with the id printed by `wrangler d1 create ownit` before deploying.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[observability]
+enabled = true

@@ -1,0 +1,17 @@
+{
+  "name": "ownit-monorepo",
+  "private": true,
+  "workspaces": [
+    "worker",
+    "cli"
+  ],
+  "scripts": {
+    "test": "npm run test -w worker && npm run test -w cli",
+    "typecheck": "npm run typecheck -w worker && npm run typecheck -w cli",
+    "build": "npm run build -w cli"
+  },
+  "allowScripts": {
+    "workerd@1.20261019.1": true,
+    "esbuild@0.28.2": true
+  }
+}

@@ -105,6 +105,19 @@ describe('push webhook', () => {
     expect(env.DB.raw.prepare('SELECT login FROM users WHERE github_id = 42').get()).toEqual({ login: 'mona' });
   });
 
+  it('handles a large push in a constant number of queries', async () => {
+    const env = env4();
+    const shas = Array.from({ length: 120 }, (_, i) => sha(1000 + i));
+    await call(env, 'POST', '/api/pushes', { repo: 'octo/shop', base_sha: sha(1), head_sha: shas[59], commits: shas.slice(0, 60).map((s) => ({ sha: s })), status: 'skipped' });
+    const res = await deliver(env, pushEvent({ after: shas[119], commits: shas.map((id) => ({ id, author: { username: 'mona' } })) }));
+    expect(res.json.pushes).toHaveLength(2);
+    const counts = env.DB.raw.prepare('SELECT push_id, count(*) AS n, sum(pushed_at IS NOT NULL) AS landed FROM commits GROUP BY push_id ORDER BY push_id').all();
+    expect(counts).toEqual([
+      { push_id: 1, n: 60, landed: 60 },
+      { push_id: 2, n: 60, landed: 60 },
+    ]);
+  });
+
   it('updates the check run when a pending push is debriefed later', async () => {
     const env = env4();
     await call(env, 'POST', '/api/pushes', { repo: 'octo/shop', base_sha: sha(1), head_sha: sha(3), commits: [{ sha: sha(2) }, { sha: sha(3) }], status: 'pending' });

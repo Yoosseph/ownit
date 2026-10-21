@@ -57,23 +57,33 @@ webhook.post('/github', async (c) => {
   if (payload.sender) await upsertUser(db, payload.sender.id, payload.sender.login);
 
   const now = nowIso();
-  const commits = payload.commits ?? [];
-  const unmatched: { sha: string; author: string | null }[] = [];
+  const commits = (payload.commits ?? []).map((commit) => ({
+    sha: commit.id,
+    author: commit.author?.username ?? commit.author?.name ?? null,
+  }));
+  const list = JSON.stringify(commits);
   const touched = new Set<number>();
-  for (const commit of commits) {
-    const author = commit.author?.username ?? commit.author?.name ?? null;
-    const row = await db.prepare('SELECT push_id FROM commits WHERE repo_id = ? AND sha = ?').bind(repo.id, commit.id).first<{ push_id: number }>();
-    if (!row) {
-      unmatched.push({ sha: commit.id, author });
-      continue;
-    }
-    await db.prepare('UPDATE commits SET pushed_at = COALESCE(pushed_at, ?), author_login = COALESCE(?, author_login) WHERE repo_id = ? AND sha = ?')
-      .bind(now, author, repo.id, commit.id)
+
+  // One statement each, whatever the commit count (D1 free plan: 50 queries per request).
+  const { results: known } = await db
+    .prepare('SELECT sha, push_id FROM commits WHERE repo_id = ? AND sha IN (SELECT json_extract(value, \'$.sha\') FROM json_each(?))')
+    .bind(repo.id, list)
+    .all<{ sha: string; push_id: number }>();
+  if (known.length) {
+    await db
+      .prepare(
+        `UPDATE commits SET pushed_at = COALESCE(pushed_at, ?), author_login = COALESCE(j.author, author_login)
+         FROM (SELECT json_extract(value, '$.sha') AS sha, json_extract(value, '$.author') AS author FROM json_each(?)) AS j
+         WHERE commits.repo_id = ? AND commits.sha = j.sha`,
+      )
+      .bind(now, list, repo.id)
       .run();
-    touched.add(row.push_id);
+    for (const row of known) touched.add(row.push_id);
   }
 
   // Commits nobody debriefed (no hook, --no-verify, web edits, GUI clients) become a pending push.
+  const knownShas = new Set(known.map((k) => k.sha));
+  const unmatched = commits.filter((c) => !knownShas.has(c.sha));
   if (unmatched.length) {
     const head = unmatched.some((u) => u.sha === payload.after) ? payload.after : unmatched.at(-1)!.sha;
     const push = await createPush(db, {
@@ -83,12 +93,14 @@ webhook.post('/github', async (c) => {
       headSha: head,
       status: 'pending',
     });
-    await db.batch(
-      unmatched.map((u) =>
-        db.prepare('INSERT INTO commits (sha, repo_id, push_id, author_login, pushed_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING')
-          .bind(u.sha, repo.id, push.id, u.author, now),
-      ),
-    );
+    await db
+      .prepare(
+        `INSERT INTO commits (sha, repo_id, push_id, author_login, pushed_at)
+         SELECT json_extract(value, '$.sha'), ?, ?, json_extract(value, '$.author'), ? FROM json_each(?) WHERE true
+         ON CONFLICT DO NOTHING`,
+      )
+      .bind(repo.id, push.id, now, JSON.stringify(unmatched))
+      .run();
     touched.add(push.id);
   }
 

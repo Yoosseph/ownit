@@ -36,13 +36,9 @@ export interface QuestionRow {
 
 export const nowIso = () => new Date().toISOString();
 
-// D1 allows at most 100 bound parameters per statement.
-const CHUNK = 90;
-function chunks<T>(items: T[]): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += CHUNK) out.push(items.slice(i, i + CHUNK));
-  return out;
-}
+// Lists of SHAs are passed as one JSON parameter and expanded with json_each, so
+// each operation is a single statement however many commits a push has. D1's free
+// plan allows 50 queries per request and 100 bound parameters per statement.
 
 export function getRepo(db: D1Database, owner: string, name: string): Promise<RepoRow | null> {
   return db.prepare('SELECT * FROM repos WHERE owner = ? AND name = ?').bind(owner, name).first<RepoRow>();
@@ -85,18 +81,14 @@ export async function findPushForCommits(db: D1Database, repoId: number, headSha
     .prepare('SELECT * FROM pushes WHERE repo_id = ? AND head_sha = ? ORDER BY id DESC LIMIT 1')
     .bind(repoId, headSha)
     .first<PushRow>();
-  if (byHead) return byHead;
-  for (const part of chunks(shas)) {
-    const row = await db
-      .prepare(
-        `SELECT p.* FROM pushes p JOIN commits c ON c.push_id = p.id
-         WHERE c.repo_id = ? AND c.sha IN (${part.map(() => '?').join(',')}) ORDER BY p.id DESC LIMIT 1`,
-      )
-      .bind(repoId, ...part)
-      .first<PushRow>();
-    if (row) return row;
-  }
-  return null;
+  if (byHead || !shas.length) return byHead;
+  return db
+    .prepare(
+      `SELECT p.* FROM pushes p JOIN commits c ON c.push_id = p.id
+       WHERE c.repo_id = ? AND c.sha IN (SELECT value FROM json_each(?)) ORDER BY p.id DESC LIMIT 1`,
+    )
+    .bind(repoId, JSON.stringify(shas))
+    .first<PushRow>();
 }
 
 export async function createPush(
@@ -117,11 +109,10 @@ export async function createPush(
 /** Attaches commits that no push owns yet. Commits already owned elsewhere are left alone. */
 export async function attachCommits(db: D1Database, repoId: number, pushId: number, shas: string[]) {
   if (!shas.length) return;
-  await db.batch(
-    shas.map((sha) =>
-      db.prepare('INSERT INTO commits (sha, repo_id, push_id) VALUES (?, ?, ?) ON CONFLICT DO NOTHING').bind(sha, repoId, pushId),
-    ),
-  );
+  await db
+    .prepare('INSERT INTO commits (sha, repo_id, push_id) SELECT value, ?, ? FROM json_each(?) WHERE true ON CONFLICT DO NOTHING')
+    .bind(repoId, pushId, JSON.stringify(shas))
+    .run();
 }
 
 export function setPushStatus(db: D1Database, pushId: number, status: PushStatus) {

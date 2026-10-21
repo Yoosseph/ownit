@@ -71,17 +71,19 @@ pushes.get('/open', async (c) => {
   )
     .bind(repo.id, userId)
     .all<PushRow>();
-  const out = [];
-  for (const push of results) {
-    const commits = await c.env.DB.prepare('SELECT sha FROM commits WHERE push_id = ? ORDER BY rowid').bind(push.id).all<{ sha: string }>();
-    out.push({
+  const { results: commits } = await c.env.DB.prepare(
+    'SELECT push_id, sha FROM commits WHERE push_id IN (SELECT value FROM json_each(?)) ORDER BY rowid',
+  )
+    .bind(JSON.stringify(results.map((p) => p.id)))
+    .all<{ push_id: number; sha: string }>();
+  return c.json({
+    pushes: results.map((push) => ({
       id: push.id,
       status: push.status,
       base_sha: push.base_sha,
       head_sha: push.head_sha,
       created_at: push.created_at,
-      commits: commits.results.map((r) => r.sha),
-    });
-  }
-  return c.json({ pushes: out });
+      commits: commits.filter((r) => r.push_id === push.id).map((r) => r.sha),
+    })),
+  });
 });

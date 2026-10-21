@@ -38,13 +38,17 @@ publicPages.get('/:owner/:repo', async (c) => {
   )
     .bind(repo.id)
     .all<Omit<PagePush, 'questions'> & { status: PushStatus }>();
-  const pushes: PagePush[] = [];
-  for (const push of results) {
-    const questions = await c.env.DB.prepare('SELECT kind, text, passed, attempts FROM questions WHERE push_id = ? ORDER BY idx')
-      .bind(push.id)
-      .all<PagePush['questions'][number]>();
-    pushes.push({ ...push, questions: questions.results });
-  }
+  // All questions in one query (D1 free plan: 50 queries per request).
+  const { results: questionRows } = await c.env.DB.prepare(
+    `SELECT push_id, kind, text, passed, attempts FROM questions
+     WHERE push_id IN (SELECT value FROM json_each(?)) ORDER BY push_id, idx`,
+  )
+    .bind(JSON.stringify(results.map((p) => p.id)))
+    .all<PagePush['questions'][number] & { push_id: number }>();
+  const pushes: PagePush[] = results.map((push) => ({
+    ...push,
+    questions: questionRows.filter((q) => q.push_id === push.id).map(({ push_id: _id, ...q }) => q),
+  }));
   const origin = (c.env.PUBLIC_URL || new URL(c.req.url).origin).replace(/\/+$/, '');
   c.header('cache-control', 'public, max-age=60');
   return c.html(renderRepoPage(origin, repo, stats, pushes));

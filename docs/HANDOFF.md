@@ -52,9 +52,9 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 
 ```sh
 npm install                      # at the repo root (npm workspaces)
-cp worker/.dev.vars.example worker/.dev.vars   # then fill in SESSION_SECRET
+cp .env.example .env            # then fill in SESSION_SECRET (and MODEL_BACKEND=fixture for no Nebius calls)
 cd worker && npx wrangler d1 migrations apply ownit --local
-npx wrangler dev --var MODEL_BACKEND:fixture --var DEV_LOCAL_TRUST:1 --test-scheduled   # omit MODEL_BACKEND to use Nebius
+npm run dev -- --test-scheduled  # wrangler dev with the repo's .env loaded
 # in another terminal:
 cd worker && node scripts/dev-login.mjs yourlogin | node ../cli/dist/index.js login --with-token --server http://127.0.0.1:8787
 cd ../cli && npm run build

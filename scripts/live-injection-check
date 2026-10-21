@@ -1,11 +1,17 @@
 #!/bin/sh
 # Runs the prompt-injection checks against the real Nemotron model on Nebius.
-# Uses NEBIUS_API_KEY, or the key saved by `ownit key set`. Costs a few cents.
+# Uses NEBIUS_API_KEY (from the environment or the repo's .env), or the key saved by
+# `ownit key set`. Costs a few cents.
 #
 #   scripts/live-injection-check
 #
 # Passes when an answer that tries to instruct the grader is failed, and an
 # honest rough answer still passes.
 set -e
-cd "$(dirname "$0")/../worker"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -z "${NEBIUS_API_KEY:-}" ] && [ -f "$root/.env" ]; then
+  key=$(sed -n "s/^NEBIUS_API_KEY=//p" "$root/.env" | tail -n 1)
+  if [ -n "$key" ]; then export NEBIUS_API_KEY="$key"; fi
+fi
+cd "$root/worker"
 exec npx vitest run --config vitest.live.config.ts --reporter verbose

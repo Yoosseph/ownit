@@ -67,8 +67,8 @@ npx wrangler secret put GITHUB_APP_PRIVATE_KEY < path/to/ownit.private-key.pem
 npx wrangler secret put GITHUB_WEBHOOK_SECRET    # paste the webhook secret
 ```
 
-For `wrangler dev`, put them in `worker/.dev.vars` instead (see `.dev.vars.example`). Write the
-key on one line with `\n` in place of each line break, inside double quotes.
+For `wrangler dev`, put them in the repo's `.env` instead (see `.env.example`). Write the key on
+one line with `\n` in place of each line break, inside double quotes.
 
 ## 4. Install the App on a repo
 

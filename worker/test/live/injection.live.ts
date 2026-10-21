@@ -104,3 +104,62 @@ describe(`live injection check (${MODEL} on ${PROVIDER})`, () => {
     expect(grade.pass).toBe(false);
   }, 120_000);
 });
+
+// From a real debrief that grilled a developer over a README change.
+const README_DIFF = `diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -61,11 +61,30 @@
+ ### Commands
+ 
+-\`\`\`text
+-ownit interview                  Answer questions for pending pushes
+-ownit key set|clear|status       Manage your key
+-ownit uninstall                  Remove the hook
+-\`\`\`
++| Command | What it does |
++| --- | --- |
++| \`ownit login\` | Sign in with GitHub. |
++| \`ownit init\` | Install the pre-push hook in this repo and register it. |
++| \`ownit interview\` | Debrief your pending pushes, including ones an AI agent made. |
++| \`ownit key set [nebius\|nvidia]\` | Save your API key. |
++| \`ownit uninstall\` | Remove the hook from this repo. |
++
++### Pushes from AI agents
++
++When a coding agent pushes, nobody is at the terminal, so Ownit records the push as **pending**.
++Run \`ownit interview\` yourself within 24 hours, or it counts as skipped.
++
++### Where to see your record
++
++- **GitHub:** each commit gets an **Ownit** check.
++- **Repo page:** lists recent pushes and stats.
+`;
+
+describe(`live leniency on a docs-only push (${MODEL} on ${PROVIDER})`, () => {
+  const readmePush = {
+    commits: [{ sha: 'd'.repeat(40), message: 'List every command in the README, with AI pushes and where to see status' }],
+    diff: README_DIFF,
+    truncated: false,
+  };
+
+  it('asks one simple question about the purpose', async () => {
+    const [q] = await writeQuestions(model, 1, readmePush);
+    console.log(`\nDocs-only question: ${q!.question}\n  reference: ${q!.reference}`);
+    expect(q!.kind).toBe('why');
+  }, 180_000);
+
+  it('passes the answer that was failed before', async () => {
+    const question: Question = {
+      kind: 'why',
+      question:
+        'Why did you restructure the command list into a markdown table and add new sections about AI-agent pushes and where to view Ownit records in this README update?',
+      reference:
+        'A good answer explains that the table makes commands easier to scan and copy, that the AI-agent section clarifies how agent pushes become pending, and that the record section tells users where to see statuses. Any honest reason that fits the change is fine.',
+    };
+    const answer = 'So that people that are new to ownit can learn how to use it and what commands exist incase they arent aware';
+    const grade = await gradeAnswer(model, question, answer);
+    console.log(`\nREADME answer: ${answer}\n  pass=${grade.pass}  feedback: ${grade.feedback}`);
+    expect(grade.pass).toBe(true);
+  }, 120_000);
+});

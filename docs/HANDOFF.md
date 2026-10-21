@@ -9,8 +9,8 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 | 1. Worker skeleton, D1 schema, Nebius client | Done, verified with the fixture model. **Live Nemotron check not run yet** (waiting on a Nebius key). | c033546 |
 | 2. CLI debrief end to end | Done: `ownit interview --range A..B` against local `wrangler dev` (fixture model): fail, feedback, follow-up, pass, recorded in D1. | c9fcaab |
 | 3. Pre-push hook | Done: Y, n, s verified with real `git push` in a ConPTY reading `/dev/tty`; no-TTY, unreachable worker, chained hook covered by `cli/test/hook.test.ts`. | f9649d3 |
-| 4. GitHub App, webhook, check runs | Next | |
-| 5. Cron, stats, badge, public page | | |
+| 4. GitHub App, webhook, check runs | Done in code and tests (fake GitHub). Signed webhooks verified against local `wrangler dev`. **Real check run not seen yet**: needs the App from docs/github-app.md and a public worker URL. | (this commit) |
+| 5. Cron, stats, badge, public page | Next | |
 | 6. Login and permissions | | |
 | 7. Docs | | |
 
@@ -25,7 +25,9 @@ Pending live checks (need a Nebius key in `worker/.dev.vars` as `DEMO_NEBIUS_KEY
 - Tests run D1 on a `node:sqlite` shim (`worker/test/helpers/d1.ts`) with the real migrations.
 - `MODEL_BACKEND = "fixture"` switches to an offline fake model (`worker/src/fixtureModel.ts`).
 - Extra columns beyond the spec's data model: `repos.private`, `pushes.check_run_id`, plus `sessions`, `rate_limits`, `demo_usage` tables.
-- Until milestone 6, API routes have no auth and `upsertRepo` auto-registers repos on first use.
+- Repos must be registered (`POST /api/repos`, called by `ownit init`) before debrief routes accept them. Until milestone 6, API routes have no auth.
+- Check runs: verified = success, skipped = neutral, pending and provider_error = in_progress. They are created only after the webhook confirms the head commit landed (`commits.pushed_at`).
+- Unmatched commits in a push webhook become a new pending push owned by the sender.
 - The hook script exits 0 unless `pre-push.local` fails. Coding-agent env vars (`CLAUDECODE`, `CI`, …) count as no TTY. The Y/n prompt times out after 120 s and becomes pending.
 - Test seam: `OWNIT_TTY_DEVICE` replaces `/dev/tty` in the hook script.
 

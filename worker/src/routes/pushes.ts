@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getRepo, setPushStatus, upsertRepo, type PushRow } from '../db';
+import { attachCommits, createPush, findPushForCommits, getRepo, type PushRow } from '../db';
 import { log } from '../log';
+import { updateStatus } from './interview';
+import { repoName, requireRepo } from './repos';
 
 const sha = z.string().regex(/^[0-9a-f]{40}([0-9a-f]{24})?$/);
-const repoName = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 
 const recordBody = z.object({
   repo: repoName,
@@ -26,8 +27,8 @@ pushes.post('/', async (c) => {
   const parsed = recordBody.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid push record.' }, 400);
   const body = parsed.data;
-  const [owner, name] = body.repo.split('/') as [string, string];
-  const repo = await upsertRepo(c.env.DB, { owner, name, installationId: null, private: false });
+  const repo = await requireRepo(c, body.repo);
+  if (repo instanceof Response) return repo;
   const shas = body.commits.map((x) => x.sha);
 
   let push = await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
@@ -40,7 +41,7 @@ pushes.post('/', async (c) => {
     status: body.status,
   });
   await attachCommits(c.env.DB, repo.id, push.id, shas);
-  if (body.status === 'skipped' && push.status !== 'skipped') await setPushStatus(c.env.DB, push.id, 'skipped');
+  if (body.status === 'skipped' && push.status !== 'skipped') await updateStatus(c, push.id, 'skipped');
   log('push.record', { repo: body.repo, push: push.id, status: body.status });
   return c.json({ push_id: push.id, status: body.status === 'skipped' ? 'skipped' : push.status });
 });

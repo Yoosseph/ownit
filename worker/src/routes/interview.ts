@@ -1,16 +1,18 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getPush, recordAttempt, replaceQuestions, setPushStatus, upsertRepo } from '../db';
+import { background } from '../background';
+import { syncCheckRun } from '../checks';
+import { attachCommits, createPush, findPushForCommits, getPush, recordAttempt, replaceQuestions, setPushStatus, type PushStatus } from '../db';
 import { gradeAnswer, MAX_ANSWER_CHARS, writeFollowUp, writeQuestions, type Question } from '../debrief';
 import { cappedDemoModel, rateLimit } from '../limits';
 import { log } from '../log';
 import { createModel, ProviderError, type ChatModel } from '../model';
 import { countChangedLines, questionCount } from '../questionCount';
 import { seal, unseal } from '../seal';
+import { repoName, requireRepo } from './repos';
 
 const sha = z.string().regex(/^[0-9a-f]{40}([0-9a-f]{24})?$/);
-const repoName = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 const commit = z.object({ sha, message: z.string().max(20_000) });
 
 const startBody = z.object({
@@ -66,6 +68,12 @@ export function modelFor(c: Context<AppEnv>): ChatModel {
 
 export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
 
+/** Sets a push's status and brings its GitHub check run up to date. */
+export async function updateStatus(c: Context<AppEnv>, pushId: number, status: PushStatus) {
+  await setPushStatus(c.env.DB, pushId, status);
+  await background(c, syncCheckRun(c.env, c.get('github'), pushId));
+}
+
 /** Opens a debrief token for the current user, or explains why it cannot be used. */
 async function openState(c: Context<AppEnv>, token: string): Promise<DebriefState | Response> {
   const state = await unseal<DebriefState>(sessionSecret(c), token);
@@ -88,10 +96,10 @@ interview.post('/start', async (c) => {
   const parsed = startBody.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid debrief request.' }, 400);
   const body = parsed.data;
-  const [owner, name] = body.repo.split('/') as [string, string];
   const started = Date.now();
 
-  const repo = await upsertRepo(c.env.DB, { owner, name, installationId: null, private: false });
+  const repo = await requireRepo(c, body.repo);
+  if (repo instanceof Response) return repo;
   if (!(await rateLimit(c.env.DB, `start:repo:${repo.id}`, 60, 3600))) {
     return c.json({ error: 'rate_limited', message: 'Too many debriefs for this repo. Try again later.' }, 429);
   }
@@ -117,7 +125,7 @@ interview.post('/start', async (c) => {
     questions = await writeQuestions(modelFor(c), n, { commits: body.commits, diff: body.diff, truncated: body.diff_truncated });
   } catch (error) {
     if (!(error instanceof ProviderError)) throw error;
-    await setPushStatus(c.env.DB, push.id, 'provider_error');
+    await updateStatus(c, push.id, 'provider_error');
     log('interview.start', { repo: body.repo, push: push.id, status: 'provider_error', reason: error.kind, ms: Date.now() - started });
     return c.json({ error: 'provider_error', reason: error.kind, message: error.message, push_id: push.id }, 502);
   }
@@ -163,7 +171,7 @@ interview.post('/answer', async (c) => {
     if (!pass) followUp = await writeFollowUp(model, push, question, feedback);
   } catch (error) {
     if (!(error instanceof ProviderError)) throw error;
-    await setPushStatus(c.env.DB, state.pushId, 'provider_error');
+    await updateStatus(c, state.pushId, 'provider_error');
     log('interview.answer', { push: state.pushId, status: 'provider_error', reason: error.kind, ms: Date.now() - started });
     return c.json({ error: 'provider_error', reason: error.kind, message: error.message, push_id: state.pushId }, 502);
   }
@@ -172,7 +180,8 @@ interview.post('/answer', async (c) => {
   if (pass) question.passed = true;
   if (followUp) state.questions[body.idx] = { ...followUp, passed: false };
   const done = state.questions.every((q) => q.passed);
-  await setPushStatus(c.env.DB, state.pushId, done ? 'verified' : 'pending');
+  if (done) await updateStatus(c, state.pushId, 'verified');
+  else await setPushStatus(c.env.DB, state.pushId, 'pending');
 
   log('interview.answer', { push: state.pushId, status: pass ? 'pass' : 'fail', done, ms: Date.now() - started });
   return c.json({
@@ -190,7 +199,7 @@ interview.post('/skip', async (c) => {
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid skip request.' }, 400);
   const state = await openState(c, parsed.data.session);
   if (state instanceof Response) return state;
-  await setPushStatus(c.env.DB, state.pushId, 'skipped');
+  await updateStatus(c, state.pushId, 'skipped');
   log('interview.skip', { push: state.pushId, status: 'skipped' });
   return c.json({ status: 'skipped', push_id: state.pushId });
 });

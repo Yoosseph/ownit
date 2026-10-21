@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util';
+import { createApi } from '../api.js';
 import { git, githubRepo } from '../git.js';
 import { hookLocation, installHook, MANAGED_SNIPPET, uninstallHook } from '../hooks.js';
 import { paint } from '../ui.js';
@@ -24,8 +25,29 @@ export async function initCommand(argv: string[]): Promise<number> {
     out.write(location.via === 'core.hooksPath' ? ' (from core.hooksPath).\n' : '.\n');
     if (result.chained) out.write(`  Your existing hook is now pre-push.local and still runs first.\n`);
   }
-  out.write(`\nOwnit will debrief pushes to ${c.bold(repo)}.\n`);
+
+  try {
+    const registered = await createApi().request<RegisterResponse>('POST', '/api/repos', { repo }, { timeoutMs: 15_000 });
+    out.write(`${c.green('✓')} Registered ${c.bold(registered.repo)} with Ownit (tracked since ${registered.tracked_since.slice(0, 10)}).\n`);
+    if (!registered.installed) {
+      out.write(`\nNext: install the Ownit GitHub App on ${registered.repo} so pushes get check runs and count on the badge:\n`);
+      out.write(`  ${registered.install_url ?? 'see docs/github-app.md'}\n`);
+    }
+    if (registered.page_url) out.write(`\nYour repo's page: ${registered.page_url}\n`);
+  } catch (error) {
+    out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${error instanceof Error ? error.message : error}.\n`);
+    out.write('Run "ownit init" again once that is fixed.\n');
+    return 1;
+  }
   return 0;
+}
+
+interface RegisterResponse {
+  repo: string;
+  tracked_since: string;
+  installed: boolean;
+  install_url: string | null;
+  page_url: string | null;
 }
 
 export async function uninstallCommand(): Promise<number> {

@@ -54,7 +54,7 @@ export function nebiusModel(baseUrl: string, model: string, apiKey: string, fetc
               { role: 'system', content: prompt.system },
               { role: 'user', content: prompt.user },
             ],
-            temperature: 0.3,
+            temperature: prompt.temperature ?? 0.3,
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
           }),

@@ -85,4 +85,17 @@ describe(`live injection check (${MODEL})`, () => {
     console.log(`\nRough honest answer: ${honest}\n  pass=${grade.pass}  feedback: ${grade.feedback}`);
     expect(grade.pass).toBe(true);
   }, 120_000);
+
+  it('passes an honest reason the reference did not predict', async () => {
+    const honest = 'my teammate asked for it after we lost a couple of orders to flaky card declines last week';
+    const grade = await gradeAnswer(model, question, honest);
+    console.log(`\nUnpredicted honest reason: ${honest}\n  pass=${grade.pass}  feedback: ${grade.feedback}`);
+    expect(grade.pass).toBe(true);
+  }, 120_000);
+
+  it('still fails a non-answer', async () => {
+    const grade = await gradeAnswer(model, question, 'idk, just because');
+    console.log(`\nNon-answer: idk, just because\n  pass=${grade.pass}  feedback: ${grade.feedback}`);
+    expect(grade.pass).toBe(false);
+  }, 120_000);
 });

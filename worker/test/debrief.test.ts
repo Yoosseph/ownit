@@ -99,6 +99,15 @@ describe('nebius client', () => {
     const body = JSON.parse(init.body as string);
     expect(body.model).toBe('nvidia/x');
     expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.temperature).toBe(0.3);
+  });
+
+  it('grades at temperature 0', async () => {
+    const fetcher = vi.fn(async () => Response.json({ choices: [{ message: { content: '{"pass":true,"feedback":"ok"}' } }] }));
+    const model = nebiusModel('https://api.example/v1/', 'nvidia/x', 'key-123', fetcher as any);
+    await gradeAnswer(model, q('why') as any, 'Totals were wrong.');
+    const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string).temperature).toBe(0);
   });
 
   it.each([

@@ -181,8 +181,10 @@ export function readOwnitignore(head: string, cwd = process.cwd()): string {
   }
 }
 
-/** Builds the filtered diff between two commits (base null means the empty tree). */
-export function buildDiff(base: string | null, head: string, cwd = process.cwd()): PreparedDiff {
-  const raw = git(['diff', '--no-color', '--no-ext-diff', '--find-renames', '--unified=3', base ?? EMPTY_TREE, head], cwd);
-  return prepareDiff(raw, ignoreRules(readOwnitignore(head, cwd)));
+/** Builds the filtered diff for one or more ranges (a null base means the empty tree). */
+export function buildDiff(ranges: { base: string | null; head: string }[], cwd = process.cwd()): PreparedDiff {
+  const raw = ranges
+    .map(({ base, head }) => git(['diff', '--no-color', '--no-ext-diff', '--find-renames', '--unified=3', base ?? EMPTY_TREE, head], cwd))
+    .join('');
+  return prepareDiff(raw, ignoreRules(readOwnitignore(ranges[0]!.head, cwd)));
 }

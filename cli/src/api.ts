@@ -43,7 +43,7 @@ export class ApiError extends Error {
 }
 
 export interface ApiClient {
-  request<T>(method: string, path: string, body?: unknown): Promise<T>;
+  request<T>(method: string, path: string, body?: unknown, options?: { timeoutMs?: number }): Promise<T>;
   server: string;
 }
 
@@ -52,7 +52,7 @@ export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv 
   const nebiusKey = env.NEBIUS_API_KEY || config.nebiusKey;
   return {
     server,
-    async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    async request<T>(method: string, path: string, body?: unknown, options: { timeoutMs?: number } = {}): Promise<T> {
       const headers: Record<string, string> = { accept: 'application/json', 'user-agent': 'getownit-cli' };
       if (body !== undefined) headers['content-type'] = 'application/json';
       if (config.token) headers.authorization = `Bearer ${config.token}`;
@@ -64,7 +64,7 @@ export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv 
           method,
           headers,
           body: body === undefined ? undefined : JSON.stringify(body),
-          signal: AbortSignal.timeout(180_000),
+          signal: AbortSignal.timeout(options.timeoutMs ?? 180_000),
         });
       } catch (error) {
         const reason = error instanceof Error && error.name === 'TimeoutError' ? 'timed out' : 'unreachable';

@@ -97,7 +97,8 @@ interview.post('/start', async (c) => {
   }
 
   const shas = body.commits.map((x) => x.sha);
-  let push = await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
+  let push = body.push_id ? await getPush(c.env.DB, body.push_id) : await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
+  if (body.push_id && push?.repo_id !== repo.id) return c.json({ error: 'not_found', message: 'No such push in this repo.' }, 404);
   if (push && (push.status === 'verified' || push.status === 'skipped')) {
     return c.json({ error: 'already_resolved', status: push.status, push_id: push.id, message: `This push is already ${push.status}.` }, 409);
   }

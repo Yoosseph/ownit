@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from './env';
 import { log } from './log';
 import { interview } from './routes/interview';
+import { pushes } from './routes/pushes';
 
 export type AppEnv = { Bindings: Env; Variables: { userId: number | null } };
 
@@ -20,6 +21,7 @@ export function createApp() {
   app.get('/', (c) => c.text('Ownit: debrief the code you ship. https://github.com/yosephnaoom/ownit\n'));
   app.get('/healthz', (c) => c.json({ ok: true }));
   app.route('/api/interview', interview);
+  app.route('/api/pushes', pushes);
 
   app.notFound((c) => c.json({ error: 'not_found' }, 404));
   app.onError((error, c) => {

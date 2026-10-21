@@ -33,7 +33,7 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
   const out = prompter.out;
   const c = paint(out);
   const commitWord = target.commits.length === 1 ? 'commit' : 'commits';
-  out.write(`\n${c.bold('Ownit debrief')} ${c.dim(`· ${target.repo} · ${target.commits.length} ${commitWord} · ${target.diff.changedLines} changed lines`)}\n`);
+  out.write(`\n${c.bold('Ownit debrief')} ${c.dim(`· ${target.repo} · ${target.commits.length} ${commitWord} · ${target.diff.changedLines} changed ${target.diff.changedLines === 1 ? 'line' : 'lines'}`)}\n`);
 
   const payload = {
     commits: target.commits,

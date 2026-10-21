@@ -11,10 +11,17 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 | 3. Pre-push hook | Done: Y, n, s verified with real `git push` in a ConPTY reading `/dev/tty`; no-TTY, unreachable worker, chained hook covered by `cli/test/hook.test.ts`. | f9649d3 |
 | 4. GitHub App, webhook, check runs | Done in code and tests (fake GitHub). Signed webhooks verified against local `wrangler dev`. **Real check run not seen yet**: needs the App from docs/github-app.md and a public worker URL. | 3575033 |
 | 5. Cron, stats, badge, public page | Done: tests on a seeded repo; locally `seed/demo.sql` + `wrangler dev --test-scheduled` shows 70% → 54% after the cron expires a 30-hour-old pending push. | 0c4faef |
-| 6. Login and permissions | Done in code and tests (fake GitHub): device flow, session tokens (hash stored), 401 without a valid token on every `/api/*` route, 403 without push access. Locally verified token rejection and the full hook flow with a dev session. **Real device flow not run yet**: needs the App's client ID. | (this commit) |
-| 7. Docs | Next | |
+| 6. Login and permissions | Done in code and tests (fake GitHub): device flow, session tokens (hash stored), 401 without a valid token on every `/api/*` route, 403 without push access. Locally verified token rejection and the full hook flow with a dev session. **Real device flow not run yet**: needs the App's client ID. | 8350a71 |
+| 7. Docs | Done: README (what/why, install, BYOK, privacy, self-hosting, limitations, credits), docs/demo.md, docs/github-app.md, scripts/live-injection-check. | (this commit) |
 
-Pending live checks (need a Nebius key in `worker/.dev.vars` as `DEMO_NEBIUS_KEY`, or `NEBIUS_API_KEY` for the CLI): milestone 1 curl against Nemotron, milestone 2 against Nemotron, and `scripts/live-injection-check` (not written yet).
+## Still to do before the hackathon demo
+
+1. **Live model checks** (need a Nebius key): milestone 1 curl against Nemotron, a debrief against Nemotron, and `scripts/live-injection-check`. If Nemotron rejects `response_format: json_object` or its replies need a different token budget, fix it in `worker/src/model.ts`.
+2. **GitHub App**: the user creates it (docs/github-app.md). Then check the real device flow and a real check run.
+3. **Deploy** (ask first): `wrangler d1 create`, set database_id, remote migrations, secrets, `wrangler deploy`.
+4. **Before `npm publish`**: set `DEFAULT_SERVER` in `cli/src/config.ts` to the deployed URL (it is `http://127.0.0.1:8787` now) and add `repository` to `cli/package.json`.
+5. Confirm the hackathon rules (required models, submission format) with the user.
+6. Stretch (only after the above): late-pass and backfill labels, trivial-push exemption, per-author badges, global `core.hooksPath` install.
 
 ## Settled decisions
 

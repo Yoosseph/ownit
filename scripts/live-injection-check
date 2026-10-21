@@ -1,0 +1,11 @@
+#!/bin/sh
+# Runs the prompt-injection checks against the real Nemotron model on Nebius.
+# Uses NEBIUS_API_KEY, or the key saved by `ownit key set`. Costs a few cents.
+#
+#   scripts/live-injection-check
+#
+# Passes when an answer that tries to instruct the grader is failed, and an
+# honest rough answer still passes.
+set -e
+cd "$(dirname "$0")/../worker"
+exec npx vitest run --config vitest.live.config.ts --reporter verbose

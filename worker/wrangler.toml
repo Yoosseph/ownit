@@ -12,7 +12,7 @@ MODEL_BACKEND = "nebius"
 # Daily cap on model calls paid for by DEMO_NEBIUS_KEY (only used when a request carries no key).
 DEMO_DAILY_CALL_CAP = "300"
 # Public origin of this worker, used in links printed by the CLI and check runs.
-PUBLIC_URL = ""
+PUBLIC_URL = "https://ownit.ownit-worker.workers.dev"
 # Fill these in after creating the GitHub App (docs/github-app.md).
 GITHUB_APP_ID = ""
 GITHUB_APP_SLUG = ""
@@ -27,8 +27,7 @@ GITHUB_CLIENT_ID = ""
 [[d1_databases]]
 binding = "DB"
 database_name = "ownit"
-# Replace with the id printed by `wrangler d1 create ownit` before deploying.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "bac3beeb-5190-40a3-acec-e8411ea6dce8"
 migrations_dir = "migrations"
 
 [triggers]

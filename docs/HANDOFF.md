@@ -18,8 +18,8 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 
 1. ~~Live model checks~~ Done 2026-10-21: `scripts/live-injection-check` 4/4 (both injected answers failed, a rough honest answer passed), the milestone 1 curl, and a CLI debrief with fail, feedback, follow-up and pass. Nemotron accepts `response_format: json_object`; calls take 1–4 s.
 2. **GitHub App**: the user creates it (docs/github-app.md). Then check the real device flow and a real check run.
-3. **Deploy** (ask first): `wrangler d1 create`, set database_id, remote migrations, secrets, `wrangler deploy`.
-4. **Before `npm publish`**: set `DEFAULT_SERVER` in `cli/src/config.ts` to the deployed URL (it is `http://127.0.0.1:8787` now) and add `repository` to `cli/package.json`.
+3. ~~Deploy~~ Done 2026-10-21: https://ownit.ownit-worker.workers.dev (D1 `ownit`, migrations applied, SESSION_SECRET set, hourly cron registered). No DEMO_NEBIUS_KEY on the server yet (user's choice; revisit before submission). GitHub App secrets still to set.
+4. **Before `npm publish`**: add `repository` to `cli/package.json`. `DEFAULT_SERVER` already points to the deployed URL.
 5. Confirm the hackathon rules (required models, submission format) with the user.
 6. Stretch (only after the above): late-pass and backfill labels, trivial-push exemption, per-author badges, global `core.hooksPath` install.
 

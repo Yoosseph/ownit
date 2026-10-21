@@ -12,8 +12,8 @@ export interface Config {
   nebiusKey?: string;
 }
 
-// Replaced with the deployed worker's URL at release time.
-export const DEFAULT_SERVER = 'http://127.0.0.1:8787';
+// The hosted Ownit server. Self-hosters point the CLI elsewhere with `ownit login --server`.
+export const DEFAULT_SERVER = 'https://ownit.ownit-worker.workers.dev';
 
 export function configDir(env: NodeJS.ProcessEnv = process.env): string {
   return env.OWNIT_HOME || join(homedir(), '.ownit');

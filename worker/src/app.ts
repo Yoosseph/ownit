@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from './env';
+import { auth, requireSession } from './auth';
 import { createGitHub, type GitHub } from './github';
 import { log } from './log';
 import { interview } from './routes/interview';
@@ -8,7 +9,7 @@ import { pushes } from './routes/pushes';
 import { repos } from './routes/repos';
 import { webhook } from './routes/webhook';
 
-export type AppEnv = { Bindings: Env; Variables: { userId: number | null; github: GitHub } };
+export type AppEnv = { Bindings: Env; Variables: { userId: number | null; login: string | null; github: GitHub } };
 
 export interface Deps {
   github?: (env: Env) => GitHub;
@@ -21,6 +22,7 @@ export function createApp(deps: Deps = {}) {
 
   app.use('*', async (c, next) => {
     c.set('userId', null);
+    c.set('login', null);
     c.set('github', (deps.github ?? createGitHub)(c.env));
     const length = Number(c.req.header('content-length') ?? 0);
     if (length > MAX_BODY_BYTES) return c.json({ error: 'too_large', message: 'Request body is too large.' }, 413);
@@ -29,6 +31,8 @@ export function createApp(deps: Deps = {}) {
 
   app.get('/', (c) => c.text('Ownit: debrief the code you ship.\n'));
   app.get('/healthz', (c) => c.json({ ok: true }));
+  app.route('/auth', auth);
+  app.use('/api/*', requireSession);
   app.route('/api/interview', interview);
   app.route('/api/pushes', pushes);
   app.route('/api/repos', repos);

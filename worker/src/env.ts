@@ -12,4 +12,6 @@ export interface Env {
   GITHUB_APP_PRIVATE_KEY?: string;
   GITHUB_WEBHOOK_SECRET?: string;
   DEMO_NEBIUS_KEY?: string;
+  /** "1" skips the GitHub push-access check, but only for requests to localhost (wrangler dev). */
+  DEV_LOCAL_TRUST?: string;
 }

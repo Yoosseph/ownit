@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { interpretChoice, isAgentEnvironment } from '../src/commands/hook.js';
 import { hookScript, installHook, isOwnitHook, uninstallHook } from '../src/hooks.js';
 import { computePush, parseRefs } from '../src/pushRange.js';
@@ -10,12 +10,6 @@ import { cleanEnv, fakeServer, makeRepo, run, sh } from './helpers.js';
 const CLI = resolve(import.meta.dirname, '..', 'dist', 'index.js');
 const fallback = { node: process.execPath.replaceAll('\\', '/'), cli: CLI.replaceAll('\\', '/') };
 
-beforeAll(() => {
-  execFileSync(process.execPath, [resolve(import.meta.dirname, '..', '..', 'node_modules', 'typescript', 'bin', 'tsc'), '-p', 'tsconfig.json'], {
-    cwd: resolve(import.meta.dirname, '..'),
-    stdio: 'inherit',
-  });
-}, 120_000);
 
 const servers: { close(): Promise<void> }[] = [];
 afterEach(async () => {
@@ -52,8 +46,15 @@ function setup() {
   return repo;
 }
 
-function push(repo: ReturnType<typeof setup>, env: Record<string, string>) {
-  return run('git', ['push', 'origin', 'main'], repo.work, cleanEnv({ OWNIT_HOME: join(repo.root, 'home'), ...env }));
+const TOKEN = 'ownit_test-session-token-0123456789';
+
+function push(repo: ReturnType<typeof setup>, env: Record<string, string>, { loggedIn = true } = {}) {
+  const home = join(repo.root, 'home');
+  if (loggedIn) {
+    mkdirSync(home, { recursive: true });
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ token: TOKEN, login: 'mona', nebiusKey: 'nb-secret-key' }));
+  }
+  return run('git', ['push', 'origin', 'main'], repo.work, cleanEnv({ OWNIT_HOME: home, ...env }));
 }
 
 function ttyFile(repo: ReturnType<typeof setup>, lines: string[]) {
@@ -79,6 +80,29 @@ describe('pre-push hook (real git push)', () => {
     expect(start.body.repo).toBe('demo/shop');
     expect(start.body.commits.map((c: any) => c.message)).toEqual(['Round totals']);
     expect(start.body.diff).toContain('diff --git a/cart.js b/cart.js');
+    expect(start.headers.authorization).toBe(`Bearer ${TOKEN}`);
+    expect(start.headers['x-nebius-key']).toBe('nb-secret-key');
+    // The key goes only to debrief calls.
+    expect(s.requests.find((r) => r.path === '/api/pushes/lookup')!.headers['x-nebius-key']).toBeUndefined();
+  }, 60_000);
+
+  it('when logged out, says so and pushes without contacting the server', async () => {
+    const repo = setup();
+    const s = await server();
+    const result = await push(repo, { OWNIT_SERVER: s.url, OWNIT_TTY_DEVICE: ttyFile(repo, ['y']) }, { loggedIn: false });
+    expect(result.code).toBe(0);
+    expect(result.output).toContain('not logged in');
+    expect(s.requests).toHaveLength(0);
+    expect(remoteHead(repo)).toBe(localHead(repo));
+  }, 60_000);
+
+  it('a rejected session prints the reason and pushes', async () => {
+    const repo = setup();
+    const s = await fakeServer({});
+    servers.push(s);
+    const result = await push(repo, { OWNIT_SERVER: s.url, OWNIT_TTY_DEVICE: join(repo.root, 'no-tty') });
+    expect(result.code).toBe(0);
+    expect(remoteHead(repo)).toBe(localHead(repo));
   }, 60_000);
 
   it('n records the push as pending, prints the hint, and pushes', async () => {

@@ -70,7 +70,12 @@ export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = proce
     const push = computePush(parseRefs(refs), remote);
     if (!push) return 0;
 
-    const api = createApi(readConfig(env), env);
+    const config = readConfig(env);
+    if (!config.token) {
+      out.write(`Ownit: not logged in, so no debrief this time. Run "ownit login". The push continues.\n`);
+      return 0;
+    }
+    const api = createApi(config, env);
     const known = await api
       .request<{ status: PushStatus | null }>(
         'POST',

@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import type { Env } from '../../src/env';
 import { createApp } from '../../src/app';
-import type { CheckRunBody, GitHub } from '../../src/github';
+import { clearPermissionCache } from '../../src/auth';
+import type { CheckRunBody, DeviceCode, GitHub } from '../../src/github';
 import { createTestDb } from './d1';
 
 export const INSTALLATION_ID = 99;
@@ -26,13 +28,35 @@ export class FakeGitHub implements GitHub {
   async permission(_installationId: number, owner: string, repo: string, username: string) {
     return this.permissions.get(`${owner}/${repo}:${username}`) ?? 'write';
   }
+
+  /** Device flow: each poll takes the next scripted reply; the last one repeats. */
+  deviceReplies: ({ accessToken: string } | { error: string })[] = [{ accessToken: 'gho_user' }];
+  tokens = new Map([['gho_user', { id: 42, login: 'mona' }]]);
+  async deviceCode(): Promise<DeviceCode> {
+    return { device_code: 'dev-code', user_code: 'ABCD-1234', verification_uri: 'https://github.com/login/device', expires_in: 900, interval: 5 };
+  }
+  async deviceToken() {
+    return this.deviceReplies.length > 1 ? this.deviceReplies.shift()! : this.deviceReplies[0]!;
+  }
+  async user(accessToken: string) {
+    return this.tokens.get(accessToken)!;
+  }
 }
 
-export type TestEnv = Env & { DB: ReturnType<typeof createTestDb>; github: FakeGitHub };
+export const USER = { id: 42, login: 'mona' };
+export const TOKEN = 'ownit_test-session-token-0123456789';
+const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 
-/** A fresh database with `octo/shop` registered and the App installed on it. */
+export type TestEnv = Env & { DB: ReturnType<typeof createTestDb>; github: FakeGitHub; token: string };
+
+/** A fresh database with user mona logged in and `octo/shop` registered with the App installed. */
 export function testEnv(overrides: Partial<Env> = {}, { register = true } = {}): TestEnv {
+  clearPermissionCache();
   const DB = createTestDb();
+  DB.raw.prepare('INSERT INTO users (github_id, login) VALUES (?, ?)').run(USER.id, USER.login);
+  DB.raw
+    .prepare("INSERT INTO sessions (token_hash, github_id, created_at, expires_at) VALUES (?, ?, '2026-01-01T00:00:00.000Z', '2999-01-01T00:00:00.000Z')")
+    .run(hash(TOKEN), USER.id);
   if (register) {
     DB.raw
       .prepare("INSERT INTO repos (owner, name, installation_id, tracked_since, private) VALUES ('octo', 'shop', ?, '2026-10-01T00:00:00.000Z', 0)")
@@ -41,6 +65,7 @@ export function testEnv(overrides: Partial<Env> = {}, { register = true } = {}):
   return {
     DB,
     github: new FakeGitHub(),
+    token: TOKEN,
     NEBIUS_BASE_URL: 'https://nebius.invalid/v1/',
     NEBIUS_MODEL: 'nvidia/test-model',
     MODEL_BACKEND: 'fixture',
@@ -92,7 +117,11 @@ export async function call(env: Env, method: string, path: string, body?: unknow
     path,
     {
       method,
-      headers: { 'content-type': 'application/json', ...headers },
+      headers: {
+        'content-type': 'application/json',
+        ...((env as Partial<TestEnv>).token ? { authorization: `Bearer ${(env as TestEnv).token}` } : {}),
+        ...headers,
+      },
       body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
     },
     env,

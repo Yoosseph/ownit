@@ -100,13 +100,17 @@ interview.post('/start', async (c) => {
 
   const repo = await requireRepo(c, body.repo);
   if (repo instanceof Response) return repo;
-  if (!(await rateLimit(c.env.DB, `start:repo:${repo.id}`, 60, 3600))) {
+  const limited = !(await rateLimit(c.env.DB, `start:user:${c.get('userId')}`, 30, 3600)) || !(await rateLimit(c.env.DB, `start:repo:${repo.id}`, 60, 3600));
+  if (limited) {
     return c.json({ error: 'rate_limited', message: 'Too many debriefs for this repo. Try again later.' }, 429);
   }
 
   const shas = body.commits.map((x) => x.sha);
   let push = body.push_id ? await getPush(c.env.DB, body.push_id) : await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
   if (body.push_id && push?.repo_id !== repo.id) return c.json({ error: 'not_found', message: 'No such push in this repo.' }, 404);
+  if (push?.user_github_id && push.user_github_id !== c.get('userId')) {
+    return c.json({ error: 'forbidden', message: 'Another developer pushed these commits, so the debrief is theirs.' }, 403);
+  }
   if (push && (push.status === 'verified' || push.status === 'skipped')) {
     return c.json({ error: 'already_resolved', status: push.status, push_id: push.id, message: `This push is already ${push.status}.` }, 409);
   }

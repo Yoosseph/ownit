@@ -4,10 +4,14 @@ import { hookCommand } from './commands/hook.js';
 import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
 import { keyCommand } from './commands/key.js';
+import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
 
 const HELP = `ownit: debrief the code you just pushed.
 
 Usage:
+  ownit login [--server URL]       Sign in with GitHub (device flow)
+  ownit logout                     Sign out
+  ownit whoami                     Show server, login, and key status
   ownit init [--repo owner/name]   Install the pre-push hook in this repo
   ownit interview                  Debrief pushes that are still pending
   ownit interview --range A..B     Debrief a commit range
@@ -26,6 +30,13 @@ function version(): string {
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   switch (command) {
+    case 'login':
+      return loginCommand(rest);
+    case 'logout':
+      return logoutCommand();
+    case 'whoami':
+    case 'status':
+      return whoamiCommand();
     case 'init':
       return initCommand(rest);
     case 'uninstall':

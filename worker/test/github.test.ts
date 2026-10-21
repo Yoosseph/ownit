@@ -162,10 +162,12 @@ describe('POST /api/repos', () => {
     expect(env.DB.raw.prepare('SELECT installation_id, private FROM repos').get()).toEqual({ installation_id: 7, private: 1 });
   });
 
-  it('registers without the App and returns the install link', async () => {
+  it('refuses to register without the App and returns the install link', async () => {
     const env = testEnv({}, { register: false });
     const res = await call(env, 'POST', '/api/repos', { repo: 'octo/elsewhere' });
-    expect(res.json).toMatchObject({ installed: false, install_url: 'https://github.com/apps/ownit-test/installations/new' });
+    expect(res.status).toBe(403);
+    expect(res.json).toMatchObject({ error: 'app_not_installed', install_url: 'https://github.com/apps/ownit-test/installations/new' });
+    expect(env.DB.raw.prepare('SELECT count(*) AS n FROM repos').get()).toEqual({ n: 0 });
   });
 
   it('keeps the original tracking date on re-registration', async () => {

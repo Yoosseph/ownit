@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getRepo, type PushRow } from '../db';
+import { attachCommits, createPush, findPushForCommits, type PushRow } from '../db';
 import { log } from '../log';
 import { updateStatus } from './interview';
 import { repoName, requireRepo } from './repos';
@@ -33,6 +33,7 @@ pushes.post('/', async (c) => {
 
   let push = await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
   if (push && isResolved(push)) return c.json({ push_id: push.id, status: push.status });
+  if (push?.user_github_id && push.user_github_id !== c.get('userId')) return c.json({ push_id: push.id, status: push.status });
   push ??= await createPush(c.env.DB, {
     repoId: repo.id,
     userId: c.get('userId'),
@@ -50,9 +51,9 @@ pushes.post('/', async (c) => {
 pushes.post('/lookup', async (c) => {
   const parsed = lookupBody.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid lookup.' }, 400);
-  const [owner, name] = parsed.data.repo.split('/') as [string, string];
-  const repo = await getRepo(c.env.DB, owner, name);
-  const push = repo ? await findPushForCommits(c.env.DB, repo.id, parsed.data.head_sha, parsed.data.shas) : null;
+  const repo = await requireRepo(c, parsed.data.repo);
+  if (repo instanceof Response) return repo;
+  const push = await findPushForCommits(c.env.DB, repo.id, parsed.data.head_sha, parsed.data.shas);
   return c.json(push ? { push_id: push.id, status: push.status } : { push_id: null, status: null });
 });
 
@@ -60,16 +61,15 @@ pushes.post('/lookup', async (c) => {
 pushes.get('/open', async (c) => {
   const parsed = repoName.safeParse(c.req.query('repo'));
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Pass ?repo=owner/name.' }, 400);
-  const [owner, name] = parsed.data.split('/') as [string, string];
-  const repo = await getRepo(c.env.DB, owner, name);
-  if (!repo) return c.json({ pushes: [] });
+  const repo = await requireRepo(c, parsed.data);
+  if (repo instanceof Response) return repo;
   const userId = c.get('userId');
   const { results } = await c.env.DB.prepare(
     `SELECT * FROM pushes WHERE repo_id = ? AND status IN ('pending', 'provider_error')
-       AND (? IS NULL OR user_github_id IS NULL OR user_github_id = ?)
+       AND (user_github_id IS NULL OR user_github_id = ?)
      ORDER BY created_at DESC LIMIT 20`,
   )
-    .bind(repo.id, userId, userId)
+    .bind(repo.id, userId)
     .all<PushRow>();
   const out = [];
   for (const push of results) {

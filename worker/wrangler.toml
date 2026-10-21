@@ -14,9 +14,9 @@ DEMO_DAILY_CALL_CAP = "300"
 # Public origin of this worker, used in links printed by the CLI and check runs.
 PUBLIC_URL = "https://ownit.ownit-worker.workers.dev"
 # Fill these in after creating the GitHub App (docs/github-app.md).
-GITHUB_APP_ID = ""
-GITHUB_APP_SLUG = ""
-GITHUB_CLIENT_ID = ""
+GITHUB_APP_ID = "5413583"
+GITHUB_APP_SLUG = "ownit-app"
+GITHUB_CLIENT_ID = "Iv23li5nolIz89LR1Dk6"
 
 # Secrets (set with `wrangler secret put <NAME>`; locally from the repo's .env via `npm run dev`):
 #   SESSION_SECRET          random string used to seal debrief state between requests

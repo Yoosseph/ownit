@@ -1,5 +1,15 @@
 # Ownit
 
+[![Ownit](https://ownit.ownit-worker.workers.dev/badge/Yoosseph/ownit.svg)](https://ownit.ownit-worker.workers.dev/Yoosseph/ownit)
+[![CI](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![NVIDIA Nemotron](https://img.shields.io/badge/NVIDIA-Nemotron-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b)
+[![Nebius Token Factory](https://img.shields.io/badge/Nebius-Token%20Factory-052B42)](https://tokenfactory.nebius.com/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 **Own the code you ship.** After each `git push`, Ownit asks you one to three short questions about
 the change, right in your terminal: why you made it, how it works, and what could come next.
 NVIDIA Nemotron (on Nebius or NVIDIA) writes the questions and grades your answers.
@@ -89,5 +99,16 @@ to answer for the change, or it counts as skipped.
 
 Privacy, self-hosting, how it works and limitations: [docs/DETAILS.md](docs/DETAILS.md).
 Overview of the code: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Every prompt sent to the model: [prompts/](prompts/).
 
-MIT licensed.
+## Contributing
+
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, tests and
+what to keep true; please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report security
+problems privately, as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE). You can use, copy, change and redistribute Ownit, including commercially and in
+closed-source projects, as long as you keep the copyright and license notice. It comes with no
+warranty. Contributions are released under the same license.

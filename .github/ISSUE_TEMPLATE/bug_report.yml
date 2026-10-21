@@ -1,0 +1,37 @@
+name: Bug report
+description: Something in Ownit doesn't work as described.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please never paste API keys, tokens or private code here.
+        Security problems go through a [private report](https://github.com/Yoosseph/ownit/security/advisories/new).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Terminal output
+      description: The Ownit lines from your terminal, with keys and private code removed.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Ownit version
+      description: Output of `ownit --version`.
+  - type: input
+    id: env
+    attributes:
+      label: OS, Node version, git client
+      placeholder: Windows 11, Node 22.11, git 2.47 in Windows Terminal
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Model provider
+      options: [Nebius, NVIDIA, Shared demo key, Not relevant]

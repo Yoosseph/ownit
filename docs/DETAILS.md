@@ -174,6 +174,8 @@ For local development, see [docs/HANDOFF.md](HANDOFF.md#running-locally). `MODEL
 
 ## Development
 
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup and how to send a change. You need Node 22.5+.
+
 ```sh
 npm install
 npm test                          # worker + CLI, offline (fixture model, node:sqlite D1 shim)

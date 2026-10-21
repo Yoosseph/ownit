@@ -58,7 +58,7 @@ function sessionSecret(c: Context<AppEnv>): string {
 
 /** The request's own key, else the capped demo key, else a provider error. */
 export function modelFor(c: Context<AppEnv>): ChatModel {
-  const key = c.req.header('x-nebius-key')?.trim();
+  const key = c.req.header('x-model-key')?.trim();
   if (key || c.env.MODEL_BACKEND === 'fixture') return createModel(c.env, key ?? '');
   if (c.env.DEMO_NEBIUS_KEY) {
     return cappedDemoModel(c.env.DB, Number(c.env.DEMO_DAILY_CALL_CAP) || 0, createModel(c.env, c.env.DEMO_NEBIUS_KEY));

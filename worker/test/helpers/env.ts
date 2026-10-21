@@ -63,6 +63,8 @@ export function testEnv(overrides: Partial<Env> = {}, { register = true } = {}):
     token: TOKEN,
     NEBIUS_BASE_URL: 'https://nebius.invalid/v1/',
     NEBIUS_MODEL: 'nvidia/test-model',
+    NVIDIA_BASE_URL: 'https://nvidia.invalid/v1/',
+    NVIDIA_MODEL: 'nvidia/test-model',
     MODEL_BACKEND: 'fixture',
     DEMO_DAILY_CALL_CAP: '5',
     PUBLIC_URL: 'https://ownit.test',

@@ -1,7 +1,7 @@
 #!/bin/sh
-# Runs the prompt-injection checks against the real Nemotron model on Nebius.
-# Uses NEBIUS_API_KEY if set, else DEMO_NEBIUS_KEY from the repo's .env, else the key
-# saved by `ownit key set`. Costs a few cents.
+# Runs the prompt-injection checks against the real Nemotron model on Nebius or NVIDIA.
+# Uses NVIDIA_API_KEY or NEBIUS_API_KEY if set, else DEMO_NEBIUS_KEY from the repo's .env,
+# else the key saved by `ownit key set`. An "nvapi-" key runs on NVIDIA. Costs a few cents.
 #
 #   scripts/live-injection-check
 #
@@ -9,7 +9,7 @@
 # honest rough answer still passes.
 set -e
 root="$(cd "$(dirname "$0")/.." && pwd)"
-if [ -z "${NEBIUS_API_KEY:-}" ] && [ -f "$root/.env" ]; then
+if [ -z "${NEBIUS_API_KEY:-}" ] && [ -z "${NVIDIA_API_KEY:-}" ] && [ -f "$root/.env" ]; then
   key=$(sed -n "s/^DEMO_NEBIUS_KEY=//p" "$root/.env" | tail -n 1)
   if [ -n "$key" ]; then export NEBIUS_API_KEY="$key"; fi
 fi

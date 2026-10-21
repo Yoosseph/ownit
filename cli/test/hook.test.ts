@@ -52,7 +52,7 @@ function push(repo: ReturnType<typeof setup>, env: Record<string, string>, { log
   const home = join(repo.root, 'home');
   if (loggedIn) {
     mkdirSync(home, { recursive: true });
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ token: TOKEN, login: 'mona', nebiusKey: 'nb-secret-key' }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ token: TOKEN, login: 'mona', apiKey: 'nb-secret-key' }));
   }
   return run('git', ['push', 'origin', 'main'], repo.work, cleanEnv({ OWNIT_HOME: home, ...env }));
 }
@@ -81,9 +81,9 @@ describe('pre-push hook (real git push)', () => {
     expect(start.body.commits.map((c: any) => c.message)).toEqual(['Round totals']);
     expect(start.body.diff).toContain('diff --git a/cart.js b/cart.js');
     expect(start.headers.authorization).toBe(`Bearer ${TOKEN}`);
-    expect(start.headers['x-nebius-key']).toBe('nb-secret-key');
+    expect(start.headers['x-model-key']).toBe('nb-secret-key');
     // The key goes only to debrief calls.
-    expect(s.requests.find((r) => r.path === '/api/pushes/lookup')!.headers['x-nebius-key']).toBeUndefined();
+    expect(s.requests.find((r) => r.path === '/api/pushes/lookup')!.headers['x-model-key']).toBeUndefined();
   }, 60_000);
 
   it('when logged out, says so and pushes without contacting the server', async () => {

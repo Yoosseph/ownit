@@ -4,20 +4,43 @@ import { fixtureModel } from './fixtureModel';
 
 export type ProviderErrorKind = 'no_key' | 'invalid_key' | 'no_credit' | 'rate_limited' | 'unavailable' | 'bad_output' | 'demo_cap';
 
-const REASONS: Record<ProviderErrorKind, string> = {
-  no_key: 'No Nebius API key. Run "ownit key set".',
-  invalid_key: 'Nebius rejected the API key. Check it with "ownit key set".',
-  no_credit: 'Your Nebius account has no credit left.',
-  rate_limited: 'Nebius is rate limiting this key. Try again in a minute.',
-  unavailable: 'Nebius is unreachable right now.',
-  bad_output: 'The model returned an invalid reply twice.',
-  demo_cap: 'The shared demo key hit its daily limit. Set your own key with "ownit key set".',
-};
+/** Both serve the same Nemotron model through an OpenAI-compatible API. */
+export type Provider = 'nebius' | 'nvidia';
+
+const PROVIDER_NAMES: Record<Provider, string> = { nebius: 'Nebius', nvidia: 'NVIDIA' };
+
+/** NVIDIA API catalog keys start with "nvapi-"; anything else is treated as a Nebius key. */
+export function providerForKey(key: string): Provider {
+  return key.startsWith('nvapi-') ? 'nvidia' : 'nebius';
+}
+
+function reason(kind: ProviderErrorKind, provider: Provider): string {
+  const name = PROVIDER_NAMES[provider];
+  switch (kind) {
+    case 'no_key':
+      return 'No model API key. Run "ownit key set" with a Nebius or NVIDIA key.';
+    case 'invalid_key':
+      return `${name} rejected the API key. Check it with "ownit key set".`;
+    case 'no_credit':
+      return `Your ${name} account has no credit left.`;
+    case 'rate_limited':
+      return `${name} is rate limiting this key. Try again in a minute.`;
+    case 'unavailable':
+      return `${name} is unreachable right now.`;
+    case 'bad_output':
+      return 'The model returned an invalid reply twice.';
+    case 'demo_cap':
+      return 'The shared demo key hit its daily limit. Set your own key with "ownit key set".';
+  }
+}
 
 /** A billing, key, or availability problem. The push is kept out of the stats. */
 export class ProviderError extends Error {
-  constructor(public kind: ProviderErrorKind) {
-    super(REASONS[kind]);
+  constructor(
+    public kind: ProviderErrorKind,
+    provider: Provider = 'nebius',
+  ) {
+    super(reason(kind, provider));
     this.name = 'ProviderError';
   }
 }
@@ -29,7 +52,9 @@ export interface ChatModel {
 
 export function createModel(env: Env, apiKey: string): ChatModel {
   if (env.MODEL_BACKEND === 'fixture') return fixtureModel;
-  return nebiusModel(env.NEBIUS_BASE_URL, env.NEBIUS_MODEL, apiKey);
+  const provider = providerForKey(apiKey);
+  if (provider === 'nvidia') return providerModel(provider, env.NVIDIA_BASE_URL, env.NVIDIA_MODEL, apiKey);
+  return providerModel(provider, env.NEBIUS_BASE_URL, env.NEBIUS_MODEL, apiKey);
 }
 
 function errorKind(status: number, body: string): ProviderErrorKind {
@@ -39,7 +64,7 @@ function errorKind(status: number, body: string): ProviderErrorKind {
   return 'unavailable';
 }
 
-export function nebiusModel(baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
+export function providerModel(provider: Provider, baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
   const url = new URL('chat/completions', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
   return {
     async complete(prompt, maxTokens) {
@@ -61,11 +86,11 @@ export function nebiusModel(baseUrl: string, model: string, apiKey: string, fetc
           signal: AbortSignal.timeout(90_000),
         });
       } catch {
-        throw new ProviderError('unavailable');
+        throw new ProviderError('unavailable', provider);
       }
       if (!response.ok) {
         const body = await response.text().catch(() => '');
-        throw new ProviderError(errorKind(response.status, body));
+        throw new ProviderError(errorKind(response.status, body), provider);
       }
       const data = (await response.json().catch(() => null)) as
         | { choices?: { message?: { content?: string | null } }[] }

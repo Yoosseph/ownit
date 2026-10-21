@@ -8,7 +8,9 @@ export interface Config {
   /** Ownit session token issued by `ownit login`. */
   token?: string;
   login?: string;
-  /** The user's own Nebius API key. It never leaves this machine except in debrief requests. */
+  /** The user's own Nebius or NVIDIA API key. It never leaves this machine except in debrief requests. */
+  apiKey?: string;
+  /** Older configs saved the key here. */
   nebiusKey?: string;
 }
 
@@ -52,6 +54,21 @@ export function updateConfig(patch: Partial<Config>, env: NodeJS.ProcessEnv = pr
   for (const key of Object.keys(next) as (keyof Config)[]) if (next[key] === undefined) delete next[key];
   writeConfig(next, env);
   return next;
+}
+
+/** The model key to send: an env var wins over the saved one. */
+export function modelKey(config: Config, env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return env.NVIDIA_API_KEY || env.NEBIUS_API_KEY || config.apiKey || config.nebiusKey;
+}
+
+/** Mirrors the worker, which picks the provider from the key: "nvapi-" keys are NVIDIA's. */
+export function keyProvider(key: string): 'NVIDIA' | 'Nebius' {
+  return key.startsWith('nvapi-') ? 'NVIDIA' : 'Nebius';
+}
+
+/** e.g. "NVIDIA, …1a2b" */
+export function describeKey(key: string): string {
+  return `${keyProvider(key)}, …${key.slice(-4)}`;
 }
 
 export function serverUrl(config: Config, env: NodeJS.ProcessEnv = process.env): string {

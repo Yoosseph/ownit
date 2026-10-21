@@ -15,7 +15,7 @@ Usage:
   ownit init [--repo owner/name]   Install the pre-push hook in this repo
   ownit interview                  Debrief pushes that are still pending
   ownit interview --range A..B     Debrief a commit range
-  ownit key set|clear|status       Manage your Nebius API key (stored locally)
+  ownit key set|clear|status       Manage your Nebius or NVIDIA key (stored locally)
   ownit uninstall                  Remove the pre-push hook
   ownit help                       Show this help
 

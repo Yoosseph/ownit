@@ -2,6 +2,8 @@ export interface Env {
   DB: D1Database;
   NEBIUS_BASE_URL: string;
   NEBIUS_MODEL: string;
+  NVIDIA_BASE_URL: string;
+  NVIDIA_MODEL: string;
   MODEL_BACKEND: string;
   DEMO_DAILY_CALL_CAP: string;
   PUBLIC_URL: string;

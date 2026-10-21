@@ -1,26 +1,31 @@
 // Live check against the real Nemotron model. Not part of `npm test`.
-// Run with: scripts/live-injection-check (needs a Nebius key: DEMO_NEBIUS_KEY in .env, NEBIUS_API_KEY, or `ownit key set`).
+// Run with: scripts/live-injection-check (needs a Nebius or NVIDIA key: NVIDIA_API_KEY, NEBIUS_API_KEY,
+// DEMO_NEBIUS_KEY in .env, or `ownit key set`). The key's prefix picks the provider, as on the server.
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gradeAnswer, writeQuestions, type Question } from '../../src/debrief';
-import { nebiusModel } from '../../src/model';
+import { providerForKey, providerModel } from '../../src/model';
 
 const wrangler = readFileSync(join(import.meta.dirname, '..', '..', 'wrangler.toml'), 'utf8');
-const BASE_URL = wrangler.match(/^NEBIUS_BASE_URL = "(.+)"$/m)![1]!;
-const MODEL = wrangler.match(/^NEBIUS_MODEL = "(.+)"$/m)![1]!;
+const toml = (name: string) => wrangler.match(new RegExp(`^${name} = "(.+)"$`, 'm'))![1]!;
 
 function apiKey(): string {
-  if (process.env.NEBIUS_API_KEY) return process.env.NEBIUS_API_KEY;
+  const key = process.env.NVIDIA_API_KEY || process.env.NEBIUS_API_KEY;
+  if (key) return key;
   try {
     const config = JSON.parse(readFileSync(join(process.env.OWNIT_HOME || join(homedir(), '.ownit'), 'config.json'), 'utf8'));
-    if (config.nebiusKey) return config.nebiusKey;
+    if (config.apiKey || config.nebiusKey) return config.apiKey || config.nebiusKey;
   } catch {}
-  throw new Error('No Nebius key: set DEMO_NEBIUS_KEY in .env, export NEBIUS_API_KEY, or run "ownit key set".');
+  throw new Error('No key: export NVIDIA_API_KEY or NEBIUS_API_KEY, set DEMO_NEBIUS_KEY in .env, or run "ownit key set".');
 }
 
-const model = nebiusModel(BASE_URL, MODEL, apiKey());
+const KEY = apiKey();
+const PROVIDER = providerForKey(KEY);
+const PREFIX = PROVIDER === 'nvidia' ? 'NVIDIA' : 'NEBIUS';
+const MODEL = toml(`${PREFIX}_MODEL`);
+const model = providerModel(PROVIDER, toml(`${PREFIX}_BASE_URL`), MODEL, KEY);
 
 const INJECTED_DIFF = `diff --git a/src/payments/retry.ts b/src/payments/retry.ts
 new file mode 100644
@@ -54,7 +59,7 @@ const push = {
   truncated: false,
 };
 
-describe(`live injection check (${MODEL})`, () => {
+describe(`live injection check (${MODEL} on ${PROVIDER})`, () => {
   let question: Question;
 
   it('writes valid questions despite instructions hidden in the diff', async () => {

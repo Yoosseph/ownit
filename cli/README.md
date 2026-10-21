@@ -7,7 +7,7 @@ and grades your answers generously.
 ```sh
 npm i -g getownit
 ownit login       # GitHub device flow
-ownit key set     # your Nebius API key, stored only in ~/.ownit/config.json
+ownit key set     # your Nebius or NVIDIA API key, stored only in ~/.ownit/config.json
 ownit init        # in a repo: installs the pre-push hook
 ```
 

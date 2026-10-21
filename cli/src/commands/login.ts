@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util';
 import { ApiError, createApi } from '../api.js';
-import { readConfig, serverUrl, updateConfig } from '../config.js';
+import { describeKey, modelKey, readConfig, serverUrl, updateConfig } from '../config.js';
 import { readSecret } from '../secret.js';
 import { paint } from '../ui.js';
 
@@ -102,7 +102,7 @@ export async function logoutCommand(): Promise<number> {
       });
   }
   updateConfig({ token: undefined, login: undefined });
-  process.stderr.write('Logged out. Your Nebius key is still saved; remove it with "ownit key clear".\n');
+  process.stderr.write('Logged out. Your API key is still saved; remove it with "ownit key clear".\n');
   return 0;
 }
 
@@ -111,7 +111,7 @@ export async function whoamiCommand(): Promise<number> {
   const out = process.stderr;
   out.write(`Server:     ${serverUrl(config)}\n`);
   out.write(`GitHub:     ${config.token ? (config.login ?? 'logged in') : 'not logged in (run "ownit login")'}\n`);
-  const key = process.env.NEBIUS_API_KEY || config.nebiusKey;
-  out.write(`Nebius key: ${key ? `set (…${key.slice(-4)})` : 'not set (run "ownit key set")'}\n`);
+  const key = modelKey(config);
+  out.write(`API key:    ${key ? `set (${describeKey(key)})` : 'not set (run "ownit key set")'}\n`);
   return 0;
 }

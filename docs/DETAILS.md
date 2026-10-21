@@ -9,14 +9,14 @@ The [README](../README.md) covers setup and use. This page has everything else.
 | **verified** | Every question passed. All commits in the push are verified. | Yes |
 | **skipped** | You pressed `s`, or a pending push went 24 hours without a debrief. | Yes |
 | **pending** | No debrief yet. This covers no terminal (GUI clients, coding agents, CI), `--no-verify`, edits on github.com, the hook not installed, or `n` at the prompt. Run `ownit interview`. | Not until it resolves |
-| **provider_error** | Nebius rejected the key, ran out of credit, or was down. | No, until you retry with `ownit interview` |
+| **provider_error** | Nebius or NVIDIA rejected the key, ran out of credit, or was down. | No, until you retry with `ownit interview` |
 
 How a push becomes a debrief:
 
 1. The pre-push hook works out which commits are being pushed. Because git uses the hook's stdin
    for the ref list, it reads your answers from `/dev/tty`.
 2. The CLI builds the diff locally and filters it (see [What the model sees](#what-the-model-sees)).
-   It sends the diff, the commit messages, and your Nebius key to the Ownit worker.
+   It sends the diff, the commit messages, and your API key to the Ownit worker.
 3. The worker makes the model calls and records the push and its questions.
 4. When GitHub's push webhook arrives, the worker matches the landed commits to the debrief by
    SHA and sets the check run: **Ownit: verified**, **skipped**, or **pending**. Commits that
@@ -34,14 +34,17 @@ Questions name the feature or area, never a file path or function name.
 
 ## Bring your own key
 
-Ownit runs on **your own Nebius account**. Create a key in
-[Nebius Token Factory](https://tokenfactory.nebius.com/), then run `ownit key set`. The key is
+Ownit runs on **your own account**. Create a key in
+[Nebius Token Factory](https://tokenfactory.nebius.com/), or at [build.nvidia.com](https://build.nvidia.com/)
+if you have no Nebius account, then run `ownit key set`. The key is
 saved in `~/.ownit/config.json` (mode 600) and sent only with debrief requests. The worker uses it
 for that request and then drops it. It never stores or logs the key. A debrief usually costs
 under a cent, and a few cents at most for a large push with several follow-ups.
 
-The server chooses the endpoint and model: `nvidia/nemotron-3-super-120b-a12b` at
-`https://api.tokenfactory.nebius.com/v1/`. The client cannot change them.
+The server chooses the endpoint and model, and the client cannot change them. The model is
+`nvidia/nemotron-3-super-120b-a12b` on both providers. A key starting with `nvapi-` goes to
+`https://integrate.api.nvidia.com/v1/`; any other key goes to `https://api.tokenfactory.nebius.com/v1/`.
+`NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
 
 Hackathon judges can try Ownit without a key. A server may set an optional shared
 `DEMO_NEBIUS_KEY`, which has a daily cap and is used only when a request carries no key.
@@ -49,7 +52,7 @@ Hackathon judges can try Ownit without a key. A server may set an optional share
 ## Privacy
 
 - **Code is never stored.** The diff exists only for the duration of a request. It goes to the
-  model on **your** Nebius account and is then discarded.
+  model on **your** Nebius or NVIDIA account and is then discarded.
 - **Your answers are never stored.** Each answer goes to the grader and is then discarded.
 - **Keys are never stored or logged.** Logs hold metadata only: repo, status, timings.
 - **What is stored:** repos (owner, name, App installation, tracked-since date), GitHub user IDs and
@@ -168,7 +171,7 @@ For local development, see [docs/HANDOFF.md](HANDOFF.md#running-locally). `MODEL
 ```sh
 npm install
 npm test                          # worker + CLI, offline (fixture model, node:sqlite D1 shim)
-scripts/live-injection-check      # live injection checks against Nemotron (needs a Nebius key)
+scripts/live-injection-check      # live injection checks against Nemotron (needs a Nebius or NVIDIA key)
 ```
 
 The layout: `cli/` is the `getownit` npm package, `worker/` is the Cloudflare Worker, and `docs/`

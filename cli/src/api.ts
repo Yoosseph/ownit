@@ -1,4 +1,4 @@
-import { readConfig, serverUrl, type Config } from './config.js';
+import { modelKey, readConfig, serverUrl, type Config } from './config.js';
 
 export type Kind = 'why' | 'how' | 'next';
 export type PushStatus = 'verified' | 'skipped' | 'pending' | 'provider_error';
@@ -49,7 +49,7 @@ export interface ApiClient {
 
 export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv = process.env): ApiClient {
   const server = serverUrl(config, env);
-  const nebiusKey = env.NEBIUS_API_KEY || config.nebiusKey;
+  const key = modelKey(config, env);
   return {
     server,
     async request<T>(method: string, path: string, body?: unknown, options: { timeoutMs?: number } = {}): Promise<T> {
@@ -57,7 +57,7 @@ export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv 
       if (body !== undefined) headers['content-type'] = 'application/json';
       if (config.token) headers.authorization = `Bearer ${config.token}`;
       // Only debrief calls need the key; the worker uses it for that request and discards it.
-      if (nebiusKey && path.startsWith('/api/interview/')) headers['x-nebius-key'] = nebiusKey;
+      if (key && path.startsWith('/api/interview/')) headers['x-model-key'] = key;
       let response: Response;
       try {
         response = await fetch(`${server}${path}`, {

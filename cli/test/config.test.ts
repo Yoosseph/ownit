@@ -52,7 +52,10 @@ describe('ownit key', () => {
 
   it('rejects an unknown provider and a key that belongs to another provider', async () => {
     const { key } = setup();
-    expect((await key(['set', 'acme'], 'k\n')).output).toContain('unknown provider "acme"');
+    const pasted = await key(['set', 'v1.secret-pasted-as-arg'], 'k\n');
+    expect(pasted.code).toBe(1);
+    expect(pasted.output).toContain('takes a provider');
+    expect(pasted.output).not.toContain('secret-pasted-as-arg');
     const mismatch = await key(['set', 'nebius'], 'nvapi-secret\n');
     expect(mismatch.code).toBe(1);
     expect(mismatch.output).toContain('looks like it is for NVIDIA');

@@ -7,7 +7,7 @@ import { RESUME_HINT, runDebrief } from '../debrief.js';
 import { buildDiff } from '../diff.js';
 import { githubRepo } from '../git.js';
 import { computePush, parseRefs, type PushRange } from '../pushRange.js';
-import { createPrompter, paint } from '../ui.js';
+import { createPrompter, paint, sentence } from '../ui.js';
 
 const PROMPT_TIMEOUT_MS = 120_000;
 const QUICK_TIMEOUT_MS = 8_000;
@@ -132,8 +132,8 @@ export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = proce
   } catch (error) {
     const reason =
       error instanceof ApiError && error.code === 'network'
-        ? `${error.message}. The push continues and will show as pending.`
-        : `${error instanceof Error ? error.message : String(error)}. The push continues.`;
+        ? `${sentence(error.message)} The push continues and will show as pending.`
+        : `${sentence(error instanceof Error ? error.message : String(error))} The push continues.`;
     out.write(`${c.yellow('Ownit:')} ${reason} ${RESUME_HINT}\n`);
     return 0;
   }

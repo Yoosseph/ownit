@@ -9,6 +9,11 @@ export function paint(out: Writable) {
   return { bold: wrap('1'), dim: wrap('2'), green: wrap('32'), red: wrap('31'), yellow: wrap('33'), cyan: wrap('36') };
 }
 
+/** Ends a message with a period unless it already ends a sentence (server messages usually do). */
+export function sentence(text: string): string {
+  return /[.!?]$/.test(text.trimEnd()) ? text.trimEnd() : `${text.trimEnd()}.`;
+}
+
 /** Line-oriented input that works for a TTY and for piped stdin alike. */
 export interface Prompter {
   /** Resolves to the next line, or null on end of input or timeout. */

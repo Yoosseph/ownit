@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 import { createApi } from '../api.js';
 import { git, githubRepo } from '../git.js';
 import { hookLocation, installHook, MANAGED_SNIPPET, uninstallHook } from '../hooks.js';
-import { paint } from '../ui.js';
+import { paint, sentence } from '../ui.js';
 
 export async function initCommand(argv: string[]): Promise<number> {
   const { values } = parseArgs({ args: argv, options: { repo: { type: 'string' } } });
@@ -35,7 +35,7 @@ export async function initCommand(argv: string[]): Promise<number> {
     }
     if (registered.page_url) out.write(`\nYour repo's page: ${registered.page_url}\n`);
   } catch (error) {
-    out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${error instanceof Error ? error.message : error}.\n`);
+    out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${sentence(error instanceof Error ? error.message : String(error))}\n`);
     out.write('Run "ownit init" again once that is fixed.\n');
     return 1;
   }

@@ -10,7 +10,10 @@ async function chooseProvider(arg: string | undefined): Promise<Provider | undef
   if (arg) {
     const id = arg.toLowerCase();
     if (isProvider(id)) return id;
-    out.write(`Ownit: unknown provider "${arg}". Use one of: ${CHOICES}.\n`);
+    // Never echo the argument: people paste the key itself here.
+    out.write(
+      `Ownit: "ownit key set" takes a provider (${CHOICES}), not the key. Keys typed on the command line end up in your shell history, so run "ownit key set" and paste the key at the hidden prompt. If that was a real key, consider rotating it.\n`,
+    );
     return undefined;
   }
   // Piped input is the key itself, so there is no line to spare for the menu.

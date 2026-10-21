@@ -2,7 +2,7 @@ import { ApiError, type AnswerResponse, type ApiClient, type PublicQuestion, typ
 import type { PreparedDiff } from './diff.js';
 import type { Commit } from './git.js';
 import type { Writable } from 'node:stream';
-import { paint, spinner, wrap, type Prompter } from './ui.js';
+import { paint, sentence, spinner, wrap, type Prompter } from './ui.js';
 
 export interface DebriefTarget {
   repo: string;
@@ -129,10 +129,10 @@ function failure(out: Writable, error: unknown): DebriefOutcome {
       out.write(`${c.dim(`Ownit: this push is already ${status}.`)}\n`);
       return { status };
     }
-    out.write(`${c.yellow('Ownit:')} ${error.message}. ${RESUME_HINT}\n`);
+    out.write(`${c.yellow('Ownit:')} ${sentence(error.message)} ${RESUME_HINT}\n`);
     return { status: 'pending', reason: error.message };
   }
   const message = error instanceof Error ? error.message : String(error);
-  out.write(`${c.yellow('Ownit:')} ${message}. ${RESUME_HINT}\n`);
+  out.write(`${c.yellow('Ownit:')} ${sentence(message)} ${RESUME_HINT}\n`);
   return { status: 'pending', reason: message };
 }

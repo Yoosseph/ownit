@@ -2,7 +2,7 @@
 
 **Own the code you ship.** After each `git push`, Ownit asks you one to three short questions about
 the change, right in your terminal: why you made it, how it works, and what could come next.
-NVIDIA Nemotron on Nebius writes the questions and grades your answers.
+NVIDIA Nemotron (on Nebius or NVIDIA) writes the questions and grades your answers.
 
 ```text
 $ git push
@@ -60,20 +60,30 @@ it becomes skipped after 24 hours). GitHub shows the result as a check on the co
 
 ### Commands
 
-```text
-ownit interview                  Answer questions for pending pushes
-ownit interview --range A..B     Answer questions about any commit range
-ownit key set [nebius|nvidia]    Save your model API key
-ownit key clear|status           Remove or show it
-ownit whoami                     Show login and key status
-ownit uninstall                  Remove the hook
-ownit logout
-```
+| Command | What it does |
+| --- | --- |
+| `ownit login` | Sign in with GitHub. |
+| `ownit init` | Install the pre-push hook in this repo and register it. |
+| `ownit interview` | Debrief your pending pushes, including ones an AI agent made. |
+| `ownit interview --range A..B` | Debrief any commit range. |
+| `ownit key set [nebius\|nvidia]` | Save your API key. Paste it at the hidden prompt, never after the command. |
+| `ownit key status` / `ownit key clear` | Show or remove the key. |
+| `ownit whoami` | Show the server, your GitHub login and your key. |
+| `ownit uninstall` | Remove the hook from this repo. |
+| `ownit logout` | Sign out. |
+| `OWNIT_SKIP=1 git push` | Push once without the prompt. The push is pending. |
 
-### Badge
+### Pushes from AI agents
 
-Your repo gets a page and a badge, like `ownit | 90% verified`. Copy the badge code from
-`https://ownit.ownit-worker.workers.dev/<owner>/<repo>` into your README.
+When a coding agent (Claude Code, Cursor, Codex, CI…) pushes, nobody is at the terminal, so Ownit
+records the push as **pending** and lets it through. Run `ownit interview` yourself within 24 hours
+to answer for the change, or it counts as skipped.
+
+### Where to see your record
+
+- **GitHub:** each commit gets an **Ownit** check: verified, skipped, or pending.
+- **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats.
+- **Badge:** like `ownit | 90% verified`. Copy its code from the repo page into your README.
 
 ## More
 

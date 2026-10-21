@@ -25,6 +25,10 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 7. ~~Deploy NVIDIA support~~ Done 2026-10-22 (version 6c042029): pushed and deployed with the provider choice. The worker still accepts the old `x-nebius-key` header as a Nebius key. **Still needs a live check with an `nvapi-` key** (and the interactive `ownit key set` menu run once in a real terminal). `getownit` is not on npm yet.
 8. Stretch (only after the above): late-pass and backfill labels, trivial-push exemption, per-author badges, global `core.hooksPath` install.
 
+- Prompts live in `prompts/*.txt` at the repo root; `worker/src/prompts.ts` imports them (Wrangler's default Text rule; `worker/test/helpers/textFiles.ts` does the same for vitest). Edit prompts only there.
+- Grading softened 2026-10-22 after a real debrief failed a fair README answer: one-thing questions, docs-only pushes get a simple purpose question, a pass gets one short line, follow-ups get easier. Live check covers that answer (8/8 passing). **Not deployed yet.**
+- Open-source files added 2026-10-22: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY (private vulnerability reporting is enabled on the repo), issue/PR templates, CI (`.github/workflows/ci.yml`, Node 22 and 24, green).
+
 ## Settled decisions
 
 - npm package `getownit`; the command is `ownit` (`ownit` on npm is an unrelated 2022 package).

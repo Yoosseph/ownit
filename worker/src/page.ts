@@ -14,6 +14,10 @@ export interface PagePush {
 export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
+// A copy hosted elsewhere shows these too, so a visitor can compare them with the address bar.
+const SOURCE_URL = 'https://github.com/Yoosseph/ownit';
+const OFFICIAL_HOST = 'ownit.ownit-worker.workers.dev';
+
 const STATUS_LABEL: Record<PushStatus, string> = {
   verified: 'Verified',
   skipped: 'Skipped',
@@ -113,6 +117,7 @@ ul{list-style:none;margin:0;padding:0}
 .embed{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
 code{background:var(--chip);border-radius:6px;padding:6px 8px;font-size:.8rem;word-break:break-all;display:block;flex:1;min-width:0}
 footer{margin-top:40px;color:var(--muted);font-size:.85rem}
+.source{margin-top:12px}
 a{color:inherit}
 </style>
 </head>
@@ -150,6 +155,7 @@ ${hideQuestions ? '<p class="sub">This repo is private, so question text is hidd
   Ownit asks developers a few questions about each push: why, how, and what's next. It shows no code and no answers.
   Percentages count commits whose push was debriefed or skipped; pending pushes become skipped after 24 hours.
   A learning tool, not proof of authorship.
+  <p class="source"><a href="${SOURCE_URL}">Ownit is open source on GitHub</a>. The official server is <strong>${OFFICIAL_HOST}</strong>; a badge that leads anywhere else comes from a copy.</p>
 </footer>
 </main>
 </body>

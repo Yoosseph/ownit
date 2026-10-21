@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Debrief the code you just pushed, in your terminal, with NVIDIA Nemotron.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yoosseph/ownit.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/Yoosseph/ownit#readme",
+  "bugs": "https://github.com/Yoosseph/ownit/issues",
   "type": "module",
   "bin": {
     "ownit": "dist/index.js"

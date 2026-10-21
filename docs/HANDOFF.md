@@ -1,6 +1,6 @@
 # Handoff
 
-Read this first, then [SPEC.md](SPEC.md). Keep this file current after each milestone.
+Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has the short overview. Keep this file current after each milestone.
 
 ## Progress
 
@@ -19,9 +19,10 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 1. ~~Live model checks~~ Done 2026-10-21: `scripts/live-injection-check` 4/4 (both injected answers failed, a rough honest answer passed), the milestone 1 curl, and a CLI debrief with fail, feedback, follow-up and pass. Nemotron accepts `response_format: json_object`; calls take 1–4 s.
 2. ~~GitHub App~~ Done 2026-10-21: `ownit-app` (App ID 5413583), push event, installed on Yoosseph/test-repo. Live end to end verified: `ownit login` (device flow), `ownit init`, a push through a real terminal with fail, feedback, follow-up and pass, then a green **Ownit: verified** check run on GitHub, the badge at 100%, and the page.
 3. ~~Deploy~~ Done 2026-10-21: https://ownit.ownit-worker.workers.dev (D1 `ownit`, migrations applied, SESSION_SECRET set, hourly cron registered). No DEMO_NEBIUS_KEY on the server yet (user's choice; revisit before submission). GitHub App secrets still to set.
-4. **Before `npm publish`**: add `repository` to `cli/package.json`. `DEFAULT_SERVER` already points to the deployed URL.
-5. Confirm the hackathon rules (required models, submission format) with the user.
-6. Stretch (only after the above): late-pass and backfill labels, trivial-push exemption, per-author badges, global `core.hooksPath` install.
+4. ~~`repository` in `cli/package.json`~~ Done 2026-10-21. `DEFAULT_SERVER` already points to the deployed URL. Ready for `npm publish` once the user says so.
+5. Hackathon rules (from summaries; the official Devpost rules page blocked fetching, so the user should confirm there): public repo with an open-source license (MIT stays), an NVIDIA open model on Nebius (met), a working demo URL, a YouTube video, a description, and tool feedback. Deadline Oct 30, 2026, 10:00 PT. **The GitHub repo is still private and must be made public** (user's call). Judges need `DEMO_NEBIUS_KEY` set to try it without a key.
+6. **Redeploy needed** (ask first): the deployed worker predates the lenient grading change (8ea19f2) and the public page's footer (source link and official server name).
+7. Stretch (only after the above): late-pass and backfill labels, trivial-push exemption, per-author badges, global `core.hooksPath` install.
 
 ## Settled decisions
 

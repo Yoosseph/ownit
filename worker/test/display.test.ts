@@ -126,6 +126,8 @@ describe('public page', () => {
     expect(text).toContain('<tr><td>bob</td><td class="num">2</td><td class="num">50%</td><td class="num">50%</td>');
     expect(text).not.toContain('carol');
     expect(text).toContain('Tracked by Ownit since Oct 1, 2026');
+    expect(text).toContain('href="https://github.com/Yoosseph/ownit"');
+    expect(text).toContain('The official server is <strong>ownit.ownit-worker.workers.dev</strong>');
   });
 
   it('escapes question text and shows no code or answers', async () => {

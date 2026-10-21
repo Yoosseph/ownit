@@ -189,6 +189,18 @@ commit-weighted: verified commits over commits whose push is verified or skipped
 GitHub confirmed after the repo's "tracked since" date count. History before Ownit doesn't count.
 Copy the snippet from your repo's page.
 
+### Is a badge real?
+
+Ownit is open source, so anyone can run their own copy, and a copy can show any number it likes.
+To check a badge:
+
+- **Click it.** It opens the repo's page on the server that made it. The official server is
+  `https://ownit.ownit-worker.workers.dev`; any other address is a copy.
+- **Look at the check run** on a commit in GitHub. Official ones come from the **ownit-app** GitHub
+  App. GitHub App names are unique, so a copy has to use a different one.
+- **Look the repo up yourself** at `https://ownit.ownit-worker.workers.dev/<owner>/<repo>`. If it
+  isn't there, the official server never tracked it.
+
 ## Hook managers and custom hooks paths
 
 - **Plain repos:** `ownit init` writes `.git/hooks/pre-push`.

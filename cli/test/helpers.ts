@@ -47,7 +47,12 @@ export async function fakeServer(routes: Record<string, Handler | Handler[]>) {
     req.on('data', (d) => (raw += d));
     req.on('end', () => {
       const path = (req.url ?? '').split('?')[0]!;
-      const body = raw ? JSON.parse(raw) : undefined;
+      let body: any;
+      try {
+        body = raw ? JSON.parse(raw) : undefined;
+      } catch {
+        body = Object.fromEntries(new URLSearchParams(raw)); // form posts, e.g. GitHub OAuth
+      }
       requests.push({ method: req.method ?? '', path, body, headers: req.headers });
       const key = `${req.method} ${path}`;
       const route = routes[key];

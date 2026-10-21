@@ -22,20 +22,8 @@ export interface GitHub {
   updateCheckRun(installationId: number, owner: string, repo: string, id: number, body: CheckRunBody): Promise<void>;
   /** "admin" | "maintain" | "write" | "triage" | "read" | "none". */
   permission(installationId: number, owner: string, repo: string, username: string): Promise<string>;
-  /** Device flow, step 1: a code for the user to enter at github.com/login/device. */
-  deviceCode(clientId: string): Promise<DeviceCode>;
-  /** Device flow, step 2: a user token once authorized, else GitHub's error code. */
-  deviceToken(clientId: string, deviceCode: string): Promise<{ accessToken: string } | { error: string; interval?: number }>;
   /** The identity behind a user token. Ownit discards the token right after. */
   user(accessToken: string): Promise<{ id: number; login: string }>;
-}
-
-export interface DeviceCode {
-  device_code: string;
-  user_code: string;
-  verification_uri: string;
-  expires_in: number;
-  interval: number;
 }
 
 export class GitHubError extends Error {
@@ -156,30 +144,9 @@ export function createGitHub(env: Env, fetcher: typeof fetch = fetch): GitHub {
         throw error;
       }
     },
-    async deviceCode(clientId) {
-      return oauthPost<DeviceCode>('/login/device/code', { client_id: clientId });
-    },
-    async deviceToken(clientId, deviceCode) {
-      const result = await oauthPost<{ access_token?: string; error?: string; interval?: number }>('/login/oauth/access_token', {
-        client_id: clientId,
-        device_code: deviceCode,
-        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-      });
-      return result.access_token ? { accessToken: result.access_token } : { error: result.error ?? 'unknown', interval: result.interval };
-    },
     async user(accessToken) {
       const user = await call<{ id: number; login: string }>('/user', accessToken);
       return { id: user.id, login: user.login };
     },
   };
-
-  async function oauthPost<T>(path: string, form: Record<string, string>): Promise<T> {
-    const response = await fetcher(`https://github.com${path}`, {
-      method: 'POST',
-      headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'ownit-worker' },
-      body: new URLSearchParams(form).toString(),
-    });
-    if (!response.ok) throw new GitHubError(response.status, `GitHub POST ${path} returned ${response.status}`);
-    return (await response.json()) as T;
-  }
 }

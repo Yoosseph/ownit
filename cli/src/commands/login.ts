@@ -12,11 +12,34 @@ interface DeviceStart {
   interval: number;
 }
 
-type PollResult = { status: 'ok'; token: string; login: string } | { status: string; interval: number | null };
+type TokenReply = { access_token?: string; error?: string; interval?: number };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** `ownit login`: GitHub device flow through the Ownit server, which issues an Ownit session token. */
+/** POSTs a form to github.com's OAuth endpoints. OWNIT_GITHUB_URL overrides the host in tests. */
+async function githubOAuth<T>(path: string, form: Record<string, string>): Promise<T> {
+  const base = (process.env.OWNIT_GITHUB_URL || 'https://github.com').replace(/\/+$/, '');
+  let response: Response;
+  try {
+    response = await fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'getownit-cli' },
+      body: new URLSearchParams(form).toString(),
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch {
+    throw new Error('could not reach github.com');
+  }
+  if (!response.ok) throw new Error(`github.com returned ${response.status}`);
+  return (await response.json()) as T;
+}
+
+/**
+ * `ownit login`: the GitHub device flow runs here, from the user's own IP
+ * (GitHub rate-limits its login endpoints per IP, which shared server IPs
+ * hit). The server then verifies the identity, drops the GitHub token, and
+ * issues an Ownit session token.
+ */
 export async function loginCommand(argv: string[]): Promise<number> {
   const { values } = parseArgs({ args: argv, options: { server: { type: 'string' }, 'with-token': { type: 'boolean' } } });
   const out = process.stderr;
@@ -36,7 +59,8 @@ export async function loginCommand(argv: string[]): Promise<number> {
   }
 
   const api = createApi({ ...readConfig(), token: undefined });
-  const start = await api.request<DeviceStart>('POST', '/auth/device/start');
+  const { github_client_id: clientId } = await api.request<{ github_client_id: string }>('GET', '/auth/config');
+  const start = await githubOAuth<DeviceStart>('/login/device/code', { client_id: clientId });
   out.write(`\nOpen ${c.bold(start.verification_uri)} and enter the code ${c.bold(c.cyan(start.user_code))}\n`);
   out.write(c.dim('Waiting for you to authorize Ownit on GitHub…\n'));
 
@@ -44,18 +68,24 @@ export async function loginCommand(argv: string[]): Promise<number> {
   const deadline = Date.now() + start.expires_in * 1000;
   while (Date.now() < deadline) {
     await sleep(interval);
-    const result = await api.request<PollResult>('POST', '/auth/device/poll', { device_code: start.device_code });
-    if (result.status === 'ok' && 'token' in result) {
-      updateConfig({ token: result.token, login: result.login });
-      out.write(`${c.green('✓')} Logged in as ${c.bold(result.login)} on ${serverUrl(readConfig())}.\n`);
+    const reply = await githubOAuth<TokenReply>('/login/oauth/access_token', {
+      client_id: clientId,
+      device_code: start.device_code,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+    });
+    if (reply.access_token) {
+      // The GitHub token goes to the Ownit server once, to prove who you are, and is not kept anywhere.
+      const session = await api.request<{ token: string; login: string }>('POST', '/auth/github', { access_token: reply.access_token });
+      updateConfig({ token: session.token, login: session.login });
+      out.write(`${c.green('✓')} Logged in as ${c.bold(session.login)} on ${serverUrl(readConfig())}.\n`);
       return 0;
     }
-    if (result.status === 'authorization_pending') continue;
-    if (result.status === 'slow_down') {
-      interval = Math.max(interval + 5000, ('interval' in result && result.interval ? result.interval : 0) * 1000);
+    if (reply.error === 'authorization_pending') continue;
+    if (reply.error === 'slow_down') {
+      interval = Math.max(interval + 5000, (reply.interval ?? 0) * 1000);
       continue;
     }
-    out.write(`Ownit: login ${result.status === 'access_denied' ? 'was cancelled' : `failed (${result.status})`}. Run "ownit login" to try again.\n`);
+    out.write(`Ownit: login ${reply.error === 'access_denied' ? 'was cancelled' : `failed (${reply.error ?? 'unknown error'})`}. Run "ownit login" to try again.\n`);
     return 1;
   }
   out.write('Ownit: the login code expired. Run "ownit login" to try again.\n');

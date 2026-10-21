@@ -4,26 +4,32 @@ import { call, sha, startBody, testEnv, USER } from './helpers/env';
 
 const record = { repo: 'octo/shop', base_sha: sha(1), head_sha: sha(3), commits: [{ sha: sha(3) }], status: 'pending' };
 
-describe('device flow login', () => {
-  it('issues a session token after GitHub authorizes, storing only its hash', async () => {
+describe('login', () => {
+  it('publishes the GitHub App client ID for the CLI device flow', async () => {
+    expect((await call(testEnv(), 'GET', '/auth/config')).json).toEqual({ github_client_id: 'Iv1.test' });
+    expect((await call(testEnv({ GITHUB_CLIENT_ID: '' }), 'GET', '/auth/config')).status).toBe(503);
+  });
+
+  it('exchanges a GitHub user token for a session, storing only its hash', async () => {
     const env = testEnv();
-    env.github.deviceReplies = [{ error: 'authorization_pending' }, { accessToken: 'gho_user' }];
-    const start = await call(env, 'POST', '/auth/device/start');
-    expect(start.json).toMatchObject({ user_code: 'ABCD-1234', verification_uri: 'https://github.com/login/device', device_code: 'dev-code' });
-
-    const pending = await call(env, 'POST', '/auth/device/poll', { device_code: 'dev-code' });
-    expect(pending.json).toEqual({ status: 'authorization_pending', interval: null });
-
-    const done = await call(env, 'POST', '/auth/device/poll', { device_code: 'dev-code' });
-    expect(done.json).toMatchObject({ status: 'ok', login: 'mona', token: expect.stringMatching(/^ownit_[\w-]{40,}$/) });
+    const done = await call(env, 'POST', '/auth/github', { access_token: 'gho_user_token_123' }, { authorization: '' });
+    expect(done.json).toMatchObject({ login: 'mona', token: expect.stringMatching(/^ownit_[\w-]{40,}$/) });
 
     const hashes = (env.DB.raw.prepare('SELECT token_hash FROM sessions').all() as { token_hash: string }[]).map((r) => r.token_hash);
     expect(hashes).toContain(createHash('sha256').update(done.json.token).digest('hex'));
-    expect(JSON.stringify(env.DB.raw.prepare('SELECT * FROM sessions').all())).not.toContain('gho_user');
+    // The GitHub token is never stored.
+    expect(JSON.stringify(env.DB.raw.prepare('SELECT * FROM sessions').all())).not.toContain('gho_user_token_123');
 
-    // The new token works.
     const api = await call(env, 'GET', '/api/pushes/open?repo=octo/shop', undefined, { authorization: `Bearer ${done.json.token}` });
     expect(api.status).toBe(200);
+  });
+
+  it('rejects a GitHub token that GitHub does not accept', async () => {
+    const env = testEnv();
+    const res = await call(env, 'POST', '/auth/github', { access_token: 'gho_not_a_real_token' }, { authorization: '' });
+    expect(res.status).toBe(401);
+    expect(res.json.error).toBe('invalid_github_token');
+    expect(env.DB.raw.prepare('SELECT count(*) AS n FROM sessions').get()).toEqual({ n: 1 });
   });
 
   it('logout revokes the token', async () => {

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Env } from '../../src/env';
 import { createApp } from '../../src/app';
 import { clearPermissionCache } from '../../src/auth';
-import type { CheckRunBody, DeviceCode, GitHub } from '../../src/github';
+import { GitHubError, type CheckRunBody, type GitHub } from '../../src/github';
 import { createTestDb } from './d1';
 
 export const INSTALLATION_ID = 99;
@@ -29,17 +29,12 @@ export class FakeGitHub implements GitHub {
     return this.permissions.get(`${owner}/${repo}:${username}`) ?? 'write';
   }
 
-  /** Device flow: each poll takes the next scripted reply; the last one repeats. */
-  deviceReplies: ({ accessToken: string } | { error: string })[] = [{ accessToken: 'gho_user' }];
-  tokens = new Map([['gho_user', { id: 42, login: 'mona' }]]);
-  async deviceCode(): Promise<DeviceCode> {
-    return { device_code: 'dev-code', user_code: 'ABCD-1234', verification_uri: 'https://github.com/login/device', expires_in: 900, interval: 5 };
-  }
-  async deviceToken() {
-    return this.deviceReplies.length > 1 ? this.deviceReplies.shift()! : this.deviceReplies[0]!;
-  }
+  /** GitHub user tokens this fake accepts; any other token is a 401. */
+  tokens = new Map([['gho_user_token_123', { id: 42, login: 'mona' }]]);
   async user(accessToken: string) {
-    return this.tokens.get(accessToken)!;
+    const user = this.tokens.get(accessToken);
+    if (!user) throw new GitHubError(401, 'GitHub GET /user returned 401');
+    return user;
   }
 }
 

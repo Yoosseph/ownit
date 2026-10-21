@@ -49,7 +49,7 @@ export interface ApiClient {
 
 export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv = process.env): ApiClient {
   const server = serverUrl(config, env);
-  const key = modelKey(config, env);
+  const model = modelKey(config, env);
   return {
     server,
     async request<T>(method: string, path: string, body?: unknown, options: { timeoutMs?: number } = {}): Promise<T> {
@@ -57,7 +57,10 @@ export function createApi(config: Config = readConfig(), env: NodeJS.ProcessEnv 
       if (body !== undefined) headers['content-type'] = 'application/json';
       if (config.token) headers.authorization = `Bearer ${config.token}`;
       // Only debrief calls need the key; the worker uses it for that request and discards it.
-      if (key && path.startsWith('/api/interview/')) headers['x-model-key'] = key;
+      if (model && path.startsWith('/api/interview/')) {
+        headers['x-model-key'] = model.key;
+        headers['x-model-provider'] = model.provider;
+      }
       let response: Response;
       try {
         response = await fetch(`${server}${path}`, {

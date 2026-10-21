@@ -31,13 +31,12 @@ gets a hint and a new question, and you can always retry or skip.
 
 You need Node 20+, a GitHub repo and an API key from [Nebius Token Factory](https://tokenfactory.nebius.com/)
 or, if you have no Nebius account, from [NVIDIA](https://build.nvidia.com/). Both serve the same Nemotron
-model. Paste either one into `ownit key set`; Ownit tells them apart by the key (NVIDIA keys start with
-`nvapi-`), so there is nothing else to configure.
+model. `ownit key set` asks which one your key is for (or name it: `ownit key set nvidia`).
 
 ```sh
 npm i -g getownit
 ownit login       # sign in with GitHub
-ownit key set     # paste your Nebius or NVIDIA key (stays on your machine)
+ownit key set     # pick Nebius or NVIDIA, then paste your key (stays on your machine)
 cd your-repo
 ownit init        # installs the pre-push hook
 ```
@@ -64,7 +63,8 @@ it becomes skipped after 24 hours). GitHub shows the result as a check on the co
 ```text
 ownit interview                  Answer questions for pending pushes
 ownit interview --range A..B     Answer questions about any commit range
-ownit key set|clear|status       Manage your Nebius or NVIDIA key
+ownit key set [nebius|nvidia]    Save your model API key
+ownit key clear|status           Remove or show it
 ownit whoami                     Show login and key status
 ownit uninstall                  Remove the hook
 ownit logout

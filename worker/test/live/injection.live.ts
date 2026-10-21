@@ -1,28 +1,28 @@
 // Live check against the real Nemotron model. Not part of `npm test`.
 // Run with: scripts/live-injection-check (needs a Nebius or NVIDIA key: NVIDIA_API_KEY, NEBIUS_API_KEY,
-// DEMO_NEBIUS_KEY in .env, or `ownit key set`). The key's prefix picks the provider, as on the server.
+// DEMO_NEBIUS_KEY in .env, or `ownit key set`).
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gradeAnswer, writeQuestions, type Question } from '../../src/debrief';
-import { providerForKey, providerModel } from '../../src/model';
+import { providerModel, type Provider } from '../../src/model';
 
 const wrangler = readFileSync(join(import.meta.dirname, '..', '..', 'wrangler.toml'), 'utf8');
 const toml = (name: string) => wrangler.match(new RegExp(`^${name} = "(.+)"$`, 'm'))![1]!;
 
-function apiKey(): string {
-  const key = process.env.NVIDIA_API_KEY || process.env.NEBIUS_API_KEY;
-  if (key) return key;
+function apiKey(): { provider: Provider; key: string } {
+  if (process.env.NVIDIA_API_KEY) return { provider: 'nvidia', key: process.env.NVIDIA_API_KEY };
+  if (process.env.NEBIUS_API_KEY) return { provider: 'nebius', key: process.env.NEBIUS_API_KEY };
   try {
     const config = JSON.parse(readFileSync(join(process.env.OWNIT_HOME || join(homedir(), '.ownit'), 'config.json'), 'utf8'));
-    if (config.apiKey || config.nebiusKey) return config.apiKey || config.nebiusKey;
+    if (config.apiKey) return { provider: config.provider ?? 'nebius', key: config.apiKey };
+    if (config.nebiusKey) return { provider: 'nebius', key: config.nebiusKey };
   } catch {}
   throw new Error('No key: export NVIDIA_API_KEY or NEBIUS_API_KEY, set DEMO_NEBIUS_KEY in .env, or run "ownit key set".');
 }
 
-const KEY = apiKey();
-const PROVIDER = providerForKey(KEY);
+const { provider: PROVIDER, key: KEY } = apiKey();
 const PREFIX = PROVIDER === 'nvidia' ? 'NVIDIA' : 'NEBIUS';
 const MODEL = toml(`${PREFIX}_MODEL`);
 const model = providerModel(PROVIDER, toml(`${PREFIX}_BASE_URL`), MODEL, KEY);

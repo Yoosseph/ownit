@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gradeAnswer, parseJsonReply, validateGrade, validateQuestions, writeFollowUp, writeQuestions } from '../src/debrief';
-import { createModel, providerForKey, providerModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
+import { createModel, providerModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
 import { countChangedLines, questionCount } from '../src/questionCount';
 import { SAMPLE_DIFF, testEnv } from './helpers/env';
 
@@ -144,18 +144,13 @@ describe('provider choice', () => {
   const env = testEnv({ MODEL_BACKEND: 'nebius', NEBIUS_MODEL: 'nvidia/on-nebius', NVIDIA_MODEL: 'nvidia/on-nvidia' });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('tells NVIDIA keys from Nebius keys by prefix', () => {
-    expect(providerForKey('nvapi-abc123')).toBe('nvidia');
-    expect(providerForKey('eyJhbGciOi.nebius')).toBe('nebius');
-  });
-
   it.each([
-    ['nvapi-abc123', 'https://nvidia.invalid/v1/chat/completions', 'nvidia/on-nvidia'],
-    ['nb-key-123', 'https://nebius.invalid/v1/chat/completions', 'nvidia/on-nebius'],
-  ])('sends %s to its own endpoint and model', async (key, url, model) => {
+    ['nvidia', 'https://nvidia.invalid/v1/chat/completions', 'nvidia/on-nvidia'],
+    ['nebius', 'https://nebius.invalid/v1/chat/completions', 'nvidia/on-nebius'],
+  ] as const)('sends %s keys to that provider\'s endpoint and model', async (provider, url, model) => {
     const fetcher = vi.fn(async () => Response.json({ choices: [{ message: { content: '{}' } }] }));
     vi.stubGlobal('fetch', fetcher);
-    await createModel(env, key).complete(prompt, 10);
+    await createModel(env, 'key-123', provider).complete(prompt, 10);
     const [calledUrl, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(calledUrl).toBe(url);
     expect(JSON.parse(init.body as string).model).toBe(model);

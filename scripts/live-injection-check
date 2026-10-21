@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs the prompt-injection checks against the real Nemotron model on Nebius or NVIDIA.
 # Uses NVIDIA_API_KEY or NEBIUS_API_KEY if set, else DEMO_NEBIUS_KEY from the repo's .env,
-# else the key saved by `ownit key set`. An "nvapi-" key runs on NVIDIA. Costs a few cents.
+# else the key saved by `ownit key set`, on that key's provider. Costs a few cents.
 #
 #   scripts/live-injection-check
 #

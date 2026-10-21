@@ -2,8 +2,8 @@ name = "ownit"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
-# The server, not the client, picks the model endpoint and model. A user's key picks the provider:
-# "nvapi-" keys go to NVIDIA's API catalog, all others to Nebius. Both serve the same model.
+# The server, not the client, picks the model endpoint and model. The user picks the provider
+# (Nebius or NVIDIA) with `ownit key set`; both serve the same model.
 # Model lists: https://tokenfactory.nebius.com/model-catalog.md and https://integrate.api.nvidia.com/v1/models
 [vars]
 NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"

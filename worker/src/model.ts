@@ -2,23 +2,38 @@ import type { Env } from './env';
 import type { ChatPrompt } from './prompts';
 import { fixtureModel } from './fixtureModel';
 
-export type ProviderErrorKind = 'no_key' | 'invalid_key' | 'no_credit' | 'rate_limited' | 'unavailable' | 'bad_output' | 'demo_cap';
+export type ProviderErrorKind =
+  | 'no_key'
+  | 'unknown_provider'
+  | 'invalid_key'
+  | 'no_credit'
+  | 'rate_limited'
+  | 'unavailable'
+  | 'bad_output'
+  | 'demo_cap';
 
-/** Both serve the same Nemotron model through an OpenAI-compatible API. */
-export type Provider = 'nebius' | 'nvidia';
+/**
+ * Model providers a user's key can be for, chosen with `ownit key set`. Each serves the
+ * server-chosen model through an OpenAI-compatible API. Add a provider here and in the CLI.
+ */
+export const PROVIDERS = {
+  nebius: { name: 'Nebius', endpoint: (env: Env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL }) },
+  nvidia: { name: 'NVIDIA', endpoint: (env: Env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL }) },
+} satisfies Record<string, { name: string; endpoint: (env: Env) => { baseUrl: string; model: string } }>;
 
-const PROVIDER_NAMES: Record<Provider, string> = { nebius: 'Nebius', nvidia: 'NVIDIA' };
+export type Provider = keyof typeof PROVIDERS;
 
-/** NVIDIA API catalog keys start with "nvapi-"; anything else is treated as a Nebius key. */
-export function providerForKey(key: string): Provider {
-  return key.startsWith('nvapi-') ? 'nvidia' : 'nebius';
+export function isProvider(value: string): value is Provider {
+  return Object.hasOwn(PROVIDERS, value);
 }
 
 function reason(kind: ProviderErrorKind, provider: Provider): string {
-  const name = PROVIDER_NAMES[provider];
+  const name = PROVIDERS[provider].name;
   switch (kind) {
     case 'no_key':
       return 'No model API key. Run "ownit key set" with a Nebius or NVIDIA key.';
+    case 'unknown_provider':
+      return 'The server does not support that key\'s provider. Run "ownit key set" again.';
     case 'invalid_key':
       return `${name} rejected the API key. Check it with "ownit key set".`;
     case 'no_credit':
@@ -50,11 +65,10 @@ export interface ChatModel {
   complete(prompt: ChatPrompt, maxTokens: number): Promise<string>;
 }
 
-export function createModel(env: Env, apiKey: string): ChatModel {
+export function createModel(env: Env, apiKey: string, provider: Provider = 'nebius'): ChatModel {
   if (env.MODEL_BACKEND === 'fixture') return fixtureModel;
-  const provider = providerForKey(apiKey);
-  if (provider === 'nvidia') return providerModel(provider, env.NVIDIA_BASE_URL, env.NVIDIA_MODEL, apiKey);
-  return providerModel(provider, env.NEBIUS_BASE_URL, env.NEBIUS_MODEL, apiKey);
+  const { baseUrl, model } = PROVIDERS[provider].endpoint(env);
+  return providerModel(provider, baseUrl, model, apiKey);
 }
 
 function errorKind(status: number, body: string): ProviderErrorKind {

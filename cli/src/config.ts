@@ -2,13 +2,32 @@ import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'n
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
+/**
+ * Model providers the worker accepts, in the order `ownit key set` lists them.
+ * Add a provider here and in the worker's PROVIDERS.
+ */
+export const PROVIDERS = {
+  nebius: { name: 'Nebius', envVar: 'NEBIUS_API_KEY', keyUrl: 'https://tokenfactory.nebius.com/', keyPrefix: undefined },
+  nvidia: { name: 'NVIDIA', envVar: 'NVIDIA_API_KEY', keyUrl: 'https://build.nvidia.com/', keyPrefix: 'nvapi-' },
+} as const satisfies Record<string, { name: string; envVar: string; keyUrl: string; keyPrefix: string | undefined }>;
+
+export type Provider = keyof typeof PROVIDERS;
+
+export const PROVIDER_IDS = Object.keys(PROVIDERS) as Provider[];
+
+export function isProvider(value: string): value is Provider {
+  return Object.hasOwn(PROVIDERS, value);
+}
+
 export interface Config {
   /** Ownit server origin; defaults to DEFAULT_SERVER. */
   server?: string;
   /** Ownit session token issued by `ownit login`. */
   token?: string;
   login?: string;
-  /** The user's own Nebius or NVIDIA API key. It never leaves this machine except in debrief requests. */
+  /** Which provider `apiKey` is for. */
+  provider?: Provider;
+  /** The user's own model API key. It never leaves this machine except in debrief requests. */
   apiKey?: string;
   /** Older configs saved the key here. */
   nebiusKey?: string;
@@ -56,19 +75,33 @@ export function updateConfig(patch: Partial<Config>, env: NodeJS.ProcessEnv = pr
   return next;
 }
 
-/** The model key to send: an env var wins over the saved one. */
-export function modelKey(config: Config, env: NodeJS.ProcessEnv = process.env): string | undefined {
-  return env.NVIDIA_API_KEY || env.NEBIUS_API_KEY || config.apiKey || config.nebiusKey;
+export interface ModelKey {
+  provider: Provider;
+  key: string;
 }
 
-/** Mirrors the worker, which picks the provider from the key: "nvapi-" keys are NVIDIA's. */
-export function keyProvider(key: string): 'NVIDIA' | 'Nebius' {
-  return key.startsWith('nvapi-') ? 'NVIDIA' : 'Nebius';
+/** The key to send with debriefs and its provider. A provider's env var wins over the saved key. */
+export function modelKey(config: Config, env: NodeJS.ProcessEnv = process.env): ModelKey | undefined {
+  for (const provider of PROVIDER_IDS) {
+    const key = env[PROVIDERS[provider].envVar];
+    if (key) return { provider, key };
+  }
+  if (config.apiKey) return { provider: config.provider ?? 'nebius', key: config.apiKey };
+  if (config.nebiusKey) return { provider: 'nebius', key: config.nebiusKey };
+  return undefined;
+}
+
+/** The provider whose keys have this key's prefix, if any. */
+export function providerByPrefix(key: string): Provider | undefined {
+  return PROVIDER_IDS.find((id) => {
+    const prefix: string | undefined = PROVIDERS[id].keyPrefix;
+    return prefix !== undefined && key.startsWith(prefix);
+  });
 }
 
 /** e.g. "NVIDIA, …1a2b" */
-export function describeKey(key: string): string {
-  return `${keyProvider(key)}, …${key.slice(-4)}`;
+export function describeKey({ provider, key }: ModelKey): string {
+  return `${PROVIDERS[provider]?.name ?? provider}, …${key.slice(-4)}`;
 }
 
 export function serverUrl(config: Config, env: NodeJS.ProcessEnv = process.env): string {

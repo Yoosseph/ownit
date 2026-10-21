@@ -36,15 +36,21 @@ Questions name the feature or area, never a file path or function name.
 
 Ownit runs on **your own account**. Create a key in
 [Nebius Token Factory](https://tokenfactory.nebius.com/), or at [build.nvidia.com](https://build.nvidia.com/)
-if you have no Nebius account, then run `ownit key set`. The key is
+if you have no Nebius account, then run `ownit key set` and pick the provider (or name it:
+`ownit key set nebius`, `ownit key set nvidia`; piping a key needs the name). The key is
 saved in `~/.ownit/config.json` (mode 600) and sent only with debrief requests. The worker uses it
 for that request and then drops it. It never stores or logs the key. A debrief usually costs
 under a cent, and a few cents at most for a large push with several follow-ups.
 
-The server chooses the endpoint and model, and the client cannot change them. The model is
-`nvidia/nemotron-3-super-120b-a12b` on both providers. A key starting with `nvapi-` goes to
-`https://integrate.api.nvidia.com/v1/`; any other key goes to `https://api.tokenfactory.nebius.com/v1/`.
+The server chooses the endpoint and model for each provider, and the client cannot change them.
+The model is `nvidia/nemotron-3-super-120b-a12b` on both: Nebius at
+`https://api.tokenfactory.nebius.com/v1/`, NVIDIA at `https://integrate.api.nvidia.com/v1/`.
 `NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
+
+Adding a provider means a row in `PROVIDERS` in both `worker/src/model.ts` and `cli/src/config.ts`,
+plus its endpoint and model in `worker/wrangler.toml`. The worker only speaks the OpenAI-compatible
+chat API today, so a provider with a different API (Anthropic's, for example) also needs its own
+client in `model.ts`.
 
 Hackathon judges can try Ownit without a key. A server may set an optional shared
 `DEMO_NEBIUS_KEY`, which has a daily cap and is used only when a request carries no key.

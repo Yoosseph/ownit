@@ -82,6 +82,7 @@ describe('pre-push hook (real git push)', () => {
     expect(start.body.diff).toContain('diff --git a/cart.js b/cart.js');
     expect(start.headers.authorization).toBe(`Bearer ${TOKEN}`);
     expect(start.headers['x-model-key']).toBe('nb-secret-key');
+    expect(start.headers['x-model-provider']).toBe('nebius');
     // The key goes only to debrief calls.
     expect(s.requests.find((r) => r.path === '/api/pushes/lookup')!.headers['x-model-key']).toBeUndefined();
   }, 60_000);

@@ -111,7 +111,7 @@ export async function whoamiCommand(): Promise<number> {
   const out = process.stderr;
   out.write(`Server:     ${serverUrl(config)}\n`);
   out.write(`GitHub:     ${config.token ? (config.login ?? 'logged in') : 'not logged in (run "ownit login")'}\n`);
-  const key = modelKey(config);
-  out.write(`API key:    ${key ? `set (${describeKey(key)})` : 'not set (run "ownit key set")'}\n`);
+  const model = modelKey(config);
+  out.write(`API key:    ${model ? `set (${describeKey(model)})` : 'not set (run "ownit key set")'}\n`);
   return 0;
 }

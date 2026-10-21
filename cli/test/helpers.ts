@@ -89,11 +89,13 @@ export function cleanEnv(extra: Record<string, string>): NodeJS.ProcessEnv {
   return { ...env, ...extra };
 }
 
-export function run(cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
+/** Runs a command; `input`, when given, is written to its stdin, which is then closed. */
+export function run(cmd: string, args: string[], cwd: string, env: NodeJS.ProcessEnv, input?: string) {
   return new Promise<{ code: number; output: string }>((resolve) => {
-    execFile(cmd, args, { cwd, env, encoding: 'utf8', timeout: 60_000 }, (error, stdout, stderr) => {
+    const child = execFile(cmd, args, { cwd, env, encoding: 'utf8', timeout: 60_000 }, (error, stdout, stderr) => {
       const code = error ? (typeof error.code === 'number' ? error.code : 1) : 0;
       resolve({ code, output: `${stdout}${stderr}` });
     });
+    if (input !== undefined) child.stdin?.end(input);
   });
 }

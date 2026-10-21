@@ -7,7 +7,7 @@ import { attachCommits, createPush, findPushForCommits, getPush, recordAttempt, 
 import { gradeAnswer, MAX_ANSWER_CHARS, writeFollowUp, writeQuestions, type Question } from '../debrief';
 import { cappedDemoModel, rateLimit } from '../limits';
 import { log } from '../log';
-import { createModel, ProviderError, type ChatModel } from '../model';
+import { createModel, isProvider, ProviderError, type ChatModel } from '../model';
 import { countChangedLines, questionCount } from '../questionCount';
 import { seal, unseal } from '../seal';
 import { repoName, requireRepo } from './repos';
@@ -56,12 +56,16 @@ function sessionSecret(c: Context<AppEnv>): string {
   return secret;
 }
 
-/** The request's own key, else the capped demo key, else a provider error. */
+/** The request's own key on its chosen provider, else the capped demo key, else a provider error. */
 export function modelFor(c: Context<AppEnv>): ChatModel {
   const key = c.req.header('x-model-key')?.trim();
-  if (key || c.env.MODEL_BACKEND === 'fixture') return createModel(c.env, key ?? '');
+  if (key || c.env.MODEL_BACKEND === 'fixture') {
+    const provider = c.req.header('x-model-provider')?.trim().toLowerCase() || 'nebius';
+    if (!isProvider(provider)) throw new ProviderError('unknown_provider');
+    return createModel(c.env, key ?? '', provider);
+  }
   if (c.env.DEMO_NEBIUS_KEY) {
-    return cappedDemoModel(c.env.DB, Number(c.env.DEMO_DAILY_CALL_CAP) || 0, createModel(c.env, c.env.DEMO_NEBIUS_KEY));
+    return cappedDemoModel(c.env.DB, Number(c.env.DEMO_DAILY_CALL_CAP) || 0, createModel(c.env, c.env.DEMO_NEBIUS_KEY, 'nebius'));
   }
   throw new ProviderError('no_key');
 }

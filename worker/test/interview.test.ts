@@ -46,6 +46,13 @@ describe('POST /api/interview/start', () => {
     expect((env.DB.raw.prepare('SELECT status FROM pushes').get() as any).status).toBe('provider_error');
   });
 
+  it('rejects a provider the server does not know', async () => {
+    const env = testEnv({ MODEL_BACKEND: 'nebius' });
+    const res = await call(env, 'POST', '/api/interview/start', startBody(), { 'x-model-key': 'k', 'x-model-provider': 'acme' });
+    expect(res.status).toBe(502);
+    expect(res.json).toMatchObject({ error: 'provider_error', reason: 'unknown_provider' });
+  });
+
   it('reuses the same push on retry instead of creating another', async () => {
     const env = testEnv({ MODEL_BACKEND: 'nebius' });
     await call(env, 'POST', '/api/interview/start', startBody());

@@ -1,7 +1,7 @@
 # getownit
 
 The `ownit` command. Right after you `git push`, it runs a short debrief in your terminal about
-what you just shipped: why, how, and what's next. NVIDIA Nemotron on Nebius writes the questions
+what you just shipped: why, how, and what's next. NVIDIA Nemotron (on Nebius or NVIDIA) writes the questions
 and grades your answers generously.
 
 ```sh

@@ -30,7 +30,9 @@ gets a hint and a new question, and you can always retry or skip.
 ## Setup
 
 You need Node 20+, a GitHub repo and an API key from [Nebius Token Factory](https://tokenfactory.nebius.com/)
-or, if you have no Nebius account, from [NVIDIA](https://build.nvidia.com/). Both serve the same Nemotron model.
+or, if you have no Nebius account, from [NVIDIA](https://build.nvidia.com/). Both serve the same Nemotron
+model. Paste either one into `ownit key set`; Ownit tells them apart by the key (NVIDIA keys start with
+`nvapi-`), so there is nothing else to configure.
 
 ```sh
 npm i -g getownit

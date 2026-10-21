@@ -6,7 +6,7 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 
 | Milestone | Status | Commit |
 | --- | --- | --- |
-| 1. Worker skeleton, D1 schema, Nebius client | Done, verified with the fixture model. **Live Nemotron check not run yet** (waiting on a Nebius key). | c033546 |
+| 1. Worker skeleton, D1 schema, Nebius client | Done. Live check passed 2026-10-21: curl to /api/interview/start returned a validated question from Nemotron in about 3.7 s. | c033546 |
 | 2. CLI debrief end to end | Done: `ownit interview --range A..B` against local `wrangler dev` (fixture model): fail, feedback, follow-up, pass, recorded in D1. | c9fcaab |
 | 3. Pre-push hook | Done: Y, n, s verified with real `git push` in a ConPTY reading `/dev/tty`; no-TTY, unreachable worker, chained hook covered by `cli/test/hook.test.ts`. | f9649d3 |
 | 4. GitHub App, webhook, check runs | Done in code and tests (fake GitHub). Signed webhooks verified against local `wrangler dev`. **Real check run not seen yet**: needs the App from docs/github-app.md and a public worker URL. | 3575033 |
@@ -16,7 +16,7 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 
 ## Still to do before the hackathon demo
 
-1. **Live model checks** (need a Nebius key): milestone 1 curl against Nemotron, a debrief against Nemotron, and `scripts/live-injection-check`. If Nemotron rejects `response_format: json_object` or its replies need a different token budget, fix it in `worker/src/model.ts`.
+1. ~~Live model checks~~ Done 2026-10-21: `scripts/live-injection-check` 4/4 (both injected answers failed, a rough honest answer passed), the milestone 1 curl, and a CLI debrief with fail, feedback, follow-up and pass. Nemotron accepts `response_format: json_object`; calls take 1–4 s.
 2. **GitHub App**: the user creates it (docs/github-app.md). Then check the real device flow and a real check run.
 3. **Deploy** (ask first): `wrangler d1 create`, set database_id, remote migrations, secrets, `wrangler deploy`.
 4. **Before `npm publish`**: set `DEFAULT_SERVER` in `cli/src/config.ts` to the deployed URL (it is `http://127.0.0.1:8787` now) and add `repository` to `cli/package.json`.

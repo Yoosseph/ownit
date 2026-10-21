@@ -16,4 +16,4 @@ finished any time with `ownit interview`.
 
 Your code and answers are never stored, and your key is never stored or logged by the server.
 
-Full documentation: see the project README.
+Full documentation: [github.com/Yoosseph/ownit](https://github.com/Yoosseph/ownit).

@@ -125,7 +125,7 @@ the push is verified. The badge reads **75%**.
 
 ## Scene 5: how it works and privacy (2:40–3:00)
 
-Show the README's [Privacy](../README.md#privacy) section, or say:
+Show the [Privacy](DETAILS.md#privacy) section in docs/DETAILS.md, or say:
 
 > "NVIDIA Nemotron on Nebius writes and grades the questions, using your own Nebius key. Your
 > code and answers are never stored. The server keeps only question text and pass or fail. Pushes

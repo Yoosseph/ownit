@@ -70,7 +70,7 @@ worker checks that you have push access to the repo.
 
 ## Running your own copy
 
-Anyone can host Ownit (see "Self-hosting" in the README). A copy is fully separate: its own worker,
+Anyone can host Ownit (see "Self-hosting" in [DETAILS](DETAILS.md#self-hosting)). A copy is fully separate: its own worker,
 database and GitHub App, with no access to the official server's data. The CLI talks to the
 official server (`ownit.ownit-worker.workers.dev`) unless you pass `ownit login --server <url>`.
 Badges link to the server that made them, and the public page names the official server, so a
@@ -83,5 +83,5 @@ badge from a copy is easy to spot.
 - Webhook: `worker/src/routes/webhook.ts`; check runs: `worker/src/checks.ts`
 - Hourly expiry: `worker/src/cron.ts`
 
-More detail: [README](../README.md) (privacy, prompt-injection design), [SPEC](SPEC.md),
+More detail: [DETAILS](DETAILS.md) (privacy, prompt-injection design), [SPEC](SPEC.md),
 [HANDOFF](HANDOFF.md).

@@ -129,7 +129,7 @@ a{color:inherit}
 <section class="cards" aria-label="Overall">
   <div class="card"><div class="big">${pct(o, 'verifiedPct')}</div><div class="label">of commits verified</div></div>
   <div class="card"><div class="big">${pct(o, 'skippedPct')}</div><div class="label">of commits skipped</div></div>
-  <div class="card"><div class="big">${o.counted}</div><div class="label">commits counted</div></div>
+  <div class="card"><div class="big">${o.counted}</div><div class="label">${o.counted === 1 ? 'commit' : 'commits'} counted</div></div>
   <div class="card"><div class="big">${o.waiting}</div><div class="label">waiting for a debrief</div></div>
 </section>
 

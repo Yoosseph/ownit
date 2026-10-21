@@ -9,9 +9,9 @@ Read this first, then [SPEC.md](SPEC.md). Keep this file current after each mile
 | 1. Worker skeleton, D1 schema, Nebius client | Done, verified with the fixture model. **Live Nemotron check not run yet** (waiting on a Nebius key). | c033546 |
 | 2. CLI debrief end to end | Done: `ownit interview --range A..B` against local `wrangler dev` (fixture model): fail, feedback, follow-up, pass, recorded in D1. | c9fcaab |
 | 3. Pre-push hook | Done: Y, n, s verified with real `git push` in a ConPTY reading `/dev/tty`; no-TTY, unreachable worker, chained hook covered by `cli/test/hook.test.ts`. | f9649d3 |
-| 4. GitHub App, webhook, check runs | Done in code and tests (fake GitHub). Signed webhooks verified against local `wrangler dev`. **Real check run not seen yet**: needs the App from docs/github-app.md and a public worker URL. | (this commit) |
-| 5. Cron, stats, badge, public page | Next | |
-| 6. Login and permissions | | |
+| 4. GitHub App, webhook, check runs | Done in code and tests (fake GitHub). Signed webhooks verified against local `wrangler dev`. **Real check run not seen yet**: needs the App from docs/github-app.md and a public worker URL. | 3575033 |
+| 5. Cron, stats, badge, public page | Done: tests on a seeded repo; locally `seed/demo.sql` + `wrangler dev --test-scheduled` shows 70% → 54% after the cron expires a 30-hour-old pending push. | (this commit) |
+| 6. Login and permissions | Next | |
 | 7. Docs | | |
 
 Pending live checks (need a Nebius key in `worker/.dev.vars` as `DEMO_NEBIUS_KEY`, or `NEBIUS_API_KEY` for the CLI): milestone 1 curl against Nemotron, milestone 2 against Nemotron, and `scripts/live-injection-check` (not written yet).
@@ -28,6 +28,8 @@ Pending live checks (need a Nebius key in `worker/.dev.vars` as `DEMO_NEBIUS_KEY
 - Repos must be registered (`POST /api/repos`, called by `ownit init`) before debrief routes accept them. Until milestone 6, API routes have no auth.
 - Check runs: verified = success, skipped = neutral, pending and provider_error = in_progress. They are created only after the webhook confirms the head commit landed (`commits.pushed_at`).
 - Unmatched commits in a push webhook become a new pending push owned by the sender.
+- Stats count only commits GitHub confirmed (`pushed_at` set, on or after `tracked_since`), so a repo without the App shows "no pushes yet". provider_error pushes never expire; only pending ones do.
+- Private repos: the public page hides question text (stats and statuses still show).
 - The hook script exits 0 unless `pre-push.local` fails. Coding-agent env vars (`CLAUDECODE`, `CI`, …) count as no TTY. The Y/n prompt times out after 120 s and becomes pending.
 - Test seam: `OWNIT_TTY_DEVICE` replaces `/dev/tty` in the hook script.
 
@@ -45,5 +47,6 @@ cd worker && npx wrangler d1 migrations apply ownit --local
 npx wrangler dev --var MODEL_BACKEND:fixture   # or omit the var to use Nebius
 cd ../cli && npm run build
 OWNIT_SERVER=http://127.0.0.1:8787 node dist/index.js interview --range HEAD~1..HEAD
+npx wrangler d1 execute ownit --local --file seed/demo.sql   # optional demo data (repo demo/seeded)
 npm test                         # at the root: worker + cli
 ```

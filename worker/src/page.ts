@@ -1,0 +1,157 @@
+import type { PushStatus, RepoRow } from './db';
+import type { RepoStats, Stats } from './stats';
+
+export interface PagePush {
+  id: number;
+  status: PushStatus;
+  created_at: string;
+  pusher: string | null;
+  commits: number;
+  questions: { kind: string; text: string; passed: number; attempts: number }[];
+}
+
+/** Escapes text for HTML. Question text is model output about user code, so it is untrusted. */
+export const esc = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+const STATUS_LABEL: Record<PushStatus, string> = {
+  verified: 'Verified',
+  skipped: 'Skipped',
+  pending: 'Pending',
+  provider_error: 'Pending (provider error)',
+};
+
+const date = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+function pct(stats: Stats, key: 'verifiedPct' | 'skippedPct') {
+  return stats[key] === null ? '—' : `${stats[key]}%`;
+}
+
+function meter(stats: Stats) {
+  const v = stats.verifiedPct ?? 0;
+  return `<div class="meter" role="img" aria-label="${stats.verifiedPct === null ? 'No data' : `${v}% verified`}"><span style="width:${v}%"></span></div>`;
+}
+
+export function renderRepoPage(origin: string, repo: RepoRow, stats: RepoStats, pushes: PagePush[]): string {
+  const full = `${repo.owner}/${repo.name}`;
+  const badgeUrl = `${origin}/badge/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}.svg`;
+  const pageUrl = `${origin}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}`;
+  const markdown = `[![Ownit](${badgeUrl})](${pageUrl})`;
+  const o = stats.overall;
+  const hideQuestions = Boolean(repo.private);
+
+  const authorRows = stats.authors.length
+    ? stats.authors
+        .map(
+          (a) => `<tr><td>${esc(a.author)}</td><td class="num">${a.stats.counted}</td><td class="num">${pct(a.stats, 'verifiedPct')}</td><td class="num">${pct(a.stats, 'skippedPct')}</td><td class="bar">${meter(a.stats)}</td></tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="5" class="empty">No pushes counted yet.</td></tr>';
+
+  const pushItems = pushes.length
+    ? pushes
+        .map((p) => {
+          const questions = hideQuestions
+            ? ''
+            : p.questions
+                .map(
+                  (q) =>
+                    `<li><span class="kind">${esc(q.kind)}</span> ${esc(q.text)}${q.passed ? ` <span class="ok" title="Passed after ${q.attempts} attempt${q.attempts === 1 ? '' : 's'}">✓</span>` : ''}</li>`,
+                )
+                .join('');
+          return `<li class="push">
+  <div class="push-head"><span class="pill ${p.status}">${STATUS_LABEL[p.status]}</span>
+  <span class="meta">${date(p.created_at)} · ${p.commits} commit${p.commits === 1 ? '' : 's'}${p.pusher ? ` · ${esc(p.pusher)}` : ''}</span></div>
+  ${questions ? `<ul class="questions">${questions}</ul>` : ''}
+</li>`;
+        })
+        .join('\n')
+    : '<li class="empty">No pushes yet. Push to this repo with the Ownit hook installed.</li>';
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(full)} · Ownit</title>
+<meta name="description" content="How much of ${esc(full)} its developers have debriefed with Ownit.">
+<style>
+:root{--bg:#fbfaf7;--card:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e7e4dc;--accent:#2f7d4f;--warn:#b7791f;--skip:#8a8a85;--chip:#f1efe8}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1d1d1b;--ink:#ecebe6;--muted:#a3a29b;--line:#33322f;--accent:#5cbf84;--warn:#e0a84a;--skip:#9b9a94;--chip:#2a2927}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+h1{font-size:1.6rem;margin:0;word-break:break-word}
+h2{font-size:1.05rem;margin:32px 0 12px}
+.sub{color:var(--muted);margin:4px 0 0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card .big{font-size:1.8rem;font-weight:650;font-variant-numeric:tabular-nums}
+.card .label{color:var(--muted);font-size:.85rem}
+.meter{height:8px;background:var(--chip);border-radius:99px;overflow:hidden;min-width:80px}
+.meter span{display:block;height:100%;background:var(--accent)}
+.table-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{color:var(--muted);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+td.bar{width:30%}
+ul{list-style:none;margin:0;padding:0}
+.push{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.push-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.meta{color:var(--muted);font-size:.9rem}
+.pill{font-size:.78rem;font-weight:600;padding:2px 10px;border-radius:99px;background:var(--chip)}
+.pill.verified{color:var(--accent)}.pill.pending,.pill.provider_error{color:var(--warn)}.pill.skipped{color:var(--skip)}
+.questions{margin-top:10px}
+.questions li{padding:4px 0;color:var(--ink)}
+.kind{display:inline-block;min-width:44px;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ok{color:var(--accent)}
+.empty{color:var(--muted)}
+.embed{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+code{background:var(--chip);border-radius:6px;padding:6px 8px;font-size:.8rem;word-break:break-all;display:block;flex:1;min-width:0}
+footer{margin-top:40px;color:var(--muted);font-size:.85rem}
+a{color:inherit}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1>${esc(full)}</h1>
+    <p class="sub">Tracked by Ownit since ${date(repo.tracked_since)}. Earlier history does not count.</p>
+  </div>
+  <img src="${esc(badgeUrl)}" alt="Ownit badge" height="20">
+</header>
+
+<section class="cards" aria-label="Overall">
+  <div class="card"><div class="big">${pct(o, 'verifiedPct')}</div><div class="label">of commits verified</div></div>
+  <div class="card"><div class="big">${pct(o, 'skippedPct')}</div><div class="label">of commits skipped</div></div>
+  <div class="card"><div class="big">${o.counted}</div><div class="label">commits counted</div></div>
+  <div class="card"><div class="big">${o.waiting}</div><div class="label">waiting for a debrief</div></div>
+</section>
+
+<h2>By author</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Author</th><th class="num">Commits</th><th class="num">Verified</th><th class="num">Skipped</th><th></th></tr></thead>
+<tbody>${authorRows}</tbody>
+</table></div>
+
+<h2>Recent pushes</h2>
+${hideQuestions ? '<p class="sub">This repo is private, so question text is hidden.</p>' : ''}
+<ul>${pushItems}</ul>
+
+<h2>Badge</h2>
+<div class="embed"><code>${esc(markdown)}</code></div>
+
+<footer>
+  Ownit asks developers a few questions about each push: why, how, and what's next. It shows no code and no answers.
+  Percentages count commits whose push was debriefed or skipped; pending pushes become skipped after 24 hours.
+  A learning tool, not proof of authorship.
+</footer>
+</main>
+</body>
+</html>`;
+}

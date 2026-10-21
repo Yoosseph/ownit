@@ -3,6 +3,7 @@ import type { Env } from './env';
 import { createGitHub, type GitHub } from './github';
 import { log } from './log';
 import { interview } from './routes/interview';
+import { publicPages } from './routes/public';
 import { pushes } from './routes/pushes';
 import { repos } from './routes/repos';
 import { webhook } from './routes/webhook';
@@ -32,6 +33,8 @@ export function createApp(deps: Deps = {}) {
   app.route('/api/pushes', pushes);
   app.route('/api/repos', repos);
   app.route('/webhooks', webhook);
+  // Last: /:owner/:repo would otherwise shadow the routes above.
+  app.route('/', publicPages);
 
   app.notFound((c) => c.json({ error: 'not_found' }, 404));
   app.onError((error, c) => {

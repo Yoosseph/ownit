@@ -58,9 +58,11 @@ function sessionSecret(c: Context<AppEnv>): string {
 
 /** The request's own key on its chosen provider, else the capped demo key, else a provider error. */
 export function modelFor(c: Context<AppEnv>): ChatModel {
-  const key = c.req.header('x-model-key')?.trim();
+  // CLI builds from before the provider choice sent only x-nebius-key.
+  const legacy = c.req.header('x-nebius-key')?.trim();
+  const key = c.req.header('x-model-key')?.trim() || legacy;
   if (key || c.env.MODEL_BACKEND === 'fixture') {
-    const provider = c.req.header('x-model-provider')?.trim().toLowerCase() || 'nebius';
+    const provider = (key === legacy ? 'nebius' : c.req.header('x-model-provider')?.trim().toLowerCase()) || 'nebius';
     if (!isProvider(provider)) throw new ProviderError('unknown_provider');
     return createModel(c.env, key ?? '', provider);
   }

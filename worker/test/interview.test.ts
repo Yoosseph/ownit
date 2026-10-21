@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { unseal } from '../src/seal';
 import { call, sha, startBody, testEnv } from './helpers/env';
 
@@ -51,6 +51,21 @@ describe('POST /api/interview/start', () => {
     const res = await call(env, 'POST', '/api/interview/start', startBody(), { 'x-model-key': 'k', 'x-model-provider': 'acme' });
     expect(res.status).toBe(502);
     expect(res.json).toMatchObject({ error: 'provider_error', reason: 'unknown_provider' });
+  });
+
+  it('still accepts the older x-nebius-key header as a Nebius key', async () => {
+    const env = testEnv({ MODEL_BACKEND: 'nebius' });
+    const fetcher = vi.fn(async () => new Response('', { status: 401 }));
+    vi.stubGlobal('fetch', fetcher);
+    try {
+      const res = await call(env, 'POST', '/api/interview/start', startBody(), { 'x-nebius-key': 'old-cli-key' });
+      expect(res.json).toMatchObject({ error: 'provider_error', reason: 'invalid_key' });
+      const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('https://nebius.invalid/v1/chat/completions');
+      expect((init.headers as Record<string, string>).Authorization).toBe('Bearer old-cli-key');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('reuses the same push on retry instead of creating another', async () => {

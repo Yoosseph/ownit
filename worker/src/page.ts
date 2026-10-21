@@ -118,6 +118,8 @@ ul{list-style:none;margin:0;padding:0}
 code{background:var(--chip);border-radius:6px;padding:6px 8px;font-size:.8rem;word-break:break-all;display:block;flex:1;min-width:0}
 footer{margin-top:40px;color:var(--muted);font-size:.85rem}
 .source{margin-top:12px}
+.copy{font:inherit;font-size:.85rem;padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.copy:hover{border-color:var(--accent)}
 a{color:inherit}
 </style>
 </head>
@@ -149,7 +151,8 @@ ${hideQuestions ? '<p class="sub">This repo is private, so question text is hidd
 <ul>${pushItems}</ul>
 
 <h2>Badge</h2>
-<div class="embed"><code>${esc(markdown)}</code></div>
+<p class="sub">Paste this into your README. The badge links back to this page.</p>
+<div class="embed"><code id="badge-md">${esc(markdown)}</code><button type="button" class="copy" data-copy="badge-md">Copy</button></div>
 
 <footer>
   Ownit asks developers a few questions about each push: why, how, and what's next. It shows no code and no answers.
@@ -158,6 +161,19 @@ ${hideQuestions ? '<p class="sub">This repo is private, so question text is hidd
   <p class="source"><a href="${SOURCE_URL}">Ownit is open source on GitHub</a>. The official server is <strong>${OFFICIAL_HOST}</strong>; a badge that leads anywhere else comes from a copy.</p>
 </footer>
 </main>
+<script>
+document.querySelectorAll('[data-copy]').forEach((button) => button.addEventListener('click', async () => {
+  const source = document.getElementById(button.dataset.copy);
+  try {
+    await navigator.clipboard.writeText(source.textContent);
+    button.textContent = 'Copied';
+  } catch {
+    getSelection().selectAllChildren(source);
+    button.textContent = 'Press Ctrl+C';
+  }
+  setTimeout(() => (button.textContent = 'Copy'), 2000);
+}));
+</script>
 </body>
 </html>`;
 }

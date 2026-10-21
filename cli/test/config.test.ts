@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { badgeMarkdown } from '../src/commands/badge';
 import { describeKey, modelKey, providerByPrefix } from '../src/config';
 import { cleanEnv, run } from './helpers.js';
 
@@ -22,6 +23,14 @@ describe('model key', () => {
     expect(providerByPrefix('nvapi-abc')).toBe('nvidia');
     expect(providerByPrefix('eyJhbGciOi')).toBeUndefined();
     expect(describeKey({ provider: 'nvidia', key: 'nvapi-abc1a2b' })).toBe('NVIDIA, …1a2b');
+  });
+});
+
+describe('badge Markdown', () => {
+  it('links the badge image to the repo page', () => {
+    expect(badgeMarkdown('https://ownit.example', 'octo/shop')).toBe(
+      '[![Ownit](https://ownit.example/badge/octo/shop.svg)](https://ownit.example/octo/shop)',
+    );
   });
 });
 

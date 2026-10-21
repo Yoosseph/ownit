@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { hookCommand } from './commands/hook.js';
 import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
+import { badgeCommand } from './commands/badge.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
 
@@ -17,6 +18,7 @@ Usage:
   ownit interview --range A..B     Debrief a commit range
   ownit key set [nebius|nvidia]    Save your model API key (stored locally)
   ownit key clear|status           Remove or show it
+  ownit badge                      Print this repo's badge Markdown for your README
   ownit uninstall                  Remove the pre-push hook
   ownit help                       Show this help
 
@@ -48,6 +50,8 @@ async function main(argv: string[]): Promise<number> {
       return interviewCommand(rest);
     case 'key':
       return keyCommand(rest);
+    case 'badge':
+      return badgeCommand();
     case '--version':
     case '-v':
       process.stdout.write(`${version()}\n`);

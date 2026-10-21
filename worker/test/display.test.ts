@@ -137,6 +137,13 @@ describe('public page', () => {
     expect(res.text).not.toContain('diff --git');
   });
 
+  it('offers the badge Markdown with a copy button', async () => {
+    const res = await call(seededRepo(), 'GET', '/octo/shop');
+    expect(res.text).toContain('<code id="badge-md">[![Ownit](');
+    expect(res.text).toContain('/badge/octo/shop.svg)](');
+    expect(res.text).toContain('data-copy="badge-md">Copy</button>');
+  });
+
   it('hides question text for private repos', async () => {
     const env = seededRepo();
     env.DB.raw.prepare('UPDATE repos SET private = 1').run();

@@ -3,6 +3,7 @@ import { createApi } from '../api.js';
 import { git, githubRepo } from '../git.js';
 import { hookLocation, installHook, MANAGED_SNIPPET, uninstallHook } from '../hooks.js';
 import { paint, sentence } from '../ui.js';
+import { badgeMarkdown } from './badge.js';
 
 export async function initCommand(argv: string[]): Promise<number> {
   const { values } = parseArgs({ args: argv, options: { repo: { type: 'string' } } });
@@ -27,13 +28,17 @@ export async function initCommand(argv: string[]): Promise<number> {
   }
 
   try {
-    const registered = await createApi().request<RegisterResponse>('POST', '/api/repos', { repo }, { timeoutMs: 15_000 });
+    const api = createApi();
+    const registered = await api.request<RegisterResponse>('POST', '/api/repos', { repo }, { timeoutMs: 15_000 });
     out.write(`${c.green('✓')} Registered ${c.bold(registered.repo)} with Ownit (tracked since ${registered.tracked_since.slice(0, 10)}).\n`);
     if (!registered.installed) {
       out.write(`\nNext: install the Ownit GitHub App on ${registered.repo} so pushes get check runs and count on the badge:\n`);
       out.write(`  ${registered.install_url ?? 'see docs/github-app.md'}\n`);
     }
     if (registered.page_url) out.write(`\nYour repo's page: ${registered.page_url}\n`);
+    // The page URL carries the server's public origin, which can differ from the API address.
+    const origin = registered.page_url ? new URL(registered.page_url).origin : api.server;
+    out.write(`\nAdd the badge to your README (run "ownit badge" to see this again):\n  ${badgeMarkdown(origin, registered.repo)}\n`);
   } catch (error) {
     out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${sentence(error instanceof Error ? error.message : String(error))}\n`);
     out.write('Run "ownit init" again once that is fixed.\n');

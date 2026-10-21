@@ -78,6 +78,7 @@ it becomes skipped after 24 hours). GitHub shows the result as a check on the co
 | `ownit interview --range A..B` | Debrief any commit range. |
 | `ownit key set [nebius\|nvidia]` | Save your API key. Paste it at the hidden prompt, never after the command. |
 | `ownit key status` / `ownit key clear` | Show or remove the key. |
+| `ownit badge` | Print this repo's badge Markdown to paste into your README. |
 | `ownit whoami` | Show the server, your GitHub login and your key. |
 | `ownit uninstall` | Remove the hook from this repo. |
 | `ownit logout` | Sign out. |
@@ -93,7 +94,8 @@ to answer for the change, or it counts as skipped.
 
 - **GitHub:** each commit gets an **Ownit** check: verified, skipped, or pending.
 - **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats.
-- **Badge:** like `ownit | 90% verified`. Copy its code from the repo page into your README.
+- **Badge:** like `ownit | 90% verified`, linking to the repo page. `ownit init` prints the code to paste
+  into your README; `ownit badge` prints it again, and the repo page has a Copy button.
 
 ## More
 

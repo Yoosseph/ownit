@@ -22,7 +22,7 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 4. ~~`repository` in `cli/package.json`~~ Done 2026-10-21. `DEFAULT_SERVER` already points to the deployed URL. Ready for `npm publish` once the user says so.
 5. Hackathon rules (from summaries; the official Devpost rules page blocked fetching, so the user should confirm there): public repo with an open-source license (MIT stays), an NVIDIA open model on Nebius (met), a working demo URL, a YouTube video, a description, and tool feedback. Deadline Oct 30, 2026, 10:00 PT. The GitHub repo is public (2026-10-21). Judges need `DEMO_NEBIUS_KEY` set to try it without a key.
 6. ~~Redeploy~~ Done 2026-10-21 (version 3d7070d8): lenient grading and the public page footer are live.
-7. NVIDIA key support (provider choice) is committed but not deployed. Needs a live check with an `nvapi-` key, then a redeploy (ask first). The deployed worker still reads `x-nebius-key`, so the new CLI's key reaches it only after the redeploy.
+7. ~~Deploy NVIDIA support~~ Done 2026-10-22 (version 6c042029): pushed and deployed with the provider choice. The worker still accepts the old `x-nebius-key` header as a Nebius key. **Still needs a live check with an `nvapi-` key** (and the interactive `ownit key set` menu run once in a real terminal). `getownit` is not on npm yet.
 8. Stretch (only after the above): late-pass and backfill labels, trivial-push exemption, per-author badges, global `core.hooksPath` install.
 
 ## Settled decisions

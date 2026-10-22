@@ -173,6 +173,14 @@ describe('pre-push hook (real git push)', () => {
     expect(result.output).not.toContain('Debrief now?');
   }, 60_000);
 
+  it('asks again for commits that were only skipped, since they are still unverified', async () => {
+    const repo = setup();
+    const s = await server({ 'POST /api/pushes/lookup': () => ({ push_id: 1, status: 'skipped' }) });
+    const result = await push(repo, { OWNIT_SERVER: s.url, OWNIT_TTY_DEVICE: ttyFile(repo, ['n']) });
+    expect(result.output).toContain('Debrief now?');
+    expect(result.output).not.toContain('already skipped');
+  }, 60_000);
+
   it('runs an existing pre-push hook first, with the same refs', async () => {
     const repo = makeRepo();
     repo.commit('a.txt', 'a\n', 'first');

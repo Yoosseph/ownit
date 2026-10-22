@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { badgeColor, badgeMessage, badgeSvg } from '../src/badge';
-import { expirePending } from '../src/cron';
+import { badgeColor, badgeSvg, repoBadge } from '../src/badge';
 import { esc } from '../src/page';
 import { computeStats } from '../src/stats';
-import { call, FakeGitHub, sha, testEnv, type TestEnv } from './helpers/env';
+import { call, sha, testEnv, type TestEnv } from './helpers/env';
 
 const HOUR = 60 * 60 * 1000;
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString();
@@ -30,7 +29,7 @@ function seedPush(env: TestEnv, opts: { status: string; author: string; n: numbe
   return push.id;
 }
 
-/** alice: 6 verified + 2 skipped; bob: 1 verified + 1 skipped; plus pushes that must not count. */
+/** alice: 6 of 9 commits verified; bob: 1 of 5; plus commits that must not count (not landed, or before tracking). */
 function seededRepo() {
   const env = testEnv();
   seedPush(env, { status: 'verified', author: 'alice', n: 4, questions: [['why', 'Why add <script>alert(1)</script> retries?', 1]] });
@@ -46,7 +45,7 @@ function seededRepo() {
 }
 
 describe('stats math', () => {
-  it('is commit-weighted over verified and skipped pushes', () => {
+  it('counts every commit that is not verified as unverified', () => {
     expect(
       computeStats([
         { status: 'verified', commits: 7 },
@@ -54,11 +53,12 @@ describe('stats math', () => {
         { status: 'pending', commits: 3 },
         { status: 'provider_error', commits: 1 },
       ]),
-    ).toEqual({ counted: 10, verified: 7, skipped: 3, waiting: 4, verifiedPct: 70, skippedPct: 30 });
+    ).toEqual({ total: 14, verified: 7, unverified: 7, verifiedPct: 50, unverifiedPct: 50 });
   });
 
-  it('has no percentage before anything counts', () => {
-    expect(computeStats([{ status: 'pending', commits: 2 }])).toMatchObject({ counted: 0, verifiedPct: null, skippedPct: null });
+  it('has no percentage before there are commits', () => {
+    expect(computeStats([])).toMatchObject({ total: 0, verifiedPct: null, unverifiedPct: null });
+    expect(computeStats([{ status: 'pending', commits: 2 }])).toMatchObject({ total: 2, verifiedPct: 0, unverifiedPct: 100 });
   });
 
   it('rounds, and the two percentages always add up to 100', () => {
@@ -66,50 +66,30 @@ describe('stats math', () => {
       { status: 'verified', commits: 2 },
       { status: 'skipped', commits: 1 },
     ]);
-    expect([s.verifiedPct, s.skippedPct]).toEqual([67, 33]);
-  });
-});
-
-describe('cron', () => {
-  it('flips pending pushes older than 24 hours to skipped and updates their check runs', async () => {
-    const env = testEnv();
-    const old = seedPush(env, { status: 'pending', author: 'a', n: 1, createdAgo: 25 * HOUR });
-    const fresh = seedPush(env, { status: 'pending', author: 'a', n: 1, createdAgo: 23 * HOUR });
-    const broken = seedPush(env, { status: 'provider_error', author: 'a', n: 1, createdAgo: 48 * HOUR });
-    env.DB.raw.prepare('UPDATE pushes SET check_run_id = 1 WHERE id = ?').run(old);
-    const github = new FakeGitHub();
-    github.checkRuns.push({ id: 1, repo: 'octo/shop', name: 'Ownit', status: 'in_progress', output: { title: 'Ownit: pending', summary: '' } });
-
-    expect(await expirePending(env, github)).toEqual([old]);
-    const statuses = env.DB.raw.prepare('SELECT id, status, resolved_at IS NOT NULL AS resolved FROM pushes ORDER BY id').all();
-    expect(statuses).toEqual([
-      { id: old, status: 'skipped', resolved: 1 },
-      { id: fresh, status: 'pending', resolved: 0 },
-      { id: broken, status: 'provider_error', resolved: 0 },
-    ]);
-    expect(github.checkRuns[0]).toMatchObject({ status: 'completed', conclusion: 'neutral', output: { title: 'Ownit: skipped' } });
-    expect(await expirePending(env, github)).toEqual([]);
+    expect([s.verifiedPct, s.unverifiedPct]).toEqual([67, 33]);
   });
 });
 
 describe('badge', () => {
-  it('shows the verified percentage of a seeded repo', async () => {
+  it('shows the verified and unverified shares of a seeded repo', async () => {
     const res = await call(seededRepo(), 'GET', '/badge/octo/shop.svg');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('image/svg+xml');
-    expect(res.text).toContain('ownit: 70% verified');
-    expect(res.text).toContain(badgeColor(70));
+    expect(res.text).toContain('<title>Ownit: Verified 50% | Unverified 50%</title>');
+    expect(res.text).toContain(badgeColor(50));
   });
 
   it('handles empty and unknown repos', async () => {
-    expect((await call(testEnv(), 'GET', '/badge/octo/shop.svg')).text).toContain('no pushes yet');
-    expect((await call(testEnv(), 'GET', '/badge/octo/nope.svg')).text).toContain('not tracked');
+    expect((await call(testEnv(), 'GET', '/badge/octo/shop.svg')).text).toContain('<title>Ownit: no pushes yet</title>');
+    expect((await call(testEnv(), 'GET', '/badge/octo/nope.svg')).text).toContain('<title>Ownit: not tracked</title>');
   });
 
-  it('colors by percentage and escapes text', () => {
+  it('colors by percentage, lays segments side by side, and escapes text', () => {
     expect([100, 90, 75, 60, 40, 20, 0, null].map(badgeColor)).toEqual(['#4c1', '#4c1', '#97ca00', '#a4a61d', '#dfb317', '#fe7d37', '#e05d44', '#9f9f9f']);
-    expect(badgeSvg('a<b', 'c&d', '#000')).not.toMatch(/a<b|c&d/);
-    expect(badgeMessage(null, true)).toBe('no pushes yet');
+    const svg = badgeSvg([{ text: 'a<b', color: '#000' }, { text: 'c&d', color: '#111' }, { text: 'e', color: '#222' }]);
+    expect(svg).not.toMatch(/a<b|c&d/);
+    expect(svg.match(/<rect x=/g)).toHaveLength(3);
+    expect(repoBadge({ total: 4, verified: 1, unverified: 3, verifiedPct: 25, unverifiedPct: 75 }).map((s) => s.text)).toEqual(['Ownit', 'Verified 25%', 'Unverified 75%']);
   });
 });
 
@@ -118,12 +98,12 @@ describe('public page', () => {
     const res = await call(seededRepo(), 'GET', '/octo/shop');
     expect(res.status).toBe(200);
     const text = res.text.replace(/\s+/g, ' ');
-    expect(text).toContain('<div class="big">70%</div><div class="label">of commits verified</div>');
-    expect(text).toContain('<div class="big">30%</div><div class="label">of commits skipped</div>');
-    expect(text).toContain('<div class="big">10</div><div class="label">commits counted</div>');
-    expect(text).toContain('<div class="big">4</div><div class="label">waiting for a debrief</div>');
-    expect(text).toContain('<tr><td>alice</td><td class="num">8</td><td class="num">75%</td><td class="num">25%</td>');
-    expect(text).toContain('<tr><td>bob</td><td class="num">2</td><td class="num">50%</td><td class="num">50%</td>');
+    expect(text).toContain('<div class="big">50%</div><div class="label">of commits verified</div>');
+    expect(text).toContain('<div class="big">50%</div><div class="label">of commits unverified</div>');
+    expect(text).toContain('<div class="big">14</div><div class="label">commits tracked</div>');
+    expect(text).toContain('<div class="big">7</div><div class="label">waiting for a debrief</div>');
+    expect(text).toContain('<tr><td>alice</td><td class="num">9</td><td class="num">67%</td><td class="num">33%</td>');
+    expect(text).toContain('<tr><td>bob</td><td class="num">5</td><td class="num">20%</td><td class="num">80%</td>');
     expect(text).not.toContain('carol');
     expect(text).toContain('Tracked by Ownit since Oct 1, 2026');
     expect(text).toContain('href="https://github.com/Yoosseph/ownit"');

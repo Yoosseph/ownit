@@ -107,6 +107,6 @@ describe('runDebrief', () => {
     });
     const { outcome, text } = await run(api, '');
     expect(outcome).toEqual({ status: 'provider_error', reason: 'Nebius rejected the API key.' });
-    expect(text).toContain("won't count until you retry");
+    expect(text).toContain('stay unverified until you retry');
   });
 });

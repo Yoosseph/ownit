@@ -9,8 +9,11 @@ import type { Kind } from './questionCount';
 
 export type PushStatus = 'verified' | 'skipped' | 'pending' | 'provider_error';
 
-/** Verified and skipped are final. Pending and provider_error pushes still wait for a debrief. */
+/** The developer answered the hook's prompt: debriefed (verified) or skipped. */
 export const isResolved = (status: PushStatus) => status === 'verified' || status === 'skipped';
+
+/** Only a verified push is final. Pending, skipped and provider_error pushes can still be debriefed. */
+export const isVerified = (status: PushStatus) => status === 'verified';
 
 export interface RepoRow {
   id: number;
@@ -137,30 +140,17 @@ export function setCheckRunId(db: D1Database, pushId: number, checkRunId: number
   return db.prepare('UPDATE pushes SET check_run_id = ? WHERE id = ?').bind(checkRunId, pushId).run();
 }
 
-/** The user's pushes still waiting for a debrief (plus unowned ones), newest first. */
+/** The user's pushes not verified yet (plus unowned ones), newest first. */
 export async function listOpenPushes(db: D1Database, repoId: number, userId: number | null): Promise<PushRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT * FROM pushes WHERE repo_id = ? AND status IN ('pending', 'provider_error')
+      `SELECT * FROM pushes WHERE repo_id = ? AND status IN ('pending', 'skipped', 'provider_error')
          AND (user_github_id IS NULL OR user_github_id = ?)
        ORDER BY created_at DESC LIMIT 20`,
     )
     .bind(repoId, userId)
     .all<PushRow>();
   return results;
-}
-
-/** Marks up to `limit` pending pushes created before `cutoff` as skipped and returns their ids. */
-export async function skipStalePushes(db: D1Database, cutoff: string, resolvedIso: string, limit: number): Promise<number[]> {
-  const { results } = await db
-    .prepare(
-      `UPDATE pushes SET status = 'skipped', resolved_at = ?
-       WHERE id IN (SELECT id FROM pushes WHERE status = 'pending' AND created_at < ? ORDER BY created_at LIMIT ?)
-       RETURNING id`,
-    )
-    .bind(resolvedIso, cutoff, limit)
-    .all<{ id: number }>();
-  return results.map((r) => r.id);
 }
 
 /** A push as the public page lists it: only pushes with at least one commit GitHub confirmed. */

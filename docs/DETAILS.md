@@ -4,10 +4,10 @@ The [README](../README.md) covers setup and use. This page has everything else.
 
 ## How a push is recorded
 
-| Status | Meaning | Counts on the badge |
+| Status | Meaning | On the badge |
 | --- | --- | --- |
 | **verified** | Every question passed. All commits in the push are verified. | Yes |
-| **skipped** | You pressed `s`, or a pending push went 24 hours without a debrief. | Yes |
+| **skipped** | You pressed `s`. You can still debrief it later with `ownit interview`. | Unverified |
 | **pending** | No debrief yet. This covers no terminal (GUI clients, coding agents, CI), `--no-verify`, edits on github.com, the hook not installed, or `n` at the prompt. Run `ownit interview`. | Not until it resolves |
 | **provider_error** | Nebius or NVIDIA rejected the key, ran out of credit, or was down. | No, until you retry with `ownit interview` |
 
@@ -21,7 +21,7 @@ How a push becomes a debrief:
 4. When GitHub's push webhook arrives, the worker matches the landed commits to the debrief by
    SHA and sets the check run: **Ownit: verified**, **skipped**, or **pending**. Commits that
    landed without a debrief become a pending push.
-5. An hourly cron turns pending pushes older than 24 hours into skips.
+5. Nothing expires. Pending and skipped pushes wait in `ownit interview` until you debrief them.
 
 The number of questions grows with the size of the push, counted as changed lines in non-ignored
 files: under 50 → 1 question, 50–300 → 2, over 300 → 3. They come in this order:
@@ -112,9 +112,10 @@ is retried once, and a second failure records a provider error.
 [![Ownit](https://<server>/badge/<owner>/<repo>.svg)](https://<server>/<owner>/<repo>)
 ```
 
-It reads, for example, `ownit | 90% verified`, colored by percentage. The percentages are
-commit-weighted: verified commits over commits whose push is verified or skipped. Only commits
-GitHub confirmed after the repo's "tracked since" date count. History before Ownit doesn't count.
+It reads, for example, `Ownit | Verified 55% | Unverified 45%`, with the verified part colored by
+percentage. The percentages are commit-weighted: verified commits over all tracked commits. A commit
+is unverified until its push passes a debrief, whenever that happens; skipping or forgetting never
+locks it out. Only commits GitHub confirmed after the repo's "tracked since" date count. History before Ownit doesn't count.
 Copy the snippet from your repo's page.
 
 ### Is a badge real?
@@ -140,7 +141,7 @@ To push once without the prompt, use `OWNIT_SKIP=1 git push`. The push then show
 
 ## Self-hosting
 
-The server is one Cloudflare Worker with a D1 database and an hourly Cron Trigger.
+The server is one Cloudflare Worker with a D1 database.
 
 ```sh
 git clone https://github.com/<you>/ownit && cd ownit && npm install

@@ -147,4 +147,19 @@ describe('POST /api/interview/skip', () => {
     expect(res.json).toEqual({ status: 'skipped', push_id: start.push_id });
     expect((env.DB.raw.prepare('SELECT status FROM pushes').get() as any).status).toBe('skipped');
   });
+
+  it('leaves a skipped push open, so a later debrief still verifies it', async () => {
+    const { env, start } = await started();
+    await call(env, 'POST', '/api/interview/skip', { session: start.session });
+
+    const open = await call(env, 'GET', '/api/pushes/open?repo=octo/shop');
+    expect(open.json.pushes.map((p: any) => [p.id, p.status])).toEqual([[start.push_id, 'skipped']]);
+
+    const again = await call(env, 'POST', '/api/interview/start', startBody({ push_id: start.push_id }));
+    expect(again.status).toBe(200);
+    const res = await call(env, 'POST', '/api/interview/answer', answer(again.json.session, 0, 'It fixes totals that ignored item quantity.'));
+    expect(res.json).toMatchObject({ pass: true, done: true, status: 'verified' });
+    expect((env.DB.raw.prepare('SELECT status FROM pushes').get() as any).status).toBe('verified');
+    expect((await call(env, 'GET', '/api/pushes/open?repo=octo/shop')).json.pushes).toEqual([]);
+  });
 });

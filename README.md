@@ -66,8 +66,10 @@ Push as usual. Ownit asks before each push:
 
 Your push always goes through, whatever you answer.
 
-Each push is marked **verified** (all questions passed), **skipped**, or **pending** (not done yet;
-it becomes skipped after 24 hours). GitHub shows the result as a check on the commit.
+Each push is marked **verified** (all questions passed), **skipped**, or **pending** (not done yet).
+Only verified commits count as verified; everything else is unverified, with no deadline. Run
+`ownit interview` whenever you like, even for a push you skipped, and its commits become verified.
+GitHub shows the result as a check on the commit.
 
 ### Commands
 
@@ -88,14 +90,14 @@ it becomes skipped after 24 hours). GitHub shows the result as a check on the co
 ### Pushes from AI agents
 
 When a coding agent (Claude Code, Cursor, Codex, CI…) pushes, nobody is at the terminal, so Ownit
-records the push as **pending** and lets it through. Run `ownit interview` yourself within 24 hours
-to answer for the change, or it counts as skipped.
+records the push as **pending** and lets it through. Run `ownit interview` yourself to answer for the
+change; until then its commits count as unverified.
 
 ### Where to see your record
 
 - **GitHub:** each commit gets an **Ownit** check: verified, skipped, or pending.
 - **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats.
-- **Badge:** like `ownit | 90% verified`, linking to the repo page. `ownit init` prints the code to paste
+- **Badge:** like `Ownit | Verified 55% | Unverified 45%`, linking to the repo page. `ownit init` prints the code to paste
   into your README; `ownit badge` prints it again, and the repo page has a Copy button.
 
 ## More

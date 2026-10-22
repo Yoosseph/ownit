@@ -49,13 +49,14 @@ describe('POST /api/pushes/lookup', () => {
 });
 
 describe('GET /api/pushes/open', () => {
-  it('lists pending and provider_error pushes with their commits', async () => {
+  it('lists every push not verified yet, skipped ones included, with their commits', async () => {
     const env = testEnv();
     await call(env, 'POST', '/api/pushes', record('pending'));
     await call(env, 'POST', '/api/pushes', record('skipped', { head_sha: sha(5), commits: [{ sha: sha(5) }] }));
     const res = await call(env, 'GET', '/api/pushes/open?repo=octo/shop');
-    expect(res.json.pushes).toEqual([
+    expect([...res.json.pushes].sort((a: any, b: any) => a.id - b.id)).toEqual([
       expect.objectContaining({ id: 1, status: 'pending', base_sha: sha(1), head_sha: sha(3), commits: [sha(2), sha(3)] }),
+      expect.objectContaining({ id: 2, status: 'skipped', head_sha: sha(5), commits: [sha(5)] }),
     ]);
   });
 });

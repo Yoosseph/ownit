@@ -1,15 +1,18 @@
 import type { PushStatus } from './db';
 
 export interface Stats {
-  /** Commits that count: their push is verified or skipped (expired pending pushes are skipped). */
-  counted: number;
+  /** Commits GitHub confirmed since tracking began. */
+  total: number;
+  /** Commits whose push passed a debrief. */
   verified: number;
-  skipped: number;
-  /** Commits waiting on a debrief (pending or provider_error). They do not count yet. */
-  waiting: number;
-  /** Whole percent, or null when nothing counts yet. verifiedPct + skippedPct = 100. */
+  /**
+   * Every other commit: not debriefed yet, skipped, or stuck on a provider
+   * error. There is no deadline; debriefing the push later verifies them.
+   */
+  unverified: number;
+  /** Whole percent, or null when there are no commits yet. verifiedPct + unverifiedPct = 100. */
   verifiedPct: number | null;
-  skippedPct: number | null;
+  unverifiedPct: number | null;
 }
 
 export interface StatusCount {
@@ -17,19 +20,22 @@ export interface StatusCount {
   commits: number;
 }
 
-/** Commit-weighted stats over verified and skipped pushes. */
+/** Commit-weighted share of verified commits. */
 export function computeStats(rows: StatusCount[]): Stats {
+  let total = 0;
   let verified = 0;
-  let skipped = 0;
-  let waiting = 0;
   for (const row of rows) {
+    total += row.commits;
     if (row.status === 'verified') verified += row.commits;
-    else if (row.status === 'skipped') skipped += row.commits;
-    else waiting += row.commits;
   }
-  const counted = verified + skipped;
-  const verifiedPct = counted ? Math.round((verified / counted) * 100) : null;
-  return { counted, verified, skipped, waiting, verifiedPct, skippedPct: verifiedPct === null ? null : 100 - verifiedPct };
+  const verifiedPct = total ? Math.round((verified / total) * 100) : null;
+  return {
+    total,
+    verified,
+    unverified: total - verified,
+    verifiedPct,
+    unverifiedPct: verifiedPct === null ? null : 100 - verifiedPct,
+  };
 }
 
 export interface RepoStats {
@@ -58,6 +64,6 @@ export async function repoStats(db: D1Database, repoId: number): Promise<RepoSta
   }
   const authors = [...byAuthor.entries()]
     .map(([author, rows]) => ({ author, stats: computeStats(rows) }))
-    .sort((a, b) => b.stats.counted - a.stats.counted || a.author.localeCompare(b.author));
+    .sort((a, b) => b.stats.total - a.stats.total || a.author.localeCompare(b.author));
   return { overall: computeStats(results), authors };
 }

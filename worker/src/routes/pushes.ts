@@ -51,7 +51,7 @@ pushes.post('/lookup', async (c) => {
   return c.json(push ? { push_id: push.id, status: push.status } : { push_id: null, status: null });
 });
 
-/** Pushes still waiting for a debrief (pending or provider_error), newest first. */
+/** Pushes not verified yet (pending, skipped, or provider_error), newest first. */
 pushes.get('/open', async (c) => {
   const parsed = repoName.safeParse(c.req.query('repo'));
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Pass ?repo=owner/name.' }, 400);

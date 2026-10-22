@@ -163,7 +163,7 @@ function failure(out: Writable, error: unknown): DebriefOutcome {
   const c = paint(out);
   if (error instanceof ApiError) {
     if (error.isProviderError) {
-      out.write(`${c.yellow('Ownit:')} ${error.message} This push won't count until you retry. ${RESUME_HINT}\n`);
+      out.write(`${c.yellow('Ownit:')} ${error.message} These commits stay unverified until you retry. ${RESUME_HINT}\n`);
       return { status: 'provider_error', reason: error.message };
     }
     if (error.code === 'already_resolved') {

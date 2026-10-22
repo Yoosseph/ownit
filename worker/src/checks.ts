@@ -23,7 +23,7 @@ export function checkRunBody(push: PushRow, repo: RepoRow, questions: string[], 
         status: 'completed',
         conclusion: 'neutral',
         completed_at: new Date().toISOString(),
-        output: { title: 'Ownit: skipped', summary: 'This push was not debriefed.' },
+        output: { title: 'Ownit: skipped', summary: 'Skipped for now. These commits count as unverified until you run `ownit interview` and pass the debrief.' },
       };
     case 'provider_error':
       return {
@@ -31,7 +31,7 @@ export function checkRunBody(push: PushRow, repo: RepoRow, questions: string[], 
         status: 'in_progress',
         output: {
           title: 'Ownit: pending',
-          summary: 'The debrief hit a model provider error (key, credit, or availability). Run `ownit interview` to retry. It does not count until then.',
+          summary: 'The debrief hit a model provider error (key, credit, or availability). Run `ownit interview` to retry. These commits count as unverified until then.',
         },
       };
     default:
@@ -40,7 +40,7 @@ export function checkRunBody(push: PushRow, repo: RepoRow, questions: string[], 
         status: 'in_progress',
         output: {
           title: 'Ownit: pending',
-          summary: 'Waiting for a debrief. Run `ownit interview`. After 24 hours this push counts as skipped.',
+          summary: 'Waiting for a debrief. Run `ownit interview` any time; these commits count as unverified until then.',
         },
       };
   }

@@ -33,8 +33,10 @@ database_name = "ownit"
 database_id = "bac3beeb-5190-40a3-acec-e8411ea6dce8"
 migrations_dir = "migrations"
 
+# No scheduled jobs. (An empty list removes the hourly cron the worker used to have;
+# deleting this section would leave it registered.)
 [triggers]
-crons = ["0 * * * *"]
+crons = []
 
 [observability]
 enabled = true

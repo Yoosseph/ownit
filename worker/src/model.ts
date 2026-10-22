@@ -1,6 +1,13 @@
 import type { Env } from './env';
-import type { ChatPrompt } from './prompts';
 import { fixtureModel } from './fixtureModel';
+import type { ChatPrompt } from './prompts';
+
+export interface ChatModel {
+  /** Returns the raw text content of the reply. */
+  complete(prompt: ChatPrompt, maxTokens: number): Promise<string>;
+}
+
+// --- Errors ------------------------------------------------------------------
 
 export type ProviderErrorKind =
   | 'no_key'
@@ -12,23 +19,7 @@ export type ProviderErrorKind =
   | 'bad_output'
   | 'demo_cap';
 
-/**
- * Model providers a user's key can be for, chosen with `ownit key set`. Each serves the
- * server-chosen model through an OpenAI-compatible API. Add a provider here and in the CLI.
- */
-export const PROVIDERS = {
-  nebius: { name: 'Nebius', endpoint: (env: Env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL }) },
-  nvidia: { name: 'NVIDIA', endpoint: (env: Env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL }) },
-} satisfies Record<string, { name: string; endpoint: (env: Env) => { baseUrl: string; model: string } }>;
-
-export type Provider = keyof typeof PROVIDERS;
-
-export function isProvider(value: string): value is Provider {
-  return Object.hasOwn(PROVIDERS, value);
-}
-
-function reason(kind: ProviderErrorKind, provider: Provider): string {
-  const name = PROVIDERS[provider].name;
+function reason(kind: ProviderErrorKind, name: string): string {
   switch (kind) {
     case 'no_key':
       return 'No model API key. Run "ownit key set" with a Nebius or NVIDIA key.';
@@ -53,23 +44,56 @@ function reason(kind: ProviderErrorKind, provider: Provider): string {
 export class ProviderError extends Error {
   constructor(
     public kind: ProviderErrorKind,
-    provider: Provider = 'nebius',
+    /** The provider's display name, used in the message. */
+    providerName = 'Nebius',
   ) {
-    super(reason(kind, provider));
+    super(reason(kind, providerName));
     this.name = 'ProviderError';
   }
 }
 
-export interface ChatModel {
-  /** Returns the raw text content of the reply. */
-  complete(prompt: ChatPrompt, maxTokens: number): Promise<string>;
+// --- Providers ---------------------------------------------------------------
+
+interface ProviderSpec {
+  /** Display name, used in error messages. */
+  name: string;
+  /** A client for this provider, using the endpoint and model the server chose. */
+  create(env: Env, apiKey: string): ChatModel;
+}
+
+/** A provider that serves the model through an OpenAI-compatible chat completions API. */
+function openAiCompatible(name: string, endpoint: (env: Env) => { baseUrl: string; model: string }): ProviderSpec {
+  return {
+    name,
+    create(env, apiKey) {
+      const { baseUrl, model } = endpoint(env);
+      return openAiCompatibleModel(name, baseUrl, model, apiKey);
+    },
+  };
+}
+
+/**
+ * Model providers a user's key can be for, chosen with `ownit key set`. To add
+ * one: an entry here, one in the CLI's providers.ts, and its endpoint and model
+ * in wrangler.toml. A provider with a different API needs its own client.
+ */
+export const PROVIDERS = {
+  nebius: openAiCompatible('Nebius', (env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL })),
+  nvidia: openAiCompatible('NVIDIA', (env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL })),
+} satisfies Record<string, ProviderSpec>;
+
+export type Provider = keyof typeof PROVIDERS;
+
+export function isProvider(value: string): value is Provider {
+  return Object.hasOwn(PROVIDERS, value);
 }
 
 export function createModel(env: Env, apiKey: string, provider: Provider = 'nebius'): ChatModel {
   if (env.MODEL_BACKEND === 'fixture') return fixtureModel;
-  const { baseUrl, model } = PROVIDERS[provider].endpoint(env);
-  return providerModel(provider, baseUrl, model, apiKey);
+  return PROVIDERS[provider].create(env, apiKey);
 }
+
+// --- OpenAI-compatible client ------------------------------------------------
 
 function errorKind(status: number, body: string): ProviderErrorKind {
   if (status === 401 || status === 403) return 'invalid_key';
@@ -78,7 +102,7 @@ function errorKind(status: number, body: string): ProviderErrorKind {
   return 'unavailable';
 }
 
-export function providerModel(provider: Provider, baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
+export function openAiCompatibleModel(name: string, baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
   const url = new URL('chat/completions', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
   return {
     async complete(prompt, maxTokens) {
@@ -100,11 +124,11 @@ export function providerModel(provider: Provider, baseUrl: string, model: string
           signal: AbortSignal.timeout(90_000),
         });
       } catch {
-        throw new ProviderError('unavailable', provider);
+        throw new ProviderError('unavailable', name);
       }
       if (!response.ok) {
         const body = await response.text().catch(() => '');
-        throw new ProviderError(errorKind(response.status, body), provider);
+        throw new ProviderError(errorKind(response.status, body), name);
       }
       const data = (await response.json().catch(() => null)) as
         | { choices?: { message?: { content?: string | null } }[] }

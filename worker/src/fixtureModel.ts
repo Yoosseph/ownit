@@ -1,7 +1,9 @@
 import type { ChatModel } from './model';
+import { KINDS } from './questionCount';
 
 // Offline stand-in for Nemotron, used by tests and local development
-// (MODEL_BACKEND = "fixture"). It never sees a network.
+// (MODEL_BACKEND = "fixture"). It never sees a network, and it answers by the
+// prompt's task, so editing prompts/*.txt cannot change what it does.
 
 const QUESTIONS = {
   why: {
@@ -25,34 +27,41 @@ function between(text: string, name: string): string {
   return match?.[1] ?? '';
 }
 
+/** Passes answers of four or more words that are not obvious non-answers. */
+function grade(answer: string): string {
+  const words = answer.split(/\s+/).filter(Boolean).length;
+  const pass = words >= 4 && !NON_ANSWER.test(answer);
+  return JSON.stringify({
+    pass,
+    feedback: pass
+      ? 'Nice, you covered the main idea.'
+      : 'Good start, but the answer does not explain the main idea yet. Try describing what the change is for.',
+  });
+}
+
+function followUp(missed: string): string {
+  const kind = KINDS.find((k) => QUESTIONS[k].question === missed) ?? 'why';
+  return JSON.stringify({
+    questions: [
+      {
+        kind,
+        question: `Looking at it another way: who benefits from this change, and what would they notice? (${kind})`,
+        reference: QUESTIONS[kind].reference,
+      },
+    ],
+  });
+}
+
 export const fixtureModel: ChatModel = {
   async complete(prompt) {
-    if (prompt.system.startsWith('You grade one answer')) {
-      const answer = between(prompt.user, 'answer').trim();
-      const words = answer.split(/\s+/).filter(Boolean).length;
-      const pass = words >= 4 && !NON_ANSWER.test(answer);
-      return JSON.stringify({
-        pass,
-        feedback: pass
-          ? 'Nice, you covered the main idea.'
-          : 'Good start, but the answer does not explain the main idea yet. Try describing what the change is for.',
-      });
+    switch (prompt.task) {
+      case 'grade':
+        return grade(between(prompt.user, 'answer').trim());
+      case 'follow_up':
+        return followUp(between(prompt.user, 'missed_question'));
+      case 'questions':
+        // All three kinds; the caller keeps as many as it asked for.
+        return JSON.stringify({ questions: KINDS.map((kind) => ({ kind, ...QUESTIONS[kind] })) });
     }
-    if (prompt.system.includes('The developer missed a question')) {
-      const missed = between(prompt.user, 'missed_question');
-      const kind = (Object.keys(QUESTIONS) as (keyof typeof QUESTIONS)[]).find((k) => QUESTIONS[k].question === missed) ?? 'why';
-      return JSON.stringify({
-        questions: [
-          {
-            kind,
-            question: `Looking at it another way: who benefits from this change, and what would they notice? (${kind})`,
-            reference: QUESTIONS[kind].reference,
-          },
-        ],
-      });
-    }
-    const n = Number(prompt.system.match(/Write exactly (\d+) questions/)?.[1] ?? 1);
-    const kinds = (['why', 'how', 'next'] as const).slice(0, n);
-    return JSON.stringify({ questions: kinds.map((kind) => ({ kind, ...QUESTIONS[kind] })) });
   },
 };

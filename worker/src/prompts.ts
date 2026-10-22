@@ -35,7 +35,11 @@ export interface PushContext {
   truncated: boolean;
 }
 
+/** What a model call is for. The offline fixture model answers by task, not by prompt wording. */
+export type PromptTask = 'questions' | 'grade' | 'follow_up';
+
 export interface ChatPrompt {
+  task: PromptTask;
   system: string;
   user: string;
   /** Defaults to 0.3. The grader uses 0 so the same answer gets the same grade. */
@@ -51,11 +55,12 @@ function pushSections(push: PushContext): string {
 }
 
 export function questionWriterPrompt(n: number, push: PushContext): ChatPrompt {
-  return { system: QUESTION_WRITER_SYSTEM.replaceAll('{n}', String(n)), user: pushSections(push) };
+  return { task: 'questions', system: QUESTION_WRITER_SYSTEM.replaceAll('{n}', String(n)), user: pushSections(push) };
 }
 
 export function graderPrompt(question: string, reference: string, answer: string): ChatPrompt {
   return {
+    task: 'grade',
     system: GRADER_SYSTEM,
     user: `${tag('question', question)}\n${tag('reference', reference)}\n${tag('answer', answer)}`,
     temperature: 0,
@@ -68,6 +73,7 @@ export function followUpPrompt(
   feedback: string,
 ): ChatPrompt {
   return {
+    task: 'follow_up',
     system: FOLLOWUP_WRITER_SYSTEM,
     user: [
       pushSections(push),

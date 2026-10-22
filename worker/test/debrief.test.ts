@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gradeAnswer, parseJsonReply, validateGrade, validateQuestions, writeFollowUp, writeQuestions } from '../src/debrief';
-import { createModel, providerModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
+import { createModel, openAiCompatibleModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
 import { countChangedLines, questionCount } from '../src/questionCount';
 import { SAMPLE_DIFF, testEnv } from './helpers/env';
 
@@ -85,13 +85,13 @@ describe('model calls', () => {
 });
 
 describe('provider client', () => {
-  const prompt = { system: 's', user: 'u' };
+  const prompt = { task: 'questions' as const, system: 's', user: 'u' };
 
   it('sends the server-chosen model with JSON response format and strips thinking', async () => {
     const fetcher = vi.fn(async () =>
       Response.json({ choices: [{ message: { content: '<think>hmm</think>\n{"pass":true,"feedback":"ok"}' } }] }),
     );
-    const model = providerModel('nebius', 'https://api.example/v1/', 'nvidia/x', 'key-123', fetcher as any);
+    const model = openAiCompatibleModel('Nebius', 'https://api.example/v1/', 'nvidia/x', 'key-123', fetcher as any);
     expect(await model.complete(prompt, 100)).toBe('{"pass":true,"feedback":"ok"}');
     const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://api.example/v1/chat/completions');
@@ -104,7 +104,7 @@ describe('provider client', () => {
 
   it('grades at temperature 0', async () => {
     const fetcher = vi.fn(async () => Response.json({ choices: [{ message: { content: '{"pass":true,"feedback":"ok"}' } }] }));
-    const model = providerModel('nebius', 'https://api.example/v1/', 'nvidia/x', 'key-123', fetcher as any);
+    const model = openAiCompatibleModel('Nebius', 'https://api.example/v1/', 'nvidia/x', 'key-123', fetcher as any);
     await gradeAnswer(model, q('why') as any, 'Totals were wrong.');
     const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string).temperature).toBe(0);
@@ -118,19 +118,19 @@ describe('provider client', () => {
     [429, 'slow down', 'rate_limited'],
     [503, '', 'unavailable'],
   ])('maps HTTP %i to %s', async (status, body, kind) => {
-    const model = providerModel('nebius', 'https://api.example/v1', 'm', 'k', (async () => new Response(body, { status })) as any);
+    const model = openAiCompatibleModel('Nebius', 'https://api.example/v1', 'm', 'k', (async () => new Response(body, { status })) as any);
     await expect(model.complete(prompt, 10)).rejects.toMatchObject({ kind });
   });
 
   it('maps network failures to unavailable', async () => {
-    const model = providerModel('nebius', 'https://api.example/v1', 'm', 'k', (async () => {
+    const model = openAiCompatibleModel('Nebius', 'https://api.example/v1', 'm', 'k', (async () => {
       throw new TypeError('fetch failed');
     }) as any);
     await expect(model.complete(prompt, 10)).rejects.toBeInstanceOf(ProviderError);
   });
 
   it('names the provider in error messages', async () => {
-    const model = providerModel('nvidia', 'https://api.example/v1', 'm', 'k', (async () => new Response('', { status: 401 })) as any);
+    const model = openAiCompatibleModel('NVIDIA', 'https://api.example/v1', 'm', 'k', (async () => new Response('', { status: 401 })) as any);
     await expect(model.complete(prompt, 10)).rejects.toMatchObject({ kind: 'invalid_key', message: expect.stringContaining('NVIDIA') });
   });
 
@@ -140,7 +140,7 @@ describe('provider client', () => {
 });
 
 describe('provider choice', () => {
-  const prompt = { system: 's', user: 'u' };
+  const prompt = { task: 'questions' as const, system: 's', user: 'u' };
   const env = testEnv({ MODEL_BACKEND: 'nebius', NEBIUS_MODEL: 'nvidia/on-nebius', NVIDIA_MODEL: 'nvidia/on-nvidia' });
   afterEach(() => vi.unstubAllGlobals());
 

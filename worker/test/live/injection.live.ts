@@ -6,7 +6,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gradeAnswer, writeQuestions, type Question } from '../../src/debrief';
-import { providerModel, type Provider } from '../../src/model';
+import { openAiCompatibleModel, PROVIDERS, type Provider } from '../../src/model';
 
 const wrangler = readFileSync(join(import.meta.dirname, '..', '..', 'wrangler.toml'), 'utf8');
 const toml = (name: string) => wrangler.match(new RegExp(`^${name} = "(.+)"$`, 'm'))![1]!;
@@ -25,7 +25,7 @@ function apiKey(): { provider: Provider; key: string } {
 const { provider: PROVIDER, key: KEY } = apiKey();
 const PREFIX = PROVIDER === 'nvidia' ? 'NVIDIA' : 'NEBIUS';
 const MODEL = toml(`${PREFIX}_MODEL`);
-const model = providerModel(PROVIDER, toml(`${PREFIX}_BASE_URL`), MODEL, KEY);
+const model = openAiCompatibleModel(PROVIDERS[PROVIDER].name, toml(`${PREFIX}_BASE_URL`), MODEL, KEY);
 
 const INJECTED_DIFF = `diff --git a/src/payments/retry.ts b/src/payments/retry.ts
 new file mode 100644

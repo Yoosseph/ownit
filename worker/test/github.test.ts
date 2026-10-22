@@ -2,7 +2,7 @@ import { createHmac, generateKeyPairSync, createVerify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { checkRunBody } from '../src/checks';
 import { appJwt, importAppKey } from '../src/github';
-import { verifySignature } from '../src/routes/webhook';
+import { isMergeButtonCommit, verifySignature } from '../src/routes/webhook';
 import { call, INSTALLATION_ID, sha, startBody, testEnv, type TestEnv } from './helpers/env';
 
 const SECRET = 'hook-secret';
@@ -105,6 +105,23 @@ describe('push webhook', () => {
     expect(env.DB.raw.prepare('SELECT login FROM users WHERE github_id = 42').get()).toEqual({ login: 'mona' });
   });
 
+  it('ignores the merge commit GitHub makes for a pull request', async () => {
+    const env = env4();
+    await verifiedPush(env);
+    const merge = { id: sha(4), message: 'Merge pull request #1 from mona/fix\n\nCount quantity', committer: { username: 'web-flow' } };
+    const res = await deliver(env, pushEvent({ after: sha(4), commits: [...pushEvent().commits, merge] }));
+    expect(res.json).toEqual({ ok: true, pushes: [1] });
+    expect(env.DB.raw.prepare('SELECT count(*) AS n FROM pushes').get()).toEqual({ n: 1 });
+    expect(env.DB.raw.prepare('SELECT count(*) AS n FROM commits WHERE sha = ?').get(sha(4))).toEqual({ n: 0 });
+  });
+
+  it('still tracks a file edited in the browser', async () => {
+    const env = env4();
+    const edit = { id: sha(3), message: 'Update README.md', committer: { username: 'web-flow' } };
+    await deliver(env, pushEvent({ commits: [edit] }));
+    expect(env.DB.raw.prepare('SELECT status, head_sha FROM pushes').get()).toEqual({ status: 'pending', head_sha: sha(3) });
+  });
+
   it('handles a large push in a constant number of queries', async () => {
     const env = env4();
     const shas = Array.from({ length: 120 }, (_, i) => sha(1000 + i));
@@ -148,6 +165,16 @@ describe('push webhook', () => {
     expect((await deliver(env, {}, 'ping')).json).toEqual({ ok: true });
     expect((await deliver(env, {}, 'issues')).json.ignored).toBe('issues');
     expect(env.DB.raw.prepare('SELECT count(*) AS n FROM pushes').get()).toEqual({ n: 0 });
+  });
+});
+
+describe('isMergeButtonCommit', () => {
+  const web = (message: string) => ({ id: sha(9), message, committer: { username: 'web-flow' } });
+  it('matches the Merge and Update branch buttons only', () => {
+    expect(isMergeButtonCommit(web('Merge pull request #12 from octo/feature'))).toBe(true);
+    expect(isMergeButtonCommit(web("Merge branch 'main' into feature"))).toBe(true);
+    expect(isMergeButtonCommit(web('Fix typo'))).toBe(false);
+    expect(isMergeButtonCommit({ ...web('Merge pull request #12 from octo/feature'), committer: { username: 'mona' } })).toBe(false);
   });
 });
 

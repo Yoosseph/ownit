@@ -20,7 +20,8 @@ How a push becomes a debrief:
 3. The worker makes the model calls and records the push and its questions.
 4. When GitHub's push webhook arrives, the worker matches the landed commits to the debrief by
    SHA and sets the check run: **Ownit: verified**, **skipped**, or **pending**. Commits that
-   landed without a debrief become a pending push.
+   landed without a debrief become a pending push. The merge commit GitHub's **Merge pull request**
+   or **Update branch** button makes is ignored, because it adds no code of its own.
 5. Nothing expires. Pending and skipped pushes wait in `ownit interview` until you debrief them.
 
 The number of questions grows with the size of the push, counted as changed lines in non-ignored

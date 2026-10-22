@@ -35,7 +35,8 @@ flowchart LR
 4. **You answer in the terminal.** The worker has the model grade each answer. If it misses, you get
    feedback and a follow-up question. When every question passes, the push is **verified**.
 5. **GitHub sends a push webhook.** The worker matches the landed commits by SHA and sets the check
-   run. Commits that arrived with no debrief become a **pending** push.
+   run. Commits that arrived with no debrief become a **pending** push. Merge commits made by
+   GitHub's Merge or Update branch button (committer `web-flow`) are left out.
 6. **Nothing expires.** A pending or skipped push stays unverified until you debrief it with
    `ownit interview`, whenever that is.
 

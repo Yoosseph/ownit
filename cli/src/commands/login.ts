@@ -36,35 +36,10 @@ async function githubOAuth<T>(path: string, form: Record<string, string>): Promi
 }
 
 /**
- * `ownit login`: the GitHub device flow runs here, from the user's own IP
- * (GitHub rate-limits its login endpoints per IP, which shared server IPs
- * hit). The server then verifies the identity, drops the GitHub token, and
- * issues an Ownit session token.
+ * Polls GitHub until the user authorizes the device code. Returns the GitHub
+ * token, or the reason the login ended without one.
  */
-export async function loginCommand(argv: string[]): Promise<number> {
-  const { values } = parseArgs({ args: argv, options: { server: { type: 'string' }, 'with-token': { type: 'boolean' } } });
-  const out = process.stderr;
-  const c = paint(out);
-  if (values.server) updateConfig({ server: values.server.replace(/\/+$/, '') });
-
-  if (values['with-token']) {
-    // For self-hosted or local servers: read a session token from stdin.
-    const token = (await readSecret('Ownit session token: ')).trim();
-    if (!/^ownit_[\w-]{20,}$/.test(token)) {
-      out.write('Ownit: that does not look like an Ownit session token.\n');
-      return 1;
-    }
-    updateConfig({ token, login: undefined });
-    out.write(`${c.green('✓')} Saved the session token.\n`);
-    return 0;
-  }
-
-  const api = createApi({ ...readConfig(), token: undefined });
-  const { github_client_id: clientId } = await api.request<{ github_client_id: string }>('GET', '/auth/config');
-  const start = await githubOAuth<DeviceStart>('/login/device/code', { client_id: clientId });
-  out.write(`\nOpen ${c.bold(start.verification_uri)} and enter the code ${c.bold(c.cyan(start.user_code))}\n`);
-  out.write(c.dim('Waiting for you to authorize Ownit on GitHub…\n'));
-
+async function pollForAccessToken(clientId: string, start: DeviceStart): Promise<{ token: string } | { failure: string }> {
   let interval = Math.max(start.interval, 0) * 1000;
   const deadline = Date.now() + start.expires_in * 1000;
   while (Date.now() < deadline) {
@@ -74,23 +49,61 @@ export async function loginCommand(argv: string[]): Promise<number> {
       device_code: start.device_code,
       grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
     });
-    if (reply.access_token) {
-      // The GitHub token goes to the Ownit server once, to prove who you are, and is not kept anywhere.
-      const session = await api.request<{ token: string; login: string }>('POST', '/auth/github', { access_token: reply.access_token });
-      updateConfig({ token: session.token, login: session.login });
-      out.write(`${c.green('✓')} Logged in as ${c.bold(session.login)} on ${serverUrl(readConfig())}.\n`);
-      return 0;
-    }
+    if (reply.access_token) return { token: reply.access_token };
     if (reply.error === 'authorization_pending') continue;
     if (reply.error === 'slow_down') {
       interval = Math.max(interval + 5000, (reply.interval ?? 0) * 1000);
       continue;
     }
-    out.write(`Ownit: login ${reply.error === 'access_denied' ? 'was cancelled' : `failed (${reply.error ?? 'unknown error'})`}. Run "ownit login" to try again.\n`);
+    return { failure: `login ${reply.error === 'access_denied' ? 'was cancelled' : `failed (${reply.error ?? 'unknown error'})`}.` };
+  }
+  return { failure: 'the login code expired.' };
+}
+
+/** For self-hosted or local servers: reads a session token from stdin. */
+async function loginWithToken(): Promise<number> {
+  const out = process.stderr;
+  const token = (await readSecret('Ownit session token: ')).trim();
+  if (!/^ownit_[\w-]{20,}$/.test(token)) {
+    out.write('Ownit: that does not look like an Ownit session token.\n');
     return 1;
   }
-  out.write('Ownit: the login code expired. Run "ownit login" to try again.\n');
-  return 1;
+  updateConfig({ token, login: undefined });
+  out.write(`${paint(out).green('✓')} Saved the session token.\n`);
+  return 0;
+}
+
+/**
+ * The GitHub device flow runs here, from the user's own IP (GitHub rate-limits
+ * its login endpoints per IP, which shared server IPs hit). The server then
+ * verifies the identity, drops the GitHub token, and issues an Ownit session token.
+ */
+async function deviceFlowLogin(): Promise<number> {
+  const out = process.stderr;
+  const c = paint(out);
+  const api = createApi({ ...readConfig(), token: undefined });
+  const { github_client_id: clientId } = await api.request<{ github_client_id: string }>('GET', '/auth/config');
+  const start = await githubOAuth<DeviceStart>('/login/device/code', { client_id: clientId });
+  out.write(`\nOpen ${c.bold(start.verification_uri)} and enter the code ${c.bold(c.cyan(start.user_code))}\n`);
+  out.write(c.dim('Waiting for you to authorize Ownit on GitHub…\n'));
+
+  const result = await pollForAccessToken(clientId, start);
+  if ('failure' in result) {
+    out.write(`Ownit: ${result.failure} Run "ownit login" to try again.\n`);
+    return 1;
+  }
+  // The GitHub token goes to the Ownit server once, to prove who you are, and is not kept anywhere.
+  const session = await api.request<{ token: string; login: string }>('POST', '/auth/github', { access_token: result.token });
+  updateConfig({ token: session.token, login: session.login });
+  out.write(`${c.green('✓')} Logged in as ${c.bold(session.login)} on ${serverUrl(readConfig())}.\n`);
+  return 0;
+}
+
+/** `ownit login [--server URL] [--with-token]` */
+export async function loginCommand(argv: string[]): Promise<number> {
+  const { values } = parseArgs({ args: argv, options: { server: { type: 'string' }, 'with-token': { type: 'boolean' } } });
+  if (values.server) updateConfig({ server: values.server.replace(/\/+$/, '') });
+  return values['with-token'] ? loginWithToken() : deviceFlowLogin();
 }
 
 export async function logoutCommand(): Promise<number> {

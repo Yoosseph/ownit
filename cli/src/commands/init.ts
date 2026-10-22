@@ -1,3 +1,4 @@
+import type { Writable } from 'node:stream';
 import { parseArgs } from 'node:util';
 import { createApi } from '../api.js';
 import { git, githubRepo } from '../git.js';
@@ -5,28 +6,32 @@ import { hookLocation, installHook, MANAGED_SNIPPET, uninstallHook } from '../ho
 import { errorMessage, paint, sentence } from '../ui.js';
 import { badgeMarkdown } from './badge.js';
 
-export async function initCommand(argv: string[]): Promise<number> {
-  const { values } = parseArgs({ args: argv, options: { repo: { type: 'string' } } });
-  const out = process.stderr;
-  const c = paint(out);
-  if (values.repo) git(['config', 'ownit.repo', values.repo]);
-  const repo = githubRepo();
-  if (!repo) {
-    out.write('Ownit: no GitHub remote found. Add one, or run "ownit init --repo owner/name".\n');
-    return 1;
-  }
+interface RegisterResponse {
+  repo: string;
+  tracked_since: string;
+  installed: boolean;
+  install_url: string | null;
+  page_url: string | null;
+}
 
+/** Installs the pre-push hook where git looks for it, or explains how to add it to a hook manager. */
+function installHookHere(out: Writable) {
+  const c = paint(out);
   const location = hookLocation();
   if (location.kind === 'manual') {
     out.write(`Ownit: ${location.reason}, so add these lines to the end of .husky/pre-push (create the file if needed):\n\n`);
     out.write(`${MANAGED_SNIPPET}\n\n`);
-  } else {
-    const result = installHook(location.dir);
-    out.write(`${c.green('✓')} ${result.updated ? 'Updated' : 'Installed'} the pre-push hook in ${location.dir}`);
-    out.write(location.via === 'core.hooksPath' ? ' (from core.hooksPath).\n' : '.\n');
-    if (result.chained) out.write(`  Your existing hook is now pre-push.local and still runs first.\n`);
+    return;
   }
+  const result = installHook(location.dir);
+  out.write(`${c.green('✓')} ${result.updated ? 'Updated' : 'Installed'} the pre-push hook in ${location.dir}`);
+  out.write(location.via === 'core.hooksPath' ? ' (from core.hooksPath).\n' : '.\n');
+  if (result.chained) out.write(`  Your existing hook is now pre-push.local and still runs first.\n`);
+}
 
+/** Registers the repo with the Ownit server and shows what to do next. */
+async function registerRepo(repo: string, out: Writable): Promise<number> {
+  const c = paint(out);
   try {
     const api = createApi();
     const registered = await api.request<RegisterResponse>('POST', '/api/repos', { repo }, { timeoutMs: 15_000 });
@@ -47,12 +52,18 @@ export async function initCommand(argv: string[]): Promise<number> {
   return 0;
 }
 
-interface RegisterResponse {
-  repo: string;
-  tracked_since: string;
-  installed: boolean;
-  install_url: string | null;
-  page_url: string | null;
+/** `ownit init [--repo owner/name]` */
+export async function initCommand(argv: string[]): Promise<number> {
+  const { values } = parseArgs({ args: argv, options: { repo: { type: 'string' } } });
+  const out = process.stderr;
+  if (values.repo) git(['config', 'ownit.repo', values.repo]);
+  const repo = githubRepo();
+  if (!repo) {
+    out.write('Ownit: no GitHub remote found. Add one, or run "ownit init --repo owner/name".\n');
+    return 1;
+  }
+  installHookHere(out);
+  return registerRepo(repo, out);
 }
 
 export async function uninstallCommand(): Promise<number> {

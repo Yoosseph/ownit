@@ -33,38 +33,51 @@ async function chooseProvider(arg: string | undefined): Promise<Provider | undef
   return picked;
 }
 
-export async function keyCommand(argv: string[]): Promise<number> {
+async function setKey(providerArg: string | undefined): Promise<number> {
   const out = process.stderr;
+  const provider = await chooseProvider(providerArg);
+  if (!provider) return 1;
+  const { name } = PROVIDERS[provider];
+  // Read from a prompt or stdin, never argv, so the key stays out of shell history.
+  const key = (await readSecret(`${name} API key (input hidden): `)).trim();
+  if (!key) {
+    out.write('Ownit: no key entered; nothing changed.\n');
+    return 1;
+  }
+  const looksLike = providerByPrefix(key);
+  if (looksLike && looksLike !== provider) {
+    out.write(`Ownit: that key looks like it is for ${PROVIDERS[looksLike].name}. Run "ownit key set ${looksLike}" instead; nothing changed.\n`);
+    return 1;
+  }
+  updateConfig({ provider, apiKey: key, nebiusKey: undefined });
+  out.write(`Saved your ${name} key to ~/.ownit/config.json. It is sent only with debrief requests and never stored by Ownit.\n`);
+  return 0;
+}
+
+function clearKey(): number {
+  updateConfig({ provider: undefined, apiKey: undefined, nebiusKey: undefined });
+  process.stderr.write('Removed your API key.\n');
+  return 0;
+}
+
+function showKey(): number {
+  const model = modelKey(readConfig());
+  process.stderr.write(model ? `API key set (${describeKey(model)}).\n` : 'No API key set. Run "ownit key set" with a Nebius or NVIDIA key.\n');
+  return 0;
+}
+
+/** `ownit key set [provider] | clear | status` */
+export async function keyCommand(argv: string[]): Promise<number> {
   const [action = 'status', providerArg] = argv;
-  if (action === 'set') {
-    const provider = await chooseProvider(providerArg);
-    if (!provider) return 1;
-    const { name } = PROVIDERS[provider];
-    // Read from a prompt or stdin, never argv, so the key stays out of shell history.
-    const key = (await readSecret(`${name} API key (input hidden): `)).trim();
-    if (!key) {
-      out.write('Ownit: no key entered; nothing changed.\n');
+  switch (action) {
+    case 'set':
+      return setKey(providerArg);
+    case 'clear':
+      return clearKey();
+    case 'status':
+      return showKey();
+    default:
+      process.stderr.write(`Usage: ownit key set [${CHOICES}] | clear | status\n`);
       return 1;
-    }
-    const looksLike = providerByPrefix(key);
-    if (looksLike && looksLike !== provider) {
-      out.write(`Ownit: that key looks like it is for ${PROVIDERS[looksLike].name}. Run "ownit key set ${looksLike}" instead; nothing changed.\n`);
-      return 1;
-    }
-    updateConfig({ provider, apiKey: key, nebiusKey: undefined });
-    out.write(`Saved your ${name} key to ~/.ownit/config.json. It is sent only with debrief requests and never stored by Ownit.\n`);
-    return 0;
   }
-  if (action === 'clear') {
-    updateConfig({ provider: undefined, apiKey: undefined, nebiusKey: undefined });
-    out.write('Removed your API key.\n');
-    return 0;
-  }
-  if (action === 'status') {
-    const model = modelKey(readConfig());
-    out.write(model ? `API key set (${describeKey(model)}).\n` : 'No API key set. Run "ownit key set" with a Nebius or NVIDIA key.\n');
-    return 0;
-  }
-  out.write(`Usage: ownit key set [${CHOICES}] | clear | status\n`);
-  return 1;
 }

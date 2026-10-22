@@ -31,7 +31,7 @@ const date = (iso: string) =>
 
 const plural = (n: number, word: string) => (n === 1 ? word : `${word}s`);
 
-function pct(stats: Stats, key: 'verifiedPct' | 'skippedPct') {
+function pct(stats: Stats, key: 'verifiedPct' | 'unverifiedPct') {
   return stats[key] === null ? '—' : `${stats[key]}%`;
 }
 
@@ -55,21 +55,21 @@ function headerSection(repo: RepoRow, badgeUrl: string): string {
 function cardsSection(o: Stats): string {
   return `<section class="cards" aria-label="Overall">
   <div class="card"><div class="big">${pct(o, 'verifiedPct')}</div><div class="label">of commits verified</div></div>
-  <div class="card"><div class="big">${pct(o, 'skippedPct')}</div><div class="label">of commits skipped</div></div>
-  <div class="card"><div class="big">${o.counted}</div><div class="label">${plural(o.counted, 'commit')} counted</div></div>
-  <div class="card"><div class="big">${o.waiting}</div><div class="label">waiting for a debrief</div></div>
+  <div class="card"><div class="big">${pct(o, 'unverifiedPct')}</div><div class="label">of commits unverified</div></div>
+  <div class="card"><div class="big">${o.total}</div><div class="label">${plural(o.total, 'commit')} tracked</div></div>
+  <div class="card"><div class="big">${o.unverified}</div><div class="label">waiting for a debrief</div></div>
 </section>`;
 }
 
 function authorRow({ author, stats }: RepoStats['authors'][number]): string {
-  return `<tr><td>${esc(author)}</td><td class="num">${stats.counted}</td><td class="num">${pct(stats, 'verifiedPct')}</td><td class="num">${pct(stats, 'skippedPct')}</td><td class="bar">${meter(stats)}</td></tr>`;
+  return `<tr><td>${esc(author)}</td><td class="num">${stats.total}</td><td class="num">${pct(stats, 'verifiedPct')}</td><td class="num">${pct(stats, 'unverifiedPct')}</td><td class="bar">${meter(stats)}</td></tr>`;
 }
 
 function authorsSection(authors: RepoStats['authors']): string {
-  const rows = authors.length ? authors.map(authorRow).join('') : '<tr><td colspan="5" class="empty">No pushes counted yet.</td></tr>';
+  const rows = authors.length ? authors.map(authorRow).join('') : '<tr><td colspan="5" class="empty">No commits tracked yet.</td></tr>';
   return `<h2>By author</h2>
 <div class="table-wrap"><table>
-<thead><tr><th>Author</th><th class="num">Commits</th><th class="num">Verified</th><th class="num">Skipped</th><th></th></tr></thead>
+<thead><tr><th>Author</th><th class="num">Commits</th><th class="num">Verified</th><th class="num">Unverified</th><th></th></tr></thead>
 <tbody>${rows}</tbody>
 </table></div>`;
 }
@@ -106,7 +106,7 @@ function badgeSection(markdown: string): string {
 
 const FOOTER = `<footer>
   Ownit asks developers a few questions about each push: why, how, and what's next. It shows no code and no answers.
-  Percentages count commits whose push was debriefed or skipped; pending pushes become skipped after 24 hours.
+  A commit is verified once its push passes a debrief. Until then it is unverified, with no deadline: debriefing it later still counts.
   A learning tool, not proof of authorship.
   <p class="source"><a href="${SOURCE_URL}">Ownit is open source on GitHub</a>. The official server is <strong>${OFFICIAL_HOST}</strong>; a badge that leads anywhere else comes from a copy.</p>
 </footer>`;

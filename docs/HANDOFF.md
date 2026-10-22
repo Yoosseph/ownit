@@ -31,6 +31,8 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 
 - Refactor for readability (2026-10-22, merged to main and deployed as worker version 4b4df03d): behavior kept identical, checked by the test suites plus a temporary golden capture of every route, log line, command output and real hook push, compared against the pre-refactor code. Layout rules are in CONTRIBUTING ("Code conventions"). Found while reading, deliberately not changed: `POST /api/interview/answer` calls `modelFor` outside its try, so a missing or unknown key there returns 500 instead of the 502 `provider_error` that `/start` returns.
 
+- Stats model changed 2026-10-22 (user's request, departs from SPEC.md): the badge reads `Ownit | Verified N% | Unverified M%`, verified commits over all tracked commits. Skipped, pending and provider_error commits are all unverified, and every non-verified push stays debriefable (`/api/pushes/open` includes skipped; only `verified` is final). The 24-hour expiry cron is gone (`crons = []` in wrangler.toml unregisters it). The CLI hook now re-asks for skipped pushes; that part needs a new `getownit` release, but older CLIs already get the catch-up list from the server.
+
 ## Settled decisions
 
 - npm package `getownit`; the command is `ownit` (`ownit` on npm is an unrelated 2022 package).

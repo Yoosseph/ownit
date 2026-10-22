@@ -36,7 +36,8 @@ flowchart LR
    feedback and a follow-up question. When every question passes, the push is **verified**.
 5. **GitHub sends a push webhook.** The worker matches the landed commits by SHA and sets the check
    run. Commits that arrived with no debrief become a **pending** push.
-6. **Every hour a cron job** turns pending pushes older than 24 hours into **skipped**.
+6. **Nothing expires.** A pending or skipped push stays unverified until you debrief it with
+   `ownit interview`, whenever that is.
 
 Missed the prompt? Run `ownit interview` later to debrief pending pushes.
 
@@ -45,11 +46,12 @@ Missed the prompt? Run `ownit interview` later to debrief pending pushes.
 | Status | Meaning |
 | --- | --- |
 | verified | All questions passed. |
-| skipped | You pressed `s`, or it sat pending for 24 hours. |
+| skipped | You pressed `s`. Still debriefable later. |
 | pending | No debrief yet. |
 | provider_error | The model call failed (bad key, no credit, outage). Retry with `ownit interview`. |
 
-The badge shows the share of commits that were verified rather than skipped.
+The badge shows the share of tracked commits that are verified, and the rest as unverified:
+`Ownit | Verified 55% | Unverified 45%`.
 
 ## Login
 
@@ -93,7 +95,7 @@ badge from a copy is easy to spot.
 - `debrief.ts` and `prompts.ts`: the three model calls. The prompt text is in [`/prompts`](../prompts/).
 - `model.ts`: the providers and their clients. `fixtureModel.ts`: the offline model for tests.
 - `sessions.ts` (who is calling) and `access.ts` (may they push to this repo).
-- `checks.ts` (GitHub check runs), `cron.ts` (hourly expiry), `page.ts` and `badge.ts` (public page
+- `checks.ts` (GitHub check runs), `page.ts` and `badge.ts` (public page
   and badge), `links.ts` (public URLs).
 
 More detail: [DETAILS](DETAILS.md) (privacy, prompt-injection design), [SPEC](SPEC.md),

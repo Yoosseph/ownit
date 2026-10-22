@@ -16,7 +16,7 @@ fails.
 4. **Model check.** Run `scripts/live-injection-check` once. It should report the injected
    answers as failed and the honest rough answer as passed.
 5. **Baseline.** Before recording, make four small one-commit pushes: verify three and skip one.
-   The badge then reads **75% verified** (3 of 4). Add the badge to the demo repo's README:
+   The badge then reads **Verified 75% | Unverified 25%** (3 of 4). Add the badge to the demo repo's README:
    `[![Ownit](https://<server>/badge/you/ownit-demo.svg)](https://<server>/you/ownit-demo)`.
 6. **Prepare the three demo changes** (below) so each scene is one `git commit` away. Keep them
    as patches or stashes.
@@ -26,7 +26,7 @@ fails.
 
 Expected badge values, commit-weighted:
 
-| After | Verified / counted | Badge |
+| After | Verified / tracked | Badge (verified) |
 | --- | --- | --- |
 | Baseline | 3 / 4 | 75% |
 | Scene 2 (2 commits verified) | 5 / 6 | 83% |
@@ -38,7 +38,7 @@ Expected badge values, commit-weighted:
 > "Coding agents let us ship code faster than we can read it. Ownit makes understanding what you
 > ship a two-minute habit, right in the terminal, right after you push."
 
-Show the demo repo's README with the badge at **75% verified**.
+Show the demo repo's README with the badge at **Verified 75%**.
 
 ## Scene 2: push, debrief, fail, follow-up, pass (0:20–1:30)
 
@@ -78,7 +78,7 @@ git push
 5. **✓ Push verified.** The push completes.
 
 Switch to GitHub and open the commit's **Checks**. It shows **Ownit: verified**, with the questions
-in the summary. Then refresh the Ownit page: the badge reads **83% verified**.
+in the summary. Then refresh the Ownit page: the badge reads **Verified 83%**.
 
 ## Scene 3: a skip lowers the badge (1:30–1:55)
 
@@ -92,7 +92,8 @@ Press **s**. The output reads `Ownit: skipped. Push continues.`
 
 > "Skipping is one key. It's recorded honestly, and it shows."
 
-Refresh the page: the badge drops to **71%**. Scroll the page to show the per-author table and
+Refresh the page: the badge drops to **Verified 71%**. The skip isn't permanent: running
+`ownit interview` later would debrief it and raise the badge again. Scroll the page to show the per-author table and
 the push list with statuses and question text. There's no code and no answers anywhere.
 
 ## Scene 4: an injection attempt fails (1:55–2:40)

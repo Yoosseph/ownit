@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getPush, isResolved, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
+import { attachCommits, createPush, findPushForCommits, getPush, isVerified, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
 import { judgeAnswer, MAX_ANSWER_CHARS, writeQuestions, type Question, type Verdict } from '../debrief';
 import { cappedDemoModel, LIMITS, rateLimit } from '../limits';
 import { log, type LogFields } from '../log';
@@ -102,7 +102,7 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
     return c.json({ error: 'expired_session', message: 'This debrief session expired. Run "ownit interview" again.' }, 410);
   }
   const push = await getPush(c.env.DB, state.pushId);
-  if (!push || isResolved(push.status)) {
+  if (!push || isVerified(push.status)) {
     return c.json({ error: 'already_resolved', status: push?.status, message: `This push is already ${push?.status ?? 'gone'}.` }, 409);
   }
   return state;
@@ -123,7 +123,7 @@ async function claimPush(c: Context<AppEnv>, repo: RepoRow, body: z.infer<typeof
   if (push?.user_github_id && push.user_github_id !== c.get('userId')) {
     return c.json({ error: 'forbidden', message: 'Another developer pushed these commits, so the debrief is theirs.' }, 403);
   }
-  if (push && isResolved(push.status)) {
+  if (push && isVerified(push.status)) {
     return c.json({ error: 'already_resolved', status: push.status, push_id: push.id, message: `This push is already ${push.status}.` }, 409);
   }
   push ??= await createPush(c.env.DB, {

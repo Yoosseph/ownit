@@ -64,8 +64,8 @@ async function recordPending(api: ApiClient, repo: string, push: PushRange, out:
 }
 
 /**
- * What the server already recorded for these commits, so a retried push is not
- * asked twice. Only an unreachable server is an error; anything else means unknown.
+ * What the server already recorded for these commits, so a verified push is not
+ * asked again. Only an unreachable server is an error; anything else means unknown.
  */
 async function knownStatus(api: ApiClient, repo: string, push: PushRange): Promise<PushStatus | null> {
   const known = await api
@@ -139,7 +139,8 @@ export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = proce
     }
     const api = createApi(config, env);
     const known = await knownStatus(api, repo, push);
-    if (known === 'verified' || known === 'skipped') {
+    // Skipped pushes are asked again: they stay unverified until debriefed.
+    if (known === 'verified') {
       out.write(c.dim(`Ownit: this push is already ${known}.\n`));
       return 0;
     }

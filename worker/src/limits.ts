@@ -1,7 +1,24 @@
 import { ProviderError, type ChatModel } from './model';
 
-/** Fixed-window counter. Returns false once `limit` hits within the window. */
-export async function rateLimit(db: D1Database, key: string, limit: number, windowSeconds: number): Promise<boolean> {
+export interface Limit {
+  max: number;
+  windowSeconds: number;
+}
+
+/** Request budgets. Each counter is keyed by who or what it limits. */
+export const LIMITS = {
+  /** Any API call by one user. */
+  apiPerUser: { max: 600, windowSeconds: 3600 },
+  /** GitHub login exchanges from one IP. */
+  loginPerIp: { max: 30, windowSeconds: 3600 },
+  /** Debriefs started by one user. */
+  debriefsPerUser: { max: 30, windowSeconds: 3600 },
+  /** Debriefs started in one repo. */
+  debriefsPerRepo: { max: 60, windowSeconds: 3600 },
+} satisfies Record<string, Limit>;
+
+/** Fixed-window counter. Returns false once `limit.max` hits within the window. */
+export async function rateLimit(db: D1Database, key: string, { max, windowSeconds }: Limit): Promise<boolean> {
   const now = Math.floor(Date.now() / 1000);
   const windowStart = now - (now % windowSeconds);
   const row = await db
@@ -14,7 +31,7 @@ export async function rateLimit(db: D1Database, key: string, limit: number, wind
     )
     .bind(key, windowStart)
     .first<{ count: number }>();
-  return (row?.count ?? 0) <= limit;
+  return (row?.count ?? 0) <= max;
 }
 
 /** Wraps a model paid for by the demo key so every call counts toward the daily cap. */

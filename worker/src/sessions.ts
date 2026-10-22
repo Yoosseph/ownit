@@ -3,7 +3,7 @@
 import type { Context, MiddlewareHandler } from 'hono';
 import type { AppEnv } from './app';
 import { nowIso } from './db';
-import { rateLimit } from './limits';
+import { LIMITS, rateLimit } from './limits';
 import { toBase64Url } from './seal';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -49,7 +49,7 @@ export const requireSession: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!row) return c.json({ error: 'unauthorized', message: 'Not logged in. Run "ownit login".' }, 401);
   c.set('userId', row.github_id);
   c.set('login', row.login);
-  if (!(await rateLimit(c.env.DB, `user:${row.github_id}`, 600, 3600))) {
+  if (!(await rateLimit(c.env.DB, `user:${row.github_id}`, LIMITS.apiPerUser))) {
     return c.json({ error: 'rate_limited', message: 'Too many requests. Try again later.' }, 429);
   }
   await next();

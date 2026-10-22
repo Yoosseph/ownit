@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { AppEnv } from '../app';
 import { upsertUser } from '../db';
 import { GitHubError } from '../github';
-import { rateLimit } from '../limits';
+import { LIMITS, rateLimit } from '../limits';
 import { log } from '../log';
 import { bearerToken, createSession, deleteSession } from '../sessions';
 import { readJson } from './shared';
@@ -31,7 +31,7 @@ auth.post('/github', async (c) => {
   const body = await readJson(c, exchangeBody, 'Pass {"access_token": "..."}.');
   if (body instanceof Response) return body;
   const ip = c.req.header('cf-connecting-ip') ?? 'local';
-  if (!(await rateLimit(c.env.DB, `login:${ip}`, 30, 3600))) {
+  if (!(await rateLimit(c.env.DB, `login:${ip}`, LIMITS.loginPerIp))) {
     return c.json({ error: 'rate_limited', message: 'Too many login attempts. Try again later.' }, 429);
   }
   let user: { id: number; login: string };

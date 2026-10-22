@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { AppEnv } from '../app';
 import { attachCommits, createPush, findPushForCommits, getPush, isResolved, recordAttempt, replaceQuestions, setPushStatus } from '../db';
 import { gradeAnswer, MAX_ANSWER_CHARS, writeFollowUp, writeQuestions, type Question } from '../debrief';
-import { cappedDemoModel, rateLimit } from '../limits';
+import { cappedDemoModel, LIMITS, rateLimit } from '../limits';
 import { log } from '../log';
 import { createModel, isProvider, ProviderError, type ChatModel } from '../model';
 import { countChangedLines, questionCount } from '../questionCount';
@@ -94,7 +94,9 @@ interview.post('/start', async (c) => {
 
   const repo = await requireRepo(c, body.repo);
   if (repo instanceof Response) return repo;
-  const limited = !(await rateLimit(c.env.DB, `start:user:${c.get('userId')}`, 30, 3600)) || !(await rateLimit(c.env.DB, `start:repo:${repo.id}`, 60, 3600));
+  const limited =
+    !(await rateLimit(c.env.DB, `start:user:${c.get('userId')}`, LIMITS.debriefsPerUser)) ||
+    !(await rateLimit(c.env.DB, `start:repo:${repo.id}`, LIMITS.debriefsPerRepo));
   if (limited) {
     return c.json({ error: 'rate_limited', message: 'Too many debriefs for this repo. Try again later.' }, 429);
   }

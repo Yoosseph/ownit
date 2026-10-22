@@ -29,7 +29,7 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 - Grading softened 2026-10-22 after a real debrief failed a fair README answer: one-thing questions, docs-only pushes get a simple purpose question, a pass gets one short line, follow-ups get easier. Live check covers that answer (8/8 passing). Deployed 2026-10-22 (version 55af83e0).
 - Open-source files added 2026-10-22: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY (private vulnerability reporting is enabled on the repo), issue/PR templates, CI (`.github/workflows/ci.yml`, Node 22 and 24, green).
 
-- Refactor for readability (2026-10-22, branch `refactor-readability`): behavior kept identical, checked by the test suites plus a temporary golden capture of every route, log line, command output and real hook push, compared against the pre-refactor code. Layout rules are in CONTRIBUTING ("Code conventions"). Found while reading, deliberately not changed: `POST /api/interview/answer` calls `modelFor` outside its try, so a missing or unknown key there returns 500 instead of the 502 `provider_error` that `/start` returns.
+- Refactor for readability (2026-10-22, merged to main and deployed as worker version 4b4df03d): behavior kept identical, checked by the test suites plus a temporary golden capture of every route, log line, command output and real hook push, compared against the pre-refactor code. Layout rules are in CONTRIBUTING ("Code conventions"). Found while reading, deliberately not changed: `POST /api/interview/answer` calls `modelFor` outside its try, so a missing or unknown key there returns 500 instead of the 502 `provider_error` that `/start` returns.
 
 ## Settled decisions
 

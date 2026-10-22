@@ -1,8 +1,8 @@
 // Helpers shared by the API routes, so route modules never import each other.
 import type { Context } from 'hono';
 import { z } from 'zod';
+import { checkPushAccess } from '../access';
 import type { AppEnv } from '../app';
-import { checkPushAccess } from '../auth';
 import { background } from '../background';
 import { syncCheckRun } from '../checks';
 import { getRepo, setPushStatus, type PushStatus, type RepoRow } from '../db';

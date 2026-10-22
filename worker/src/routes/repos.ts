@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { checkPushAccess } from '../auth';
+import { checkPushAccess } from '../access';
 import { getRepo, upsertRepo, type RepoRow } from '../db';
 import { installUrl, repoPageUrl } from '../links';
 import { log } from '../log';

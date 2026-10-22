@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Env } from '../../src/env';
 import { createApp } from '../../src/app';
-import { clearPermissionCache } from '../../src/auth';
+import { clearPermissionCache } from '../../src/access';
 import { GitHubError, type CheckRunBody, type GitHub } from '../../src/github';
 import { createTestDb } from './d1';
 

@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import type { Env } from './env';
-import { auth, requireSession } from './auth';
 import { createGitHub, type GitHub } from './github';
 import { log } from './log';
+import { auth } from './routes/auth';
 import { interview } from './routes/interview';
 import { publicPages } from './routes/public';
 import { pushes } from './routes/pushes';
 import { repos } from './routes/repos';
 import { webhook } from './routes/webhook';
+import { requireSession } from './sessions';
 
 export type AppEnv = { Bindings: Env; Variables: { userId: number | null; login: string | null; github: GitHub } };
 

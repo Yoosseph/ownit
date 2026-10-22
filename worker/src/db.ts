@@ -1,5 +1,5 @@
 // Queries for the core tables: repos, users, pushes, commits and questions.
-// Tables with a single owner keep their SQL there: sessions (auth.ts),
+// Tables with a single owner keep their SQL there: sessions (sessions.ts),
 // rate_limits and demo_usage (limits.ts), and the stats aggregation (stats.ts).
 //
 // Lists of SHAs are passed as one JSON parameter and expanded with json_each, so

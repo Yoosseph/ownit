@@ -1,4 +1,5 @@
 import type { PushStatus, RepoRow } from './db';
+import { badgeImageUrl, repoPageUrl } from './links';
 import type { RepoStats, Stats } from './stats';
 
 export interface PagePush {
@@ -39,8 +40,8 @@ function meter(stats: Stats) {
 
 export function renderRepoPage(origin: string, repo: RepoRow, stats: RepoStats, pushes: PagePush[]): string {
   const full = `${repo.owner}/${repo.name}`;
-  const badgeUrl = `${origin}/badge/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}.svg`;
-  const pageUrl = `${origin}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}`;
+  const badgeUrl = badgeImageUrl(origin, repo);
+  const pageUrl = repoPageUrl(origin, repo);
   const markdown = `[![Ownit](${badgeUrl})](${pageUrl})`;
   const o = stats.overall;
   const hideQuestions = Boolean(repo.private);

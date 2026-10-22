@@ -1,19 +1,14 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { background } from '../background';
-import { syncCheckRun } from '../checks';
-import { attachCommits, createPush, findPushForCommits, getPush, recordAttempt, replaceQuestions, setPushStatus, type PushStatus } from '../db';
+import { attachCommits, createPush, findPushForCommits, getPush, recordAttempt, replaceQuestions, setPushStatus } from '../db';
 import { gradeAnswer, MAX_ANSWER_CHARS, writeFollowUp, writeQuestions, type Question } from '../debrief';
 import { cappedDemoModel, rateLimit } from '../limits';
 import { log } from '../log';
 import { createModel, isProvider, ProviderError, type ChatModel } from '../model';
 import { countChangedLines, questionCount } from '../questionCount';
 import { seal, unseal } from '../seal';
-import { repoName, requireRepo } from './repos';
-
-const sha = z.string().regex(/^[0-9a-f]{40}([0-9a-f]{24})?$/);
-const commit = z.object({ sha, message: z.string().max(20_000) });
+import { commit, readJson, repoName, requireRepo, sha, updateStatus } from './shared';
 
 const startBody = z.object({
   repo: repoName,
@@ -74,12 +69,6 @@ export function modelFor(c: Context<AppEnv>): ChatModel {
 
 export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
 
-/** Sets a push's status and brings its GitHub check run up to date. */
-export async function updateStatus(c: Context<AppEnv>, pushId: number, status: PushStatus) {
-  await setPushStatus(c.env.DB, pushId, status);
-  await background(c, syncCheckRun(c.env, c.get('github'), pushId));
-}
-
 /** Opens a debrief token for the current user, or explains why it cannot be used. */
 async function openState(c: Context<AppEnv>, token: string): Promise<DebriefState | Response> {
   const state = await unseal<DebriefState>(sessionSecret(c), token);
@@ -99,9 +88,8 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
 export const interview = new Hono<AppEnv>();
 
 interview.post('/start', async (c) => {
-  const parsed = startBody.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid debrief request.' }, 400);
-  const body = parsed.data;
+  const body = await readJson(c, startBody, 'Invalid debrief request.');
+  if (body instanceof Response) return body;
   const started = Date.now();
 
   const repo = await requireRepo(c, body.repo);
@@ -161,9 +149,8 @@ interview.post('/start', async (c) => {
 });
 
 interview.post('/answer', async (c) => {
-  const parsed = answerBody.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid answer request.' }, 400);
-  const body = parsed.data;
+  const body = await readJson(c, answerBody, 'Invalid answer request.');
+  if (body instanceof Response) return body;
   const state = await openState(c, body.session);
   if (state instanceof Response) return state;
   const question = state.questions[body.idx];
@@ -205,9 +192,9 @@ interview.post('/answer', async (c) => {
 });
 
 interview.post('/skip', async (c) => {
-  const parsed = skipBody.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid skip request.' }, 400);
-  const state = await openState(c, parsed.data.session);
+  const body = await readJson(c, skipBody, 'Invalid skip request.');
+  if (body instanceof Response) return body;
+  const state = await openState(c, body.session);
   if (state instanceof Response) return state;
   await updateStatus(c, state.pushId, 'skipped');
   log('interview.skip', { push: state.pushId, status: 'skipped' });

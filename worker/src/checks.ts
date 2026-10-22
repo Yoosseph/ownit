@@ -1,10 +1,11 @@
 import type { Env } from './env';
 import { getPush, getRepoById, listQuestions, type PushRow, type RepoRow } from './db';
 import type { CheckRunBody, GitHub } from './github';
+import { repoPageUrl } from './links';
 import { log } from './log';
 
 export function checkRunBody(push: PushRow, repo: RepoRow, questions: string[], publicUrl: string): CheckRunBody {
-  const details = publicUrl ? `${publicUrl.replace(/\/+$/, '')}/${repo.owner}/${repo.name}` : undefined;
+  const details = publicUrl ? repoPageUrl(publicUrl, repo) : undefined;
   const base = { name: 'Ownit', head_sha: push.head_sha, external_id: String(push.id), details_url: details };
   const asked = questions.length ? `\n\nQuestions:\n${questions.map((q) => `- ${q}`).join('\n')}` : '';
   switch (push.status) {

@@ -4,6 +4,7 @@ import type { AppEnv } from './app';
 import { nowIso, upsertUser, type RepoRow } from './db';
 import { GitHubError } from './github';
 import { rateLimit } from './limits';
+import { installUrl } from './links';
 import { log } from './log';
 import { toBase64Url } from './seal';
 
@@ -73,7 +74,8 @@ export async function checkPushAccess(c: Context<AppEnv>, repo: RepoRow): Promis
   if (c.env.DEV_LOCAL_TRUST === '1' && isLocalRequest(c)) return null;
   const full = `${repo.owner}/${repo.name}`;
   if (!repo.installation_id) {
-    const install = c.env.GITHUB_APP_SLUG ? ` Install it: https://github.com/apps/${c.env.GITHUB_APP_SLUG}/installations/new` : '';
+    const url = installUrl(c.env.GITHUB_APP_SLUG);
+    const install = url ? ` Install it: ${url}` : '';
     return c.json({ error: 'app_not_installed', message: `The Ownit GitHub App is not installed on ${full}.${install}` }, 403);
   }
   const login = c.get('login')!;

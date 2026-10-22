@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { badgeColor, badgeMessage, badgeSvg } from '../badge';
 import { getRepo, type PushStatus } from '../db';
+import { withoutTrailingSlash } from '../links';
 import { renderRepoPage, type PagePush } from '../page';
 import { repoStats } from '../stats';
 
@@ -49,7 +50,7 @@ publicPages.get('/:owner/:repo', async (c) => {
     ...push,
     questions: questionRows.filter((q) => q.push_id === push.id).map(({ push_id: _id, ...q }) => q),
   }));
-  const origin = (c.env.PUBLIC_URL || new URL(c.req.url).origin).replace(/\/+$/, '');
+  const origin = withoutTrailingSlash(c.env.PUBLIC_URL || new URL(c.req.url).origin);
   c.header('cache-control', 'public, max-age=60');
   return c.html(renderRepoPage(origin, repo, stats, pushes));
 });

@@ -3,10 +3,7 @@ import { z } from 'zod';
 import type { AppEnv } from '../app';
 import { attachCommits, createPush, findPushForCommits, type PushRow } from '../db';
 import { log } from '../log';
-import { updateStatus } from './interview';
-import { repoName, requireRepo } from './repos';
-
-const sha = z.string().regex(/^[0-9a-f]{40}([0-9a-f]{24})?$/);
+import { readJson, repoName, requireRepo, sha, updateStatus } from './shared';
 
 const recordBody = z.object({
   repo: repoName,
@@ -24,9 +21,8 @@ export const pushes = new Hono<AppEnv>();
 
 /** Records a push without a debrief: the hook's "n" (pending) and "s" (skipped) answers. */
 pushes.post('/', async (c) => {
-  const parsed = recordBody.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid push record.' }, 400);
-  const body = parsed.data;
+  const body = await readJson(c, recordBody, 'Invalid push record.');
+  if (body instanceof Response) return body;
   const repo = await requireRepo(c, body.repo);
   if (repo instanceof Response) return repo;
   const shas = body.commits.map((x) => x.sha);
@@ -49,11 +45,11 @@ pushes.post('/', async (c) => {
 
 /** Tells the hook whether these commits were already debriefed, so a retried push is not asked twice. */
 pushes.post('/lookup', async (c) => {
-  const parsed = lookupBody.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'bad_request', message: 'Invalid lookup.' }, 400);
-  const repo = await requireRepo(c, parsed.data.repo);
+  const body = await readJson(c, lookupBody, 'Invalid lookup.');
+  if (body instanceof Response) return body;
+  const repo = await requireRepo(c, body.repo);
   if (repo instanceof Response) return repo;
-  const push = await findPushForCommits(c.env.DB, repo.id, parsed.data.head_sha, parsed.data.shas);
+  const push = await findPushForCommits(c.env.DB, repo.id, body.head_sha, body.shas);
   return c.json(push ? { push_id: push.id, status: push.status } : { push_id: null, status: null });
 });
 

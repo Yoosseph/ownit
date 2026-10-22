@@ -1,7 +1,18 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { syncCheckRun } from '../checks';
-import { createPush, getRepo, nowIso, upsertUser } from '../db';
+import {
+  createPush,
+  findKnownCommits,
+  getRepo,
+  insertLandedCommits,
+  markCommitsLanded,
+  nowIso,
+  setRepoInstallation,
+  upsertUser,
+  type LandedCommit,
+  type RepoRow,
+} from '../db';
 import { log } from '../log';
 
 const ZERO = /^0+$/;
@@ -30,6 +41,51 @@ interface PushEvent {
   commits?: { id: string; author?: { username?: string; name?: string } }[];
 }
 
+interface Landing {
+  /** Every push whose commits this event touched. */
+  touched: Set<number>;
+  commits: number;
+  /** Commits Ownit had not seen; they became a new pending push. */
+  unmatched: number;
+}
+
+/**
+ * Records which commits of a push event landed on GitHub. Known commits now
+ * count; commits nobody debriefed (no hook, --no-verify, web edits, GUI
+ * clients) become a new pending push.
+ */
+async function recordLanding(db: D1Database, repo: RepoRow, event: PushEvent): Promise<Landing> {
+  const now = nowIso();
+  const commits: LandedCommit[] = (event.commits ?? []).map((commit) => ({
+    sha: commit.id,
+    author: commit.author?.username ?? commit.author?.name ?? null,
+  }));
+  const touched = new Set<number>();
+
+  // One statement each, whatever the commit count (D1 free plan: 50 queries per request).
+  const known = await findKnownCommits(db, repo.id, commits);
+  if (known.length) {
+    await markCommitsLanded(db, repo.id, commits, now);
+    for (const row of known) touched.add(row.push_id);
+  }
+
+  const knownShas = new Set(known.map((k) => k.sha));
+  const unmatched = commits.filter((commit) => !knownShas.has(commit.sha));
+  if (unmatched.length) {
+    const head = unmatched.some((u) => u.sha === event.after) ? event.after : unmatched.at(-1)!.sha;
+    const push = await createPush(db, {
+      repoId: repo.id,
+      userId: event.sender?.id ?? null,
+      baseSha: ZERO.test(event.before) ? null : event.before,
+      headSha: head,
+      status: 'pending',
+    });
+    await insertLandedCommits(db, repo.id, push.id, unmatched, now);
+    touched.add(push.id);
+  }
+  return { touched, commits: commits.length, unmatched: unmatched.length };
+}
+
 export const webhook = new Hono<AppEnv>();
 
 webhook.post('/github', async (c) => {
@@ -50,62 +106,12 @@ webhook.post('/github', async (c) => {
   if (payload.deleted || ZERO.test(payload.after)) return c.json({ ignored: 'branch deleted' });
 
   const db = c.env.DB;
-  const installationId = payload.installation?.id ?? repo.installation_id;
-  await db.prepare('UPDATE repos SET installation_id = ?, private = ? WHERE id = ?')
-    .bind(installationId, payload.repository.private ? 1 : 0, repo.id)
-    .run();
+  await setRepoInstallation(db, repo.id, payload.installation?.id ?? repo.installation_id, payload.repository.private);
   if (payload.sender) await upsertUser(db, payload.sender.id, payload.sender.login);
-
-  const now = nowIso();
-  const commits = (payload.commits ?? []).map((commit) => ({
-    sha: commit.id,
-    author: commit.author?.username ?? commit.author?.name ?? null,
-  }));
-  const list = JSON.stringify(commits);
-  const touched = new Set<number>();
-
-  // One statement each, whatever the commit count (D1 free plan: 50 queries per request).
-  const { results: known } = await db
-    .prepare('SELECT sha, push_id FROM commits WHERE repo_id = ? AND sha IN (SELECT json_extract(value, \'$.sha\') FROM json_each(?))')
-    .bind(repo.id, list)
-    .all<{ sha: string; push_id: number }>();
-  if (known.length) {
-    await db
-      .prepare(
-        `UPDATE commits SET pushed_at = COALESCE(pushed_at, ?), author_login = COALESCE(j.author, author_login)
-         FROM (SELECT json_extract(value, '$.sha') AS sha, json_extract(value, '$.author') AS author FROM json_each(?)) AS j
-         WHERE commits.repo_id = ? AND commits.sha = j.sha`,
-      )
-      .bind(now, list, repo.id)
-      .run();
-    for (const row of known) touched.add(row.push_id);
-  }
-
-  // Commits nobody debriefed (no hook, --no-verify, web edits, GUI clients) become a pending push.
-  const knownShas = new Set(known.map((k) => k.sha));
-  const unmatched = commits.filter((c) => !knownShas.has(c.sha));
-  if (unmatched.length) {
-    const head = unmatched.some((u) => u.sha === payload.after) ? payload.after : unmatched.at(-1)!.sha;
-    const push = await createPush(db, {
-      repoId: repo.id,
-      userId: payload.sender?.id ?? null,
-      baseSha: ZERO.test(payload.before) ? null : payload.before,
-      headSha: head,
-      status: 'pending',
-    });
-    await db
-      .prepare(
-        `INSERT INTO commits (sha, repo_id, push_id, author_login, pushed_at)
-         SELECT json_extract(value, '$.sha'), ?, ?, json_extract(value, '$.author'), ? FROM json_each(?) WHERE true
-         ON CONFLICT DO NOTHING`,
-      )
-      .bind(repo.id, push.id, now, JSON.stringify(unmatched))
-      .run();
-    touched.add(push.id);
-  }
+  const landing = await recordLanding(db, repo, payload);
 
   const github = c.get('github');
-  for (const pushId of touched) await syncCheckRun(c.env, github, pushId);
-  log('webhook.push', { repo: `${repo.owner}/${repo.name}`, commits: commits.length, unmatched: unmatched.length });
-  return c.json({ ok: true, pushes: [...touched] });
+  for (const pushId of landing.touched) await syncCheckRun(c.env, github, pushId);
+  log('webhook.push', { repo: `${repo.owner}/${repo.name}`, commits: landing.commits, unmatched: landing.unmatched });
+  return c.json({ ok: true, pushes: [...landing.touched] });
 });

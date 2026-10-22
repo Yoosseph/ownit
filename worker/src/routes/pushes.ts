@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, isResolved, type PushRow } from '../db';
+import { attachCommits, createPush, findPushForCommits, isResolved, listCommitShas, listOpenPushes } from '../db';
 import { log } from '../log';
 import { readJson, repoName, requireRepo, sha, updateStatus } from './shared';
 
@@ -57,21 +57,10 @@ pushes.get('/open', async (c) => {
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Pass ?repo=owner/name.' }, 400);
   const repo = await requireRepo(c, parsed.data);
   if (repo instanceof Response) return repo;
-  const userId = c.get('userId');
-  const { results } = await c.env.DB.prepare(
-    `SELECT * FROM pushes WHERE repo_id = ? AND status IN ('pending', 'provider_error')
-       AND (user_github_id IS NULL OR user_github_id = ?)
-     ORDER BY created_at DESC LIMIT 20`,
-  )
-    .bind(repo.id, userId)
-    .all<PushRow>();
-  const { results: commits } = await c.env.DB.prepare(
-    'SELECT push_id, sha FROM commits WHERE push_id IN (SELECT value FROM json_each(?)) ORDER BY rowid',
-  )
-    .bind(JSON.stringify(results.map((p) => p.id)))
-    .all<{ push_id: number; sha: string }>();
+  const open = await listOpenPushes(c.env.DB, repo.id, c.get('userId'));
+  const commits = await listCommitShas(c.env.DB, open.map((p) => p.id));
   return c.json({
-    pushes: results.map((push) => ({
+    pushes: open.map((push) => ({
       id: push.id,
       status: push.status,
       base_sha: push.base_sha,

@@ -1,5 +1,5 @@
 import type { Env } from './env';
-import { getPush, getRepoById, listQuestions, type PushRow, type RepoRow } from './db';
+import { getPush, getRepoById, isCommitLanded, listQuestions, setCheckRunId, type PushRow, type RepoRow } from './db';
 import type { CheckRunBody, GitHub } from './github';
 import { repoPageUrl } from './links';
 import { log } from './log';
@@ -55,10 +55,7 @@ export async function syncCheckRun(env: Env, github: GitHub, pushId: number): Pr
   if (!push) return;
   const repo = await getRepoById(env.DB, push.repo_id);
   if (!repo?.installation_id) return;
-  const landed = await env.DB.prepare('SELECT 1 AS ok FROM commits WHERE repo_id = ? AND sha = ? AND pushed_at IS NOT NULL')
-    .bind(repo.id, push.head_sha)
-    .first<{ ok: number }>();
-  if (!landed) return;
+  if (!(await isCommitLanded(env.DB, repo.id, push.head_sha))) return;
   const questions = push.status === 'verified' ? (await listQuestions(env.DB, push.id)).map((q) => q.text) : [];
   const body = checkRunBody(push, repo, questions, env.PUBLIC_URL);
   try {
@@ -66,7 +63,7 @@ export async function syncCheckRun(env: Env, github: GitHub, pushId: number): Pr
       await github.updateCheckRun(repo.installation_id, repo.owner, repo.name, push.check_run_id, body);
     } else {
       const id = await github.createCheckRun(repo.installation_id, repo.owner, repo.name, body);
-      await env.DB.prepare('UPDATE pushes SET check_run_id = ? WHERE id = ?').bind(id, push.id).run();
+      await setCheckRunId(env.DB, push.id, id);
     }
     log('check_run.sync', { repo: `${repo.owner}/${repo.name}`, push: push.id, status: push.status });
   } catch (error) {

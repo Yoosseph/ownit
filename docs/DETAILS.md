@@ -47,10 +47,10 @@ The model is `nvidia/nemotron-3-super-120b-a12b` on both: Nebius at
 `https://api.tokenfactory.nebius.com/v1/`, NVIDIA at `https://integrate.api.nvidia.com/v1/`.
 `NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
 
-Adding a provider means a row in `PROVIDERS` in both `worker/src/model.ts` and `cli/src/config.ts`,
-plus its endpoint and model in `worker/wrangler.toml`. The worker only speaks the OpenAI-compatible
-chat API today, so a provider with a different API (Anthropic's, for example) also needs its own
-client in `model.ts`.
+Adding a provider means an entry in `PROVIDERS` in both `worker/src/model.ts` and
+`cli/src/providers.ts`, plus its endpoint and model in `worker/wrangler.toml`. Both current providers
+use the OpenAI-compatible chat API, so each is one `openAiCompatible(...)` line; a provider with a
+different API (Anthropic's, for example) gets its own `create` function with its own client.
 
 Hackathon judges can try Ownit without a key. A server may set an optional shared
 `DEMO_NEBIUS_KEY`, which has a daily cap and is used only when a request carries no key.

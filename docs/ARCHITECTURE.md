@@ -78,10 +78,23 @@ badge from a copy is easy to spot.
 
 ## Where to look in the code
 
-- CLI commands: `cli/src/commands/`; the hook script: `cli/src/hooks.ts`
-- Debrief flow: `worker/src/routes/interview.ts`; prompts: `worker/src/prompts.ts`
-- Webhook: `worker/src/routes/webhook.ts`; check runs: `worker/src/checks.ts`
-- Hourly expiry: `worker/src/cron.ts`
+**CLI** (`cli/src/`)
+
+- `index.ts`: the command table, with each command's help lines. One file per command in `commands/`;
+  `commands/hook.ts` runs on every push.
+- `debrief.ts` asks the questions, `diff.ts` builds the filtered diff, `hooks.ts` writes the git hook.
+- `providers.ts`: the model providers a key can be for. `config.ts`: `~/.ownit/config.json`.
+
+**Worker** (`worker/src/`)
+
+- `routes/`: one router per URL prefix, sharing helpers through `routes/shared.ts`. The debrief
+  itself is `routes/interview.ts`; GitHub push events are `routes/webhook.ts`.
+- `db.ts`: every query on repos, users, pushes, commits and questions.
+- `debrief.ts` and `prompts.ts`: the three model calls. The prompt text is in [`/prompts`](../prompts/).
+- `model.ts`: the providers and their clients. `fixtureModel.ts`: the offline model for tests.
+- `sessions.ts` (who is calling) and `access.ts` (may they push to this repo).
+- `checks.ts` (GitHub check runs), `cron.ts` (hourly expiry), `page.ts` and `badge.ts` (public page
+  and badge), `links.ts` (public URLs).
 
 More detail: [DETAILS](DETAILS.md) (privacy, prompt-injection design), [SPEC](SPEC.md),
 [HANDOFF](HANDOFF.md).

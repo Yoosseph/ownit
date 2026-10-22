@@ -58,8 +58,19 @@ older x-nebius-key header").
 - **The worker stays compatible with older CLIs**, since people update the CLI on their own schedule.
 - **Grading is generous.** Ownit is a learning habit, not an exam.
 
-## Adding a model provider
+## Code conventions
 
-Add a row to `PROVIDERS` in `worker/src/model.ts` and in `cli/src/config.ts`, and the endpoint and
-model to `worker/wrangler.toml`. Providers with an OpenAI-compatible chat API need nothing else;
-others need their own client in `model.ts`.
+- **Routes** (`worker/src/routes/`) never import each other; what they share is in `routes/shared.ts`.
+  They hold no SQL: queries on the core tables live in `worker/src/db.ts`.
+- **Prompts** live in `prompts/*.txt`. Code never depends on their wording: the offline fixture
+  model answers by each prompt's `task`.
+- **Public URLs** (repo page, badge, App install) are built in `worker/src/links.ts`.
+
+## Adding things
+
+- **A model provider:** an entry in `PROVIDERS` in `worker/src/model.ts` and in `cli/src/providers.ts`,
+  plus its endpoint and model in `worker/wrangler.toml`. An OpenAI-compatible provider is one line
+  (`openAiCompatible(...)`); one with a different API gets its own `create` function.
+- **A CLI command:** a file in `cli/src/commands/` and an entry in the `COMMANDS` table in
+  `cli/src/index.ts`. Its help lines go in that entry, so `ownit help` lists it.
+- **A worker route:** a router in `worker/src/routes/`, mounted in `worker/src/app.ts`.

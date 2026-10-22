@@ -38,7 +38,27 @@ interface PushEvent {
   repository: { name: string; owner: { login?: string; name?: string }; private: boolean };
   installation?: { id: number };
   sender?: { id: number; login: string };
-  commits?: { id: string; author?: { username?: string; name?: string } }[];
+  commits?: PushedCommit[];
+}
+
+interface PushedCommit {
+  id: string;
+  message?: string;
+  author?: { username?: string; name?: string };
+  committer?: { username?: string };
+}
+
+/** GitHub's own account for commits made in the web UI. */
+const WEB_FLOW = 'web-flow';
+const MERGE_MESSAGE = /^Merge (pull request #\d+ from |branch '[^']+' into )/;
+
+/**
+ * True for the merge commit GitHub's Merge (or Update branch) button makes.
+ * It only joins commits Ownit already tracks, so there is nothing to explain.
+ * Other web-flow commits, such as file edits in the browser, still count.
+ */
+export function isMergeButtonCommit(commit: PushedCommit): boolean {
+  return commit.committer?.username === WEB_FLOW && MERGE_MESSAGE.test(commit.message ?? '');
 }
 
 interface Landing {
@@ -52,14 +72,16 @@ interface Landing {
 /**
  * Records which commits of a push event landed on GitHub. Known commits now
  * count; commits nobody debriefed (no hook, --no-verify, web edits, GUI
- * clients) become a new pending push.
+ * clients) become a new pending push. Merge-button commits are left out.
  */
 async function recordLanding(db: D1Database, repo: RepoRow, event: PushEvent): Promise<Landing> {
   const now = nowIso();
-  const commits: LandedCommit[] = (event.commits ?? []).map((commit) => ({
-    sha: commit.id,
-    author: commit.author?.username ?? commit.author?.name ?? null,
-  }));
+  const commits: LandedCommit[] = (event.commits ?? [])
+    .filter((commit) => !isMergeButtonCommit(commit))
+    .map((commit) => ({
+      sha: commit.id,
+      author: commit.author?.username ?? commit.author?.name ?? null,
+    }));
   const touched = new Set<number>();
 
   // One statement each, whatever the commit count (D1 free plan: 50 queries per request).

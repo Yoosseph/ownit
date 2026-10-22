@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { badgeMarkdown } from '../src/commands/badge';
-import { describeKey, modelKey, providerByPrefix } from '../src/config';
+import { badgeMarkdown } from '../src/commands/badge.js';
+import { describeKey, modelKey, providerByPrefix } from '../src/providers.js';
 import { cleanEnv, run } from './helpers.js';
 
 // The built CLI; test/build.ts compiles it before the suite runs.

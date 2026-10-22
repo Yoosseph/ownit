@@ -4,7 +4,7 @@ import { buildDiff } from '../diff.js';
 import { runDebrief, type DebriefOutcome } from '../debrief.js';
 import { githubRepo, listCommits, objectExists, resolveCommit } from '../git.js';
 import { rangeForRecordedPush } from '../pushRange.js';
-import { createPrompter, paint, type Prompter } from '../ui.js';
+import { createPrompter, paint, plural, type Prompter } from '../ui.js';
 
 interface OpenPush {
   id: number;
@@ -66,7 +66,7 @@ async function debriefOpenPushes(api: ApiClient, prompter: Prompter, repo: strin
     out.write(`${c.green('✓')} Nothing to debrief for ${repo}.\n`);
     return 0;
   }
-  out.write(`${pushes.length} push${pushes.length === 1 ? '' : 'es'} waiting for a debrief in ${repo}.\n`);
+  out.write(`${pushes.length} ${plural(pushes.length, 'push', 'pushes')} waiting for a debrief in ${repo}.\n`);
   let code = 0;
   for (const push of pushes) {
     const missing = [push.head_sha, ...push.commits].find((sha) => !objectExists(sha));

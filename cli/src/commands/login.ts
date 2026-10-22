@@ -1,6 +1,7 @@
 import { parseArgs } from 'node:util';
 import { ApiError, createApi } from '../api.js';
-import { describeKey, modelKey, readConfig, serverUrl, updateConfig } from '../config.js';
+import { readConfig, serverUrl, updateConfig } from '../config.js';
+import { describeKey, modelKey } from '../providers.js';
 import { readSecret } from '../secret.js';
 import { paint } from '../ui.js';
 

@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 import { createApi } from '../api.js';
 import { git, githubRepo } from '../git.js';
 import { hookLocation, installHook, MANAGED_SNIPPET, uninstallHook } from '../hooks.js';
-import { paint, sentence } from '../ui.js';
+import { errorMessage, paint, sentence } from '../ui.js';
 import { badgeMarkdown } from './badge.js';
 
 export async function initCommand(argv: string[]): Promise<number> {
@@ -40,7 +40,7 @@ export async function initCommand(argv: string[]): Promise<number> {
     const origin = registered.page_url ? new URL(registered.page_url).origin : api.server;
     out.write(`\nAdd the badge to your README (run "ownit badge" to see this again):\n  ${badgeMarkdown(origin, registered.repo)}\n`);
   } catch (error) {
-    out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${sentence(error instanceof Error ? error.message : String(error))}\n`);
+    out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${sentence(errorMessage(error))}\n`);
     out.write('Run "ownit init" again once that is fixed.\n');
     return 1;
   }

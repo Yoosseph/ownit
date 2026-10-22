@@ -9,6 +9,12 @@ export function paint(out: Writable) {
   return { bold: wrap('1'), dim: wrap('2'), green: wrap('32'), red: wrap('31'), yellow: wrap('33'), cyan: wrap('36') };
 }
 
+/** "1 commit", "2 commits". Pass the plural form for irregular words. */
+export const plural = (n: number, singular: string, pluralForm = `${singular}s`) => (n === 1 ? singular : pluralForm);
+
+/** The message of whatever was thrown. */
+export const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 /** Ends a message with a period unless it already ends a sentence (server messages usually do). */
 export function sentence(text: string): string {
   return /[.!?]$/.test(text.trimEnd()) ? text.trimEnd() : `${text.trimEnd()}.`;

@@ -1,4 +1,5 @@
-import { modelKey, readConfig, serverUrl, type Config } from './config.js';
+import { readConfig, serverUrl, type Config } from './config.js';
+import { modelKey } from './providers.js';
 
 export type Kind = 'why' | 'how' | 'next';
 export type PushStatus = 'verified' | 'skipped' | 'pending' | 'provider_error';

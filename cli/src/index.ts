@@ -6,6 +6,7 @@ import { interviewCommand } from './commands/interview.js';
 import { badgeCommand } from './commands/badge.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
+import { errorMessage } from './ui.js';
 
 const HELP = `ownit: debrief the code you just pushed.
 
@@ -73,7 +74,7 @@ main(process.argv.slice(2)).then(
     process.exitCode = code;
   },
   (error: unknown) => {
-    process.stderr.write(`Ownit: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(`Ownit: ${errorMessage(error)}\n`);
     process.exitCode = 1;
   },
 );

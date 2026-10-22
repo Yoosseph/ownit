@@ -2,7 +2,7 @@ import { ApiError, type AnswerResponse, type ApiClient, type PublicQuestion, typ
 import type { PreparedDiff } from './diff.js';
 import type { Commit } from './git.js';
 import type { Writable } from 'node:stream';
-import { paint, sentence, spinner, wrap, type Prompter } from './ui.js';
+import { errorMessage, paint, plural, sentence, spinner, wrap, type Prompter } from './ui.js';
 
 export interface DebriefTarget {
   repo: string;
@@ -32,8 +32,8 @@ function isSkip(answer: string) {
 export async function runDebrief(api: ApiClient, prompter: Prompter, target: DebriefTarget): Promise<DebriefOutcome> {
   const out = prompter.out;
   const c = paint(out);
-  const commitWord = target.commits.length === 1 ? 'commit' : 'commits';
-  out.write(`\n${c.bold('Ownit debrief')} ${c.dim(`· ${target.repo} · ${target.commits.length} ${commitWord} · ${target.diff.changedLines} changed ${target.diff.changedLines === 1 ? 'line' : 'lines'}`)}\n`);
+  const commitWord = plural(target.commits.length, 'commit');
+  out.write(`\n${c.bold('Ownit debrief')} ${c.dim(`· ${target.repo} · ${target.commits.length} ${commitWord} · ${target.diff.changedLines} changed ${plural(target.diff.changedLines, 'line')}`)}\n`);
 
   const payload = {
     commits: target.commits,
@@ -132,7 +132,7 @@ function failure(out: Writable, error: unknown): DebriefOutcome {
     out.write(`${c.yellow('Ownit:')} ${sentence(error.message)} ${RESUME_HINT}\n`);
     return { status: 'pending', reason: error.message };
   }
-  const message = error instanceof Error ? error.message : String(error);
+  const message = errorMessage(error);
   out.write(`${c.yellow('Ownit:')} ${sentence(message)} ${RESUME_HINT}\n`);
   return { status: 'pending', reason: message };
 }

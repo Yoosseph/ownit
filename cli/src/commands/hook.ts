@@ -7,7 +7,7 @@ import { RESUME_HINT, runDebrief } from '../debrief.js';
 import { buildDiff } from '../diff.js';
 import { githubRepo } from '../git.js';
 import { computePush, parseRefs, type PushRange } from '../pushRange.js';
-import { createPrompter, paint, sentence } from '../ui.js';
+import { createPrompter, errorMessage, paint, plural, sentence } from '../ui.js';
 
 const PROMPT_TIMEOUT_MS = 120_000;
 const QUICK_TIMEOUT_MS = 8_000;
@@ -103,7 +103,7 @@ export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = proce
     try {
       const n = push.commits.length;
       const answer = await prompter.ask(
-        `${c.bold('Ownit')} ${c.dim(`(${n} ${n === 1 ? 'commit' : 'commits'} to ${repo})`)} Debrief now? [Y/n/s=skip] `,
+        `${c.bold('Ownit')} ${c.dim(`(${n} ${plural(n, 'commit')} to ${repo})`)} Debrief now? [Y/n/s=skip] `,
         PROMPT_TIMEOUT_MS,
       );
       const choice = interpretChoice(answer);
@@ -133,7 +133,7 @@ export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = proce
     const reason =
       error instanceof ApiError && error.code === 'network'
         ? `${sentence(error.message)} The push continues and will show as pending.`
-        : `${sentence(error instanceof Error ? error.message : String(error))} The push continues.`;
+        : `${sentence(errorMessage(error))} The push continues.`;
     out.write(`${c.yellow('Ownit:')} ${reason} ${RESUME_HINT}\n`);
     return 0;
   }

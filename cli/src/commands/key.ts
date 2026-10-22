@@ -1,4 +1,5 @@
-import { describeKey, isProvider, modelKey, PROVIDER_IDS, PROVIDERS, providerByPrefix, readConfig, updateConfig, type Provider } from '../config.js';
+import { readConfig, updateConfig } from '../config.js';
+import { describeKey, isProvider, modelKey, PROVIDER_IDS, PROVIDERS, providerByPrefix, type Provider } from '../providers.js';
 import { readSecret } from '../secret.js';
 import { createPrompter } from '../ui.js';
 

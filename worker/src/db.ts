@@ -2,6 +2,9 @@ import type { Kind } from './questionCount';
 
 export type PushStatus = 'verified' | 'skipped' | 'pending' | 'provider_error';
 
+/** Verified and skipped are final. Pending and provider_error pushes still wait for a debrief. */
+export const isResolved = (status: PushStatus) => status === 'verified' || status === 'skipped';
+
 export interface RepoRow {
   id: number;
   owner: string;
@@ -35,6 +38,8 @@ export interface QuestionRow {
 }
 
 export const nowIso = () => new Date().toISOString();
+
+const resolvedAt = (status: PushStatus) => (isResolved(status) ? nowIso() : null);
 
 // Lists of SHAs are passed as one JSON parameter and expanded with json_each, so
 // each operation is a single statement however many commits a push has. D1's free
@@ -95,13 +100,12 @@ export async function createPush(
   db: D1Database,
   push: { repoId: number; userId: number | null; baseSha: string | null; headSha: string; status: PushStatus },
 ): Promise<PushRow> {
-  const resolved = push.status === 'verified' || push.status === 'skipped' ? nowIso() : null;
   const row = await db
     .prepare(
       `INSERT INTO pushes (repo_id, user_github_id, base_sha, head_sha, status, created_at, resolved_at)
        VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *`,
     )
-    .bind(push.repoId, push.userId, push.baseSha, push.headSha, push.status, nowIso(), resolved)
+    .bind(push.repoId, push.userId, push.baseSha, push.headSha, push.status, nowIso(), resolvedAt(push.status))
     .first<PushRow>();
   return row!;
 }
@@ -116,8 +120,7 @@ export async function attachCommits(db: D1Database, repoId: number, pushId: numb
 }
 
 export function setPushStatus(db: D1Database, pushId: number, status: PushStatus) {
-  const resolved = status === 'verified' || status === 'skipped' ? nowIso() : null;
-  return db.prepare('UPDATE pushes SET status = ?, resolved_at = ? WHERE id = ?').bind(status, resolved, pushId).run();
+  return db.prepare('UPDATE pushes SET status = ?, resolved_at = ? WHERE id = ?').bind(status, resolvedAt(status), pushId).run();
 }
 
 export async function replaceQuestions(db: D1Database, pushId: number, questions: { kind: Kind; question: string }[]) {

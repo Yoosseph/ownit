@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, type PushRow } from '../db';
+import { attachCommits, createPush, findPushForCommits, isResolved, type PushRow } from '../db';
 import { log } from '../log';
 import { readJson, repoName, requireRepo, sha, updateStatus } from './shared';
 
@@ -15,8 +15,6 @@ const recordBody = z.object({
 
 const lookupBody = z.object({ repo: repoName, head_sha: sha, shas: z.array(sha).min(1).max(500) });
 
-const isResolved = (push: PushRow) => push.status === 'verified' || push.status === 'skipped';
-
 export const pushes = new Hono<AppEnv>();
 
 /** Records a push without a debrief: the hook's "n" (pending) and "s" (skipped) answers. */
@@ -28,7 +26,7 @@ pushes.post('/', async (c) => {
   const shas = body.commits.map((x) => x.sha);
 
   let push = await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
-  if (push && isResolved(push)) return c.json({ push_id: push.id, status: push.status });
+  if (push && isResolved(push.status)) return c.json({ push_id: push.id, status: push.status });
   if (push?.user_github_id && push.user_github_id !== c.get('userId')) return c.json({ push_id: push.id, status: push.status });
   push ??= await createPush(c.env.DB, {
     repoId: repo.id,

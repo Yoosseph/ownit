@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getPush, recordAttempt, replaceQuestions, setPushStatus } from '../db';
+import { attachCommits, createPush, findPushForCommits, getPush, isResolved, recordAttempt, replaceQuestions, setPushStatus } from '../db';
 import { gradeAnswer, MAX_ANSWER_CHARS, writeFollowUp, writeQuestions, type Question } from '../debrief';
 import { cappedDemoModel, rateLimit } from '../limits';
 import { log } from '../log';
@@ -79,7 +79,7 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
     return c.json({ error: 'expired_session', message: 'This debrief session expired. Run "ownit interview" again.' }, 410);
   }
   const push = await getPush(c.env.DB, state.pushId);
-  if (!push || (push.status !== 'pending' && push.status !== 'provider_error')) {
+  if (!push || isResolved(push.status)) {
     return c.json({ error: 'already_resolved', status: push?.status, message: `This push is already ${push?.status ?? 'gone'}.` }, 409);
   }
   return state;
@@ -105,7 +105,7 @@ interview.post('/start', async (c) => {
   if (push?.user_github_id && push.user_github_id !== c.get('userId')) {
     return c.json({ error: 'forbidden', message: 'Another developer pushed these commits, so the debrief is theirs.' }, 403);
   }
-  if (push && (push.status === 'verified' || push.status === 'skipped')) {
+  if (push && isResolved(push.status)) {
     return c.json({ error: 'already_resolved', status: push.status, push_id: push.id, message: `This push is already ${push.status}.` }, 409);
   }
   push ??= await createPush(c.env.DB, {

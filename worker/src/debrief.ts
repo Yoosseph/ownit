@@ -78,3 +78,12 @@ export async function writeFollowUp(model: ChatModel, push: PushContext, missed:
   const [question] = await callJson(model, followUpPrompt(push, missed, feedback), 2000, (v) => validateQuestions(v, 1));
   return { ...question!, kind: missed.kind };
 }
+
+export type Verdict = Grade & { followUp?: Question };
+
+/** Grades an answer and, on a miss, writes a follow-up question for another try. */
+export async function judgeAnswer(model: ChatModel, push: PushContext, question: Question, answer: string): Promise<Verdict> {
+  const grade = await gradeAnswer(model, question, answer);
+  if (grade.pass) return grade;
+  return { ...grade, followUp: await writeFollowUp(model, push, question, grade.feedback) };
+}

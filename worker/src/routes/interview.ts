@@ -1,14 +1,16 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getPush, isResolved, recordAttempt, replaceQuestions, setPushStatus } from '../db';
-import { gradeAnswer, MAX_ANSWER_CHARS, writeFollowUp, writeQuestions, type Question } from '../debrief';
+import { attachCommits, createPush, findPushForCommits, getPush, isResolved, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
+import { judgeAnswer, MAX_ANSWER_CHARS, writeQuestions, type Question, type Verdict } from '../debrief';
 import { cappedDemoModel, LIMITS, rateLimit } from '../limits';
-import { log } from '../log';
+import { log, type LogFields } from '../log';
 import { createModel, isProvider, ProviderError, type ChatModel } from '../model';
 import { countChangedLines, questionCount } from '../questionCount';
 import { seal, unseal } from '../seal';
 import { commit, readJson, repoName, requireRepo, sha, updateStatus } from './shared';
+
+// --- Request bodies ----------------------------------------------------------
 
 const startBody = z.object({
   repo: repoName,
@@ -33,6 +35,43 @@ const answerBody = z.object({
 
 const skipBody = z.object({ session: z.string().min(1).max(20_000) });
 
+// --- The model for a request -------------------------------------------------
+
+/** The API key the CLI sent and the provider it named. */
+function requestedKey(c: Context<AppEnv>): { key: string | undefined; provider: string } {
+  // CLI builds from before the provider choice sent only x-nebius-key.
+  const legacy = c.req.header('x-nebius-key')?.trim();
+  const key = c.req.header('x-model-key')?.trim() || legacy;
+  const provider = (key === legacy ? 'nebius' : c.req.header('x-model-provider')?.trim().toLowerCase()) || 'nebius';
+  return { key, provider };
+}
+
+/** The request's own key on its chosen provider, else the capped demo key, else a provider error. */
+export function modelFor(c: Context<AppEnv>): ChatModel {
+  const { key, provider } = requestedKey(c);
+  if (key || c.env.MODEL_BACKEND === 'fixture') {
+    if (!isProvider(provider)) throw new ProviderError('unknown_provider');
+    return createModel(c.env, key ?? '', provider);
+  }
+  if (c.env.DEMO_NEBIUS_KEY) {
+    return cappedDemoModel(c.env.DB, Number(c.env.DEMO_DAILY_CALL_CAP) || 0, createModel(c.env, c.env.DEMO_NEBIUS_KEY, 'nebius'));
+  }
+  throw new ProviderError('no_key');
+}
+
+/**
+ * Marks the push provider_error (it stays out of the stats until retried) and
+ * explains why. Anything that is not a ProviderError is rethrown.
+ */
+async function providerFailure(c: Context<AppEnv>, error: unknown, pushId: number, event: string, fields: LogFields, started: number): Promise<Response> {
+  if (!(error instanceof ProviderError)) throw error;
+  await updateStatus(c, pushId, 'provider_error');
+  log(event, { ...fields, push: pushId, status: 'provider_error', reason: error.kind, ms: Date.now() - started });
+  return c.json({ error: 'provider_error', reason: error.kind, message: error.message, push_id: pushId }, 502);
+}
+
+// --- Sealed debrief state ----------------------------------------------------
+
 /** Debrief state sealed into the token the CLI carries between requests. */
 export interface DebriefState {
   v: 1;
@@ -51,23 +90,7 @@ function sessionSecret(c: Context<AppEnv>): string {
   return secret;
 }
 
-/** The request's own key on its chosen provider, else the capped demo key, else a provider error. */
-export function modelFor(c: Context<AppEnv>): ChatModel {
-  // CLI builds from before the provider choice sent only x-nebius-key.
-  const legacy = c.req.header('x-nebius-key')?.trim();
-  const key = c.req.header('x-model-key')?.trim() || legacy;
-  if (key || c.env.MODEL_BACKEND === 'fixture') {
-    const provider = (key === legacy ? 'nebius' : c.req.header('x-model-provider')?.trim().toLowerCase()) || 'nebius';
-    if (!isProvider(provider)) throw new ProviderError('unknown_provider');
-    return createModel(c.env, key ?? '', provider);
-  }
-  if (c.env.DEMO_NEBIUS_KEY) {
-    return cappedDemoModel(c.env.DB, Number(c.env.DEMO_DAILY_CALL_CAP) || 0, createModel(c.env, c.env.DEMO_NEBIUS_KEY, 'nebius'));
-  }
-  throw new ProviderError('no_key');
-}
-
-export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
+const sealState = (c: Context<AppEnv>, state: DebriefState) => seal(sessionSecret(c), state);
 
 /** Opens a debrief token for the current user, or explains why it cannot be used. */
 async function openState(c: Context<AppEnv>, token: string): Promise<DebriefState | Response> {
@@ -85,22 +108,15 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
   return state;
 }
 
-export const interview = new Hono<AppEnv>();
+export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
 
-interview.post('/start', async (c) => {
-  const body = await readJson(c, startBody, 'Invalid debrief request.');
-  if (body instanceof Response) return body;
-  const started = Date.now();
+// --- Routes ------------------------------------------------------------------
 
-  const repo = await requireRepo(c, body.repo);
-  if (repo instanceof Response) return repo;
-  const limited =
-    !(await rateLimit(c.env.DB, `start:user:${c.get('userId')}`, LIMITS.debriefsPerUser)) ||
-    !(await rateLimit(c.env.DB, `start:repo:${repo.id}`, LIMITS.debriefsPerRepo));
-  if (limited) {
-    return c.json({ error: 'rate_limited', message: 'Too many debriefs for this repo. Try again later.' }, 429);
-  }
-
+/**
+ * The push these commits belong to, created when new, provided the current
+ * user may debrief it. Otherwise an error response to return as is.
+ */
+async function claimPush(c: Context<AppEnv>, repo: RepoRow, body: z.infer<typeof startBody>): Promise<PushRow | Response> {
   const shas = body.commits.map((x) => x.sha);
   let push = body.push_id ? await getPush(c.env.DB, body.push_id) : await findPushForCommits(c.env.DB, repo.id, body.head_sha, shas);
   if (body.push_id && push?.repo_id !== repo.id) return c.json({ error: 'not_found', message: 'No such push in this repo.' }, 404);
@@ -118,16 +134,33 @@ interview.post('/start', async (c) => {
     status: 'pending',
   });
   await attachCommits(c.env.DB, repo.id, push.id, shas);
+  return push;
+}
+
+export const interview = new Hono<AppEnv>();
+
+interview.post('/start', async (c) => {
+  const body = await readJson(c, startBody, 'Invalid debrief request.');
+  if (body instanceof Response) return body;
+  const started = Date.now();
+
+  const repo = await requireRepo(c, body.repo);
+  if (repo instanceof Response) return repo;
+  const limited =
+    !(await rateLimit(c.env.DB, `start:user:${c.get('userId')}`, LIMITS.debriefsPerUser)) ||
+    !(await rateLimit(c.env.DB, `start:repo:${repo.id}`, LIMITS.debriefsPerRepo));
+  if (limited) {
+    return c.json({ error: 'rate_limited', message: 'Too many debriefs for this repo. Try again later.' }, 429);
+  }
+  const push = await claimPush(c, repo, body);
+  if (push instanceof Response) return push;
 
   const n = questionCount(Math.max(body.changed_lines, countChangedLines(body.diff)));
   let questions: Question[];
   try {
     questions = await writeQuestions(modelFor(c), n, { commits: body.commits, diff: body.diff, truncated: body.diff_truncated });
   } catch (error) {
-    if (!(error instanceof ProviderError)) throw error;
-    await updateStatus(c, push.id, 'provider_error');
-    log('interview.start', { repo: body.repo, push: push.id, status: 'provider_error', reason: error.kind, ms: Date.now() - started });
-    return c.json({ error: 'provider_error', reason: error.kind, message: error.message, push_id: push.id }, 502);
+    return providerFailure(c, error, push.id, 'interview.start', { repo: body.repo }, started);
   }
 
   await replaceQuestions(c.env.DB, push.id, questions);
@@ -145,7 +178,7 @@ interview.post('/start', async (c) => {
   return c.json({
     push_id: push.id,
     total: n,
-    session: await seal(sessionSecret(c), state),
+    session: await sealState(c, state),
     questions: questions.map(publicQuestion),
   });
 });
@@ -162,18 +195,13 @@ interview.post('/answer', async (c) => {
 
   const model = modelFor(c);
   const push = { commits: body.commits, diff: body.diff, truncated: body.diff_truncated };
-  let pass: boolean;
-  let feedback: string;
-  let followUp: Question | undefined;
+  let verdict: Verdict;
   try {
-    ({ pass, feedback } = await gradeAnswer(model, question, body.answer));
-    if (!pass) followUp = await writeFollowUp(model, push, question, feedback);
+    verdict = await judgeAnswer(model, push, question, body.answer);
   } catch (error) {
-    if (!(error instanceof ProviderError)) throw error;
-    await updateStatus(c, state.pushId, 'provider_error');
-    log('interview.answer', { push: state.pushId, status: 'provider_error', reason: error.kind, ms: Date.now() - started });
-    return c.json({ error: 'provider_error', reason: error.kind, message: error.message, push_id: state.pushId }, 502);
+    return providerFailure(c, error, state.pushId, 'interview.answer', {}, started);
   }
+  const { pass, feedback, followUp } = verdict;
 
   await recordAttempt(c.env.DB, state.pushId, body.idx, pass, followUp?.question);
   if (pass) question.passed = true;
@@ -189,7 +217,7 @@ interview.post('/answer', async (c) => {
     done,
     status: done ? 'verified' : 'pending',
     followup: followUp ? publicQuestion(followUp, body.idx) : null,
-    session: await seal(sessionSecret(c), state),
+    session: await sealState(c, state),
   });
 });
 

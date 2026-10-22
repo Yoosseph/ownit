@@ -1,7 +1,7 @@
+import type { Writable } from 'node:stream';
 import { ApiError, type AnswerResponse, type ApiClient, type PublicQuestion, type PushStatus, type StartResponse } from './api.js';
 import type { PreparedDiff } from './diff.js';
 import type { Commit } from './git.js';
-import type { Writable } from 'node:stream';
 import { errorMessage, paint, plural, sentence, spinner, wrap, type Prompter } from './ui.js';
 
 export interface DebriefTarget {
@@ -24,8 +24,89 @@ export const RESUME_HINT = 'Run "ownit interview" when you\'re ready.';
 
 const KIND_LABEL = { why: 'why', how: 'how', next: "what's next" } as const;
 
+/** What every request in one debrief shares. The sealed session token changes with each answer. */
+interface Debrief {
+  api: ApiClient;
+  prompter: Prompter;
+  total: number;
+  /** Sent with every request, so the server never has to store the code. */
+  payload: { commits: Commit[]; diff: string; diff_truncated: boolean };
+  session: string;
+}
+
 function isSkip(answer: string) {
   return /^(s|skip|:skip)$/i.test(answer.trim());
+}
+
+/** Shows a spinner while `work` runs. */
+async function withSpinner<T>(out: Writable, text: string, work: () => Promise<T>): Promise<T> {
+  const spin = spinner(out, text);
+  try {
+    return await work();
+  } finally {
+    spin.stop();
+  }
+}
+
+function printQuestion(out: Writable, question: PublicQuestion, total: number, followUp: boolean) {
+  const c = paint(out);
+  const label = `Question ${question.idx + 1}/${total}`;
+  out.write(`\n${c.bold(c.cyan(label))} ${c.dim(`(${KIND_LABEL[question.kind]}${followUp ? ', follow-up' : ''})`)}\n`);
+  out.write(`${wrap(question.text)}\n`);
+}
+
+/** The next non-blank answer, or null when the input ends. */
+async function readAnswer(prompter: Prompter): Promise<string | null> {
+  const c = paint(prompter.out);
+  let answer: string | null;
+  do answer = await prompter.ask(c.bold('> '));
+  while (answer !== null && !answer.trim());
+  return answer;
+}
+
+/**
+ * Asks a question, and follow-ups after a miss, until an answer passes (null)
+ * or the debrief ends early (its outcome).
+ */
+async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<DebriefOutcome | null> {
+  const { api, prompter } = debrief;
+  const out = prompter.out;
+  const c = paint(out);
+  let question = first;
+  let followUp = false;
+  for (;;) {
+    printQuestion(out, question, debrief.total, followUp);
+    const answer = await readAnswer(prompter);
+    if (answer === null) {
+      out.write(`\n${c.yellow('Debrief paused.')} ${RESUME_HINT}\n`);
+      return { status: 'pending', reason: 'debrief paused' };
+    }
+    if (isSkip(answer)) return skip(api, out, debrief.session);
+
+    let result: AnswerResponse;
+    try {
+      result = await withSpinner(out, 'Checking your answer…', () =>
+        api.request<AnswerResponse>('POST', '/api/interview/answer', {
+          session: debrief.session,
+          idx: question.idx,
+          answer: answer.slice(0, MAX_ANSWER_CHARS),
+          ...debrief.payload,
+        }),
+      );
+    } catch (error) {
+      return failure(out, error);
+    }
+    debrief.session = result.session;
+    if (result.pass) {
+      out.write(`${c.green('✓ Passed.')}\n${c.dim(wrap(result.feedback))}\n`);
+      return null;
+    }
+    out.write(`${c.yellow('Not quite yet.')}\n${wrap(result.feedback)}\n`);
+    if (!result.followup) return { status: 'pending', reason: 'no follow-up question' };
+    out.write(c.dim("Here's another angle on the same topic:\n"));
+    question = result.followup;
+    followUp = true;
+  }
 }
 
 /** Runs one debrief: asks each question, grades answers, and offers follow-ups until every question passes. */
@@ -42,65 +123,26 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
   };
 
   let start: StartResponse;
-  const spin = spinner(out, 'Nemotron is reading your push…');
   try {
-    start = await api.request<StartResponse>('POST', '/api/interview/start', {
-      repo: target.repo,
-      base_sha: target.baseSha,
-      head_sha: target.headSha,
-      changed_lines: target.diff.changedLines,
-      push_id: target.pushId,
-      ...payload,
-    });
+    start = await withSpinner(out, 'Nemotron is reading your push…', () =>
+      api.request<StartResponse>('POST', '/api/interview/start', {
+        repo: target.repo,
+        base_sha: target.baseSha,
+        head_sha: target.headSha,
+        changed_lines: target.diff.changedLines,
+        push_id: target.pushId,
+        ...payload,
+      }),
+    );
   } catch (error) {
-    spin.stop();
     return failure(out, error);
   }
-  spin.stop();
 
-  let session = start.session;
   out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to skip.\n`));
-  for (const first of start.questions) {
-    let question: PublicQuestion = first;
-    let followUp = false;
-    for (;;) {
-      const label = `Question ${question.idx + 1}/${start.total}`;
-      out.write(`\n${c.bold(c.cyan(label))} ${c.dim(`(${KIND_LABEL[question.kind]}${followUp ? ', follow-up' : ''})`)}\n`);
-      out.write(`${wrap(question.text)}\n`);
-      let answer: string | null;
-      do answer = await prompter.ask(c.bold('> '));
-      while (answer !== null && !answer.trim());
-      if (answer === null) {
-        out.write(`\n${c.yellow('Debrief paused.')} ${RESUME_HINT}\n`);
-        return { status: 'pending', reason: 'debrief paused' };
-      }
-      if (isSkip(answer)) return skip(api, out, session);
-
-      const grading = spinner(out, 'Checking your answer…');
-      let result: AnswerResponse;
-      try {
-        result = await api.request<AnswerResponse>('POST', '/api/interview/answer', {
-          session,
-          idx: question.idx,
-          answer: answer.slice(0, MAX_ANSWER_CHARS),
-          ...payload,
-        });
-      } catch (error) {
-        grading.stop();
-        return failure(out, error);
-      }
-      grading.stop();
-      session = result.session;
-      if (result.pass) {
-        out.write(`${c.green('✓ Passed.')}\n${c.dim(wrap(result.feedback))}\n`);
-        break;
-      }
-      out.write(`${c.yellow('Not quite yet.')}\n${wrap(result.feedback)}\n`);
-      if (!result.followup) return { status: 'pending', reason: 'no follow-up question' };
-      out.write(c.dim("Here's another angle on the same topic:\n"));
-      question = result.followup;
-      followUp = true;
-    }
+  const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session };
+  for (const question of start.questions) {
+    const ended = await askUntilPassed(debrief, question);
+    if (ended) return ended;
   }
   out.write(`\n${c.green(c.bold('✓ Push verified.'))} ${c.dim(`${target.commits.length} ${commitWord} owned. Nice work.`)}\n`);
   return { status: 'verified' };

@@ -1,6 +1,6 @@
 import { openSync } from 'node:fs';
 import { ReadStream } from 'node:tty';
-import type { Readable } from 'node:stream';
+import type { Readable, Writable } from 'node:stream';
 import { ApiError, createApi, type ApiClient, type PushStatus } from '../api.js';
 import { readConfig } from '../config.js';
 import { RESUME_HINT, runDebrief } from '../debrief.js';
@@ -57,6 +57,68 @@ async function record(api: ApiClient, repo: string, push: PushRange, status: 'pe
   return res.status;
 }
 
+async function recordPending(api: ApiClient, repo: string, push: PushRange, out: Writable): Promise<number> {
+  await record(api, repo, push, 'pending');
+  out.write(`Ownit: push recorded as pending. ${RESUME_HINT}\n`);
+  return 0;
+}
+
+/**
+ * What the server already recorded for these commits, so a retried push is not
+ * asked twice. Only an unreachable server is an error; anything else means unknown.
+ */
+async function knownStatus(api: ApiClient, repo: string, push: PushRange): Promise<PushStatus | null> {
+  const known = await api
+    .request<{ status: PushStatus | null }>(
+      'POST',
+      '/api/pushes/lookup',
+      { repo, head_sha: push.head, shas: push.commits.map((x) => x.sha) },
+      { timeoutMs: QUICK_TIMEOUT_MS },
+    )
+    .catch((error: unknown) => {
+      if (error instanceof ApiError && error.code === 'network') throw error;
+      return { status: null };
+    });
+  return known.status;
+}
+
+/** Asks whether to debrief now, then debriefs, records a skip, or leaves the push pending. */
+async function askAndDebrief(api: ApiClient, terminal: Readable, repo: string, push: PushRange, out: Writable): Promise<number> {
+  const c = paint(out);
+  const prompter = createPrompter(terminal, out);
+  try {
+    const n = push.commits.length;
+    const answer = await prompter.ask(
+      `${c.bold('Ownit')} ${c.dim(`(${n} ${plural(n, 'commit')} to ${repo})`)} Debrief now? [Y/n/s=skip] `,
+      PROMPT_TIMEOUT_MS,
+    );
+    const choice = interpretChoice(answer);
+    if (choice === 'skip') {
+      await record(api, repo, push, 'skipped');
+      out.write(c.dim('Ownit: skipped. Push continues.\n'));
+      return 0;
+    }
+    if (choice === 'later') return await recordPending(api, repo, push, out);
+    await runDebrief(api, prompter, {
+      repo,
+      baseSha: push.base,
+      headSha: push.head,
+      commits: push.commits,
+      diff: buildDiff(push.ranges),
+    });
+    return 0;
+  } finally {
+    prompter.close();
+    if (terminal !== process.stdin) terminal.destroy();
+  }
+}
+
+function continueReason(error: unknown): string {
+  return error instanceof ApiError && error.code === 'network'
+    ? `${sentence(error.message)} The push continues and will show as pending.`
+    : `${sentence(errorMessage(error))} The push continues.`;
+}
+
 /** `ownit hook pre-push <remote> <url>`. Always exits 0: the debrief never blocks a push. */
 export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<number> {
   const [event, remote = '', url = ''] = argv;
@@ -76,65 +138,17 @@ export async function hookCommand(argv: string[], env: NodeJS.ProcessEnv = proce
       return 0;
     }
     const api = createApi(config, env);
-    const known = await api
-      .request<{ status: PushStatus | null }>(
-        'POST',
-        '/api/pushes/lookup',
-        { repo, head_sha: push.head, shas: push.commits.map((x) => x.sha) },
-        { timeoutMs: QUICK_TIMEOUT_MS },
-      )
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.code === 'network') throw error;
-        return { status: null };
-      });
-    if (known.status === 'verified' || known.status === 'skipped') {
-      out.write(c.dim(`Ownit: this push is already ${known.status}.\n`));
+    const known = await knownStatus(api, repo, push);
+    if (known === 'verified' || known === 'skipped') {
+      out.write(c.dim(`Ownit: this push is already ${known}.\n`));
       return 0;
     }
 
     const terminal = openTerminal(env);
-    if (!terminal) {
-      await record(api, repo, push, 'pending');
-      out.write(`Ownit: push recorded as pending. ${RESUME_HINT}\n`);
-      return 0;
-    }
-
-    const prompter = createPrompter(terminal, out);
-    try {
-      const n = push.commits.length;
-      const answer = await prompter.ask(
-        `${c.bold('Ownit')} ${c.dim(`(${n} ${plural(n, 'commit')} to ${repo})`)} Debrief now? [Y/n/s=skip] `,
-        PROMPT_TIMEOUT_MS,
-      );
-      const choice = interpretChoice(answer);
-      if (choice === 'skip') {
-        await record(api, repo, push, 'skipped');
-        out.write(c.dim('Ownit: skipped. Push continues.\n'));
-        return 0;
-      }
-      if (choice === 'later') {
-        await record(api, repo, push, 'pending');
-        out.write(`Ownit: push recorded as pending. ${RESUME_HINT}\n`);
-        return 0;
-      }
-      await runDebrief(api, prompter, {
-        repo,
-        baseSha: push.base,
-        headSha: push.head,
-        commits: push.commits,
-        diff: buildDiff(push.ranges),
-      });
-      return 0;
-    } finally {
-      prompter.close();
-      if (terminal !== process.stdin) terminal.destroy();
-    }
+    if (!terminal) return await recordPending(api, repo, push, out);
+    return await askAndDebrief(api, terminal, repo, push, out);
   } catch (error) {
-    const reason =
-      error instanceof ApiError && error.code === 'network'
-        ? `${sentence(error.message)} The push continues and will show as pending.`
-        : `${sentence(errorMessage(error))} The push continues.`;
-    out.write(`${c.yellow('Ownit:')} ${reason} ${RESUME_HINT}\n`);
+    out.write(`${c.yellow('Ownit:')} ${continueReason(error)} ${RESUME_HINT}\n`);
     return 0;
   }
 }

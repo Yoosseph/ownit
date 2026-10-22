@@ -29,6 +29,8 @@ const STATUS_LABEL: Record<PushStatus, string> = {
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
+const plural = (n: number, word: string) => (n === 1 ? word : `${word}s`);
+
 function pct(stats: Stats, key: 'verifiedPct' | 'skippedPct') {
   return stats[key] === null ? '—' : `${stats[key]}%`;
 }
@@ -38,51 +40,80 @@ function meter(stats: Stats) {
   return `<div class="meter" role="img" aria-label="${stats.verifiedPct === null ? 'No data' : `${v}% verified`}"><span style="width:${v}%"></span></div>`;
 }
 
-export function renderRepoPage(origin: string, repo: RepoRow, stats: RepoStats, pushes: PagePush[]): string {
-  const full = `${repo.owner}/${repo.name}`;
-  const badgeUrl = badgeImageUrl(origin, repo);
-  const pageUrl = repoPageUrl(origin, repo);
-  const markdown = `[![Ownit](${badgeUrl})](${pageUrl})`;
-  const o = stats.overall;
-  const hideQuestions = Boolean(repo.private);
+// --- Sections ----------------------------------------------------------------
 
-  const authorRows = stats.authors.length
-    ? stats.authors
-        .map(
-          (a) => `<tr><td>${esc(a.author)}</td><td class="num">${a.stats.counted}</td><td class="num">${pct(a.stats, 'verifiedPct')}</td><td class="num">${pct(a.stats, 'skippedPct')}</td><td class="bar">${meter(a.stats)}</td></tr>`,
-        )
-        .join('')
-    : '<tr><td colspan="5" class="empty">No pushes counted yet.</td></tr>';
+function headerSection(repo: RepoRow, badgeUrl: string): string {
+  return `<header>
+  <div>
+    <h1>${esc(`${repo.owner}/${repo.name}`)}</h1>
+    <p class="sub">Tracked by Ownit since ${date(repo.tracked_since)}. Earlier history does not count.</p>
+  </div>
+  <img src="${esc(badgeUrl)}" alt="Ownit badge" height="20">
+</header>`;
+}
 
-  const pushItems = pushes.length
-    ? pushes
-        .map((p) => {
-          const questions = hideQuestions
-            ? ''
-            : p.questions
-                .map(
-                  (q) =>
-                    `<li><span class="kind">${esc(q.kind)}</span> ${esc(q.text)}${q.passed ? ` <span class="ok" title="Passed after ${q.attempts} attempt${q.attempts === 1 ? '' : 's'}">✓</span>` : ''}</li>`,
-                )
-                .join('');
-          return `<li class="push">
+function cardsSection(o: Stats): string {
+  return `<section class="cards" aria-label="Overall">
+  <div class="card"><div class="big">${pct(o, 'verifiedPct')}</div><div class="label">of commits verified</div></div>
+  <div class="card"><div class="big">${pct(o, 'skippedPct')}</div><div class="label">of commits skipped</div></div>
+  <div class="card"><div class="big">${o.counted}</div><div class="label">${plural(o.counted, 'commit')} counted</div></div>
+  <div class="card"><div class="big">${o.waiting}</div><div class="label">waiting for a debrief</div></div>
+</section>`;
+}
+
+function authorRow({ author, stats }: RepoStats['authors'][number]): string {
+  return `<tr><td>${esc(author)}</td><td class="num">${stats.counted}</td><td class="num">${pct(stats, 'verifiedPct')}</td><td class="num">${pct(stats, 'skippedPct')}</td><td class="bar">${meter(stats)}</td></tr>`;
+}
+
+function authorsSection(authors: RepoStats['authors']): string {
+  const rows = authors.length ? authors.map(authorRow).join('') : '<tr><td colspan="5" class="empty">No pushes counted yet.</td></tr>';
+  return `<h2>By author</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Author</th><th class="num">Commits</th><th class="num">Verified</th><th class="num">Skipped</th><th></th></tr></thead>
+<tbody>${rows}</tbody>
+</table></div>`;
+}
+
+function questionItem(q: PagePush['questions'][number]): string {
+  const passed = q.passed ? ` <span class="ok" title="Passed after ${q.attempts} ${plural(q.attempts, 'attempt')}">✓</span>` : '';
+  return `<li><span class="kind">${esc(q.kind)}</span> ${esc(q.text)}${passed}</li>`;
+}
+
+function pushItem(p: PagePush, hideQuestions: boolean): string {
+  const questions = hideQuestions ? '' : p.questions.map(questionItem).join('');
+  return `<li class="push">
   <div class="push-head"><span class="pill ${p.status}">${STATUS_LABEL[p.status]}</span>
-  <span class="meta">${date(p.created_at)} · ${p.commits} commit${p.commits === 1 ? '' : 's'}${p.pusher ? ` · ${esc(p.pusher)}` : ''}</span></div>
+  <span class="meta">${date(p.created_at)} · ${p.commits} ${plural(p.commits, 'commit')}${p.pusher ? ` · ${esc(p.pusher)}` : ''}</span></div>
   ${questions ? `<ul class="questions">${questions}</ul>` : ''}
 </li>`;
-        })
-        .join('\n')
-    : '<li class="empty">No pushes yet. Push to this repo with the Ownit hook installed.</li>';
+}
 
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(full)} · Ownit</title>
-<meta name="description" content="How much of ${esc(full)} its developers have debriefed with Ownit.">
-<style>
-:root{--bg:#fbfaf7;--card:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e7e4dc;--accent:#2f7d4f;--warn:#b7791f;--skip:#8a8a85;--chip:#f1efe8}
+/** Question text is hidden for private repos; stats and statuses still show. */
+function pushesSection(pushes: PagePush[], hideQuestions: boolean): string {
+  const items = pushes.length
+    ? pushes.map((p) => pushItem(p, hideQuestions)).join('\n')
+    : '<li class="empty">No pushes yet. Push to this repo with the Ownit hook installed.</li>';
+  return `<h2>Recent pushes</h2>
+${hideQuestions ? '<p class="sub">This repo is private, so question text is hidden.</p>' : ''}
+<ul>${items}</ul>`;
+}
+
+function badgeSection(markdown: string): string {
+  return `<h2>Badge</h2>
+<p class="sub">Paste this into your README. The badge links back to this page.</p>
+<div class="embed"><code id="badge-md">${esc(markdown)}</code><button type="button" class="copy" data-copy="badge-md">Copy</button></div>`;
+}
+
+const FOOTER = `<footer>
+  Ownit asks developers a few questions about each push: why, how, and what's next. It shows no code and no answers.
+  Percentages count commits whose push was debriefed or skipped; pending pushes become skipped after 24 hours.
+  A learning tool, not proof of authorship.
+  <p class="source"><a href="${SOURCE_URL}">Ownit is open source on GitHub</a>. The official server is <strong>${OFFICIAL_HOST}</strong>; a badge that leads anywhere else comes from a copy.</p>
+</footer>`;
+
+// --- Page --------------------------------------------------------------------
+
+const STYLES = `:root{--bg:#fbfaf7;--card:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e7e4dc;--accent:#2f7d4f;--warn:#b7791f;--skip:#8a8a85;--chip:#f1efe8}
 @media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1d1d1b;--ink:#ecebe6;--muted:#a3a29b;--line:#33322f;--accent:#5cbf84;--warn:#e0a84a;--skip:#9b9a94;--chip:#2a2927}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -121,49 +152,10 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem}
 .source{margin-top:12px}
 .copy{font:inherit;font-size:.85rem;padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .copy:hover{border-color:var(--accent)}
-a{color:inherit}
-</style>
-</head>
-<body>
-<main>
-<header>
-  <div>
-    <h1>${esc(full)}</h1>
-    <p class="sub">Tracked by Ownit since ${date(repo.tracked_since)}. Earlier history does not count.</p>
-  </div>
-  <img src="${esc(badgeUrl)}" alt="Ownit badge" height="20">
-</header>
+a{color:inherit}`;
 
-<section class="cards" aria-label="Overall">
-  <div class="card"><div class="big">${pct(o, 'verifiedPct')}</div><div class="label">of commits verified</div></div>
-  <div class="card"><div class="big">${pct(o, 'skippedPct')}</div><div class="label">of commits skipped</div></div>
-  <div class="card"><div class="big">${o.counted}</div><div class="label">${o.counted === 1 ? 'commit' : 'commits'} counted</div></div>
-  <div class="card"><div class="big">${o.waiting}</div><div class="label">waiting for a debrief</div></div>
-</section>
-
-<h2>By author</h2>
-<div class="table-wrap"><table>
-<thead><tr><th>Author</th><th class="num">Commits</th><th class="num">Verified</th><th class="num">Skipped</th><th></th></tr></thead>
-<tbody>${authorRows}</tbody>
-</table></div>
-
-<h2>Recent pushes</h2>
-${hideQuestions ? '<p class="sub">This repo is private, so question text is hidden.</p>' : ''}
-<ul>${pushItems}</ul>
-
-<h2>Badge</h2>
-<p class="sub">Paste this into your README. The badge links back to this page.</p>
-<div class="embed"><code id="badge-md">${esc(markdown)}</code><button type="button" class="copy" data-copy="badge-md">Copy</button></div>
-
-<footer>
-  Ownit asks developers a few questions about each push: why, how, and what's next. It shows no code and no answers.
-  Percentages count commits whose push was debriefed or skipped; pending pushes become skipped after 24 hours.
-  A learning tool, not proof of authorship.
-  <p class="source"><a href="${SOURCE_URL}">Ownit is open source on GitHub</a>. The official server is <strong>${OFFICIAL_HOST}</strong>; a badge that leads anywhere else comes from a copy.</p>
-</footer>
-</main>
-<script>
-document.querySelectorAll('[data-copy]').forEach((button) => button.addEventListener('click', async () => {
+/** Copies the badge Markdown; falls back to selecting it where the clipboard API is unavailable. */
+const COPY_SCRIPT = `document.querySelectorAll('[data-copy]').forEach((button) => button.addEventListener('click', async () => {
   const source = document.getElementById(button.dataset.copy);
   try {
     await navigator.clipboard.writeText(source.textContent);
@@ -173,7 +165,37 @@ document.querySelectorAll('[data-copy]').forEach((button) => button.addEventList
     button.textContent = 'Press Ctrl+C';
   }
   setTimeout(() => (button.textContent = 'Copy'), 2000);
-}));
+}));`;
+
+export function renderRepoPage(origin: string, repo: RepoRow, stats: RepoStats, pushes: PagePush[]): string {
+  const full = `${repo.owner}/${repo.name}`;
+  const badgeUrl = badgeImageUrl(origin, repo);
+  const markdown = `[![Ownit](${badgeUrl})](${repoPageUrl(origin, repo)})`;
+  const sections = [
+    headerSection(repo, badgeUrl),
+    cardsSection(stats.overall),
+    authorsSection(stats.authors),
+    pushesSection(pushes, Boolean(repo.private)),
+    badgeSection(markdown),
+    FOOTER,
+  ];
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(full)} · Ownit</title>
+<meta name="description" content="How much of ${esc(full)} its developers have debriefed with Ownit.">
+<style>
+${STYLES}
+</style>
+</head>
+<body>
+<main>
+${sections.join('\n\n')}
+</main>
+<script>
+${COPY_SCRIPT}
 </script>
 </body>
 </html>`;

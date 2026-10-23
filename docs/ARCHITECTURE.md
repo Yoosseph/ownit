@@ -33,7 +33,9 @@ flowchart LR
 3. **The worker asks the model for 1–3 questions** (more for bigger pushes): *why*, *how*, *next*.
    Each question has a reference answer, which is encrypted into a token the CLI carries but can't read.
 4. **You answer in the terminal.** The worker has the model grade each answer. If it misses, you get
-   feedback and a follow-up question. When every question passes, the push is **verified**.
+   feedback and a follow-up question. On a follow-up, you may instead stand by the answer that missed
+   (once per debrief, no model call); that question passes and shows as **disputed** on the page and
+   check run. When every question passes, the push is **verified**.
 5. **GitHub sends a push webhook.** The worker matches the landed commits by SHA and sets the check
    run. Commits that arrived with no debrief become a **pending** push. Merge commits made by
    GitHub's Merge or Update branch button (committer `web-flow`) are left out.

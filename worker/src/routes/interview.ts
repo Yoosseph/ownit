@@ -32,6 +32,8 @@ const answerBody = z.object({
   commits: z.array(commit).min(1).max(500),
   diff: z.string().max(200_000),
   diff_truncated: z.boolean(),
+  // Stand by `answer` (the one the grader did not accept) instead of grading it again.
+  dispute: z.boolean().optional(),
 });
 
 const skipBody = z.object({ session: z.string().min(1).max(20_000) });
@@ -80,7 +82,10 @@ export interface DebriefState {
   repoId: number;
   uid: number | null;
   exp: number;
-  questions: (Question & { passed: boolean })[];
+  /** `missed`: this question is a follow-up after an answer that did not pass. */
+  questions: (Question & { passed: boolean; missed?: boolean })[];
+  /** Whether the developer already used the one dispute this debrief allows. */
+  disputed?: boolean;
 }
 
 const STATE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -127,6 +132,19 @@ async function creditBackfill(c: Context<AppEnv>, repo: RepoRow, pushId: number)
     throw error;
   }
   return creditEarlierWork(c.env.DB, repo, pushId, c.get('login') ?? null);
+}
+
+const MIN_DISPUTE_WORDS = 4;
+
+/**
+ * Why a dispute is not allowed, or null when it is. A developer may stand by an
+ * answer once per debrief, only on a follow-up, and only with a real attempt.
+ */
+function disputeRefusal(state: DebriefState, question: DebriefState['questions'][number], answer: string): string | null {
+  if (!question.missed) return 'You can stand by an answer only on a follow-up question.';
+  if (state.disputed) return 'You already stood by one answer in this debrief.';
+  if (answer.trim().split(/\s+/).length < MIN_DISPUTE_WORDS) return 'Stand by a real answer: a sentence or more.';
+  return null;
 }
 
 /** Whether the repo's public page shows passing answers, so they are worth keeping. */
@@ -217,13 +235,19 @@ interview.post('/answer', async (c) => {
   if (question.passed) return c.json({ error: 'already_passed', message: 'That question is already passed.' }, 409);
   const started = Date.now();
 
-  const model = modelFor(c);
-  const push = { commits: body.commits, diff: body.diff, truncated: body.diff_truncated };
   let verdict: Verdict;
-  try {
-    verdict = await judgeAnswer(model, push, question, body.answer);
-  } catch (error) {
-    return providerFailure(c, error, state.pushId, 'interview.answer', {}, started);
+  if (body.dispute) {
+    const refused = disputeRefusal(state, question, body.answer);
+    if (refused) return c.json({ error: 'dispute_refused', message: refused }, 400);
+    state.disputed = true;
+    verdict = { pass: true, feedback: 'Noted. You stood by your answer, so this question shows as disputed.' };
+  } else {
+    const push = { commits: body.commits, diff: body.diff, truncated: body.diff_truncated };
+    try {
+      verdict = await judgeAnswer(modelFor(c), push, question, body.answer);
+    } catch (error) {
+      return providerFailure(c, error, state.pushId, 'interview.answer', {}, started);
+    }
   }
   const { pass, feedback, followUp } = verdict;
 
@@ -233,15 +257,16 @@ interview.post('/answer', async (c) => {
     passed: pass,
     nextText: followUp?.question,
     answer: keep ? body.answer.trim().slice(0, MAX_ANSWER_CHARS) : null,
+    disputed: body.dispute,
   });
   if (pass) question.passed = true;
-  if (followUp) state.questions[body.idx] = { ...followUp, passed: false };
+  if (followUp) state.questions[body.idx] = { ...followUp, passed: false, missed: true };
   const done = state.questions.every((q) => q.passed);
   if (done) await updateStatus(c, state.pushId, 'verified');
   else await setPushStatus(c.env.DB, state.pushId, 'pending');
   const earlier = done && repo ? await creditBackfill(c, repo, state.pushId) : 0;
 
-  log('interview.answer', { push: state.pushId, status: pass ? 'pass' : 'fail', done, earlier, ms: Date.now() - started });
+  log('interview.answer', { push: state.pushId, status: body.dispute ? 'disputed' : pass ? 'pass' : 'fail', done, earlier, ms: Date.now() - started });
   return c.json({
     pass,
     feedback,

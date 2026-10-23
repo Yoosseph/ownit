@@ -34,6 +34,13 @@ interface Debrief {
   session: string;
   /** Older commits the final passing answer credited (repos that count earlier work). */
   earlierCredited: number;
+  /** Whether the one dispute a debrief allows is used up. */
+  disputed: boolean;
+}
+
+/** "d" on a follow-up stands by the answer that did not pass. */
+function isDispute(answer: string) {
+  return /^(d|dispute)$/i.test(answer.trim());
 }
 
 /** "s" (or the older "skip") stops the debrief for now. */
@@ -80,28 +87,38 @@ async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<
   const c = paint(out);
   let question = first;
   let followUp = false;
+  // The answer that did not pass, which "d" stands by on the follow-up.
+  let missed: string | null = null;
   for (;;) {
     printQuestion(out, question, debrief.total, followUp);
-    const answer = await readAnswer(prompter);
-    if (answer === null) {
+    const typed = await readAnswer(prompter);
+    if (typed === null) {
       out.write(`\n${c.yellow('Debrief paused.')} ${RESUME_HINT}\n`);
       return { status: 'pending', reason: 'debrief paused' };
     }
-    if (isLater(answer)) return later(out);
+    if (isLater(typed)) return later(out);
+    const dispute: boolean = missed !== null && !debrief.disputed && isDispute(typed);
+    const answer: string = dispute ? missed! : typed;
 
     let result: AnswerResponse;
     try {
-      result = await withSpinner(out, 'Checking your answer…', () =>
+      result = await withSpinner(out, dispute ? 'Recording your answer…' : 'Checking your answer…', () =>
         api.request<AnswerResponse>('POST', '/api/interview/answer', {
           session: debrief.session,
           idx: question.idx,
           answer: answer.slice(0, MAX_ANSWER_CHARS),
+          ...(dispute ? { dispute: true } : {}),
           ...debrief.payload,
         }),
       );
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'dispute_refused') {
+        out.write(`${c.yellow(error.message)} Answer the follow-up instead.\n`);
+        continue;
+      }
       return failure(out, error);
     }
+    if (dispute) debrief.disputed = true;
     debrief.session = result.session;
     debrief.earlierCredited = result.earlier_credited ?? 0;
     if (result.pass) {
@@ -111,6 +128,10 @@ async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<
     out.write(`${c.yellow('Not quite yet.')}\n${wrap(result.feedback)}\n`);
     if (!result.followup) return { status: 'pending', reason: 'no follow-up question' };
     out.write(c.dim("Here's another angle on the same topic:\n"));
+    if (!debrief.disputed) {
+      out.write(c.dim('Sure your answer was right? Type "d" to stand by it. It passes, marked as disputed (once per debrief).\n'));
+    }
+    missed = answer;
     question = result.followup;
     followUp = true;
   }
@@ -147,7 +168,7 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
 
   out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to stop and finish later.\n`));
   if (start.answers_public) out.write(c.yellow('Note: this repo shows passing answers on its public Ownit page.\n'));
-  const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session, earlierCredited: 0 };
+  const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session, earlierCredited: 0, disputed: false };
   for (const question of start.questions) {
     const ended = await askUntilPassed(debrief, question);
     if (ended) return ended;

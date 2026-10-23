@@ -6,7 +6,7 @@ import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
-import { errorMessage } from './ui.js';
+import { closestMatch, errorMessage } from './ui.js';
 
 interface Command {
   /** [usage, description] lines for `ownit help`. Commands without them are not listed. */
@@ -77,7 +77,14 @@ async function main(argv: string[]): Promise<number> {
   const [name = 'help', ...args] = argv;
   const command = findCommand(name);
   if (!command) {
-    process.stderr.write(`Unknown command "${name}".\n\n${helpText()}`);
+    // Suggest only listed commands, so a typo never points at the hidden hook command.
+    const listed = Object.keys(COMMANDS).filter((key) => COMMANDS[key]!.help);
+    const guess = closestMatch(name, listed);
+    process.stderr.write(
+      guess
+        ? `Unknown command "${name}". Did you mean "ownit ${guess}"?\nRun "ownit help" to see every command.\n`
+        : `Unknown command "${name}".\n\n${helpText()}`,
+    );
     return 1;
   }
   return command.run(args);

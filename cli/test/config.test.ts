@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { badgeMarkdown } from '../src/commands/badge.js';
 import { describeKey, modelKey, providerByPrefix } from '../src/providers.js';
+import { closestMatch } from '../src/ui.js';
 import { cleanEnv, run } from './helpers.js';
 
 // The built CLI; test/build.ts compiles it before the suite runs.
@@ -31,6 +32,30 @@ describe('badge Markdown', () => {
     expect(badgeMarkdown('https://ownit.example', 'octo/shop')).toBe(
       '[![Ownit](https://ownit.example/badge/octo/shop.svg)](https://ownit.example/octo/shop)',
     );
+  });
+});
+
+describe('unknown commands', () => {
+  it('matches a close typo to a listed command', () => {
+    const commands = ['login', 'interview', 'init', 'badge'];
+    expect(closestMatch('interviews', commands)).toBe('interview');
+    expect(closestMatch('Badeg', commands)).toBe('badge');
+    expect(closestMatch('deploy', commands)).toBeNull();
+  });
+
+  it('suggests the command a typo meant', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'ownit-home-'));
+    const res = await run(process.execPath, [CLI, 'interviews'], home, cleanEnv({ OWNIT_HOME: home }));
+    expect(res.code).toBe(1);
+    expect(res.output).toContain('Did you mean "ownit interview"?');
+    expect(res.output).not.toContain('Usage:');
+  });
+
+  it('prints the full help when nothing is close', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'ownit-home-'));
+    const res = await run(process.execPath, [CLI, 'deploy'], home, cleanEnv({ OWNIT_HOME: home }));
+    expect(res.output).toContain('Unknown command "deploy".');
+    expect(res.output).toContain('Usage:');
   });
 });
 

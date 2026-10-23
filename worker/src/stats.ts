@@ -43,7 +43,7 @@ export interface RepoStats {
   authors: { author: string; stats: Stats }[];
 }
 
-/** Stats for one repo, counting only commits GitHub confirmed after tracking began. */
+/** Stats for one repo: commits GitHub confirmed after tracking began, plus earlier work a debrief verified. */
 export async function repoStats(db: D1Database, repoId: number): Promise<RepoStats> {
   const { results } = await db
     .prepare(
@@ -51,7 +51,8 @@ export async function repoStats(db: D1Database, repoId: number): Promise<RepoSta
        FROM commits c
        JOIN pushes p ON p.id = c.push_id
        JOIN repos r ON r.id = c.repo_id
-       WHERE c.repo_id = ? AND c.pushed_at IS NOT NULL AND c.pushed_at >= r.tracked_since
+       WHERE c.repo_id = ?
+         AND ((c.pushed_at IS NOT NULL AND c.pushed_at >= r.tracked_since) OR (c.backfilled = 1 AND p.status = 'verified'))
        GROUP BY p.status, author`,
     )
     .bind(repoId)

@@ -22,6 +22,8 @@ export interface GitHub {
   updateCheckRun(installationId: number, owner: string, repo: string, id: number, body: CheckRunBody): Promise<void>;
   /** "admin" | "maintain" | "write" | "triage" | "read" | "none". */
   permission(installationId: number, owner: string, repo: string, username: string): Promise<string>;
+  /** Whether the commit exists in the repo on GitHub. */
+  commitExists(installationId: number, owner: string, repo: string, sha: string): Promise<boolean>;
   /** The identity behind a user token. Ownit discards the token right after. */
   user(accessToken: string): Promise<{ id: number; login: string }>;
 }
@@ -141,6 +143,15 @@ export function createGitHub(env: Env, fetcher: typeof fetch = fetch): GitHub {
         return result.permission;
       } catch (error) {
         if (error instanceof GitHubError && error.status === 404) return 'none';
+        throw error;
+      }
+    },
+    async commitExists(installationId, owner, repo, sha) {
+      try {
+        await call(`${repoPath(owner, repo)}/commits/${sha}`, await installationToken(installationId));
+        return true;
+      } catch (error) {
+        if (error instanceof GitHubError && (error.status === 404 || error.status === 422)) return false;
         throw error;
       }
     },

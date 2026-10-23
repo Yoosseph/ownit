@@ -25,6 +25,8 @@ export interface AnswerResponse {
   done: boolean;
   status: PushStatus;
   followup: PublicQuestion | null;
+  /** Commits from before tracking that this debrief made count. Older servers omit it. */
+  earlier_credited?: number;
   session: string;
 }
 

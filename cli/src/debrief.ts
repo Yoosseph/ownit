@@ -32,6 +32,8 @@ interface Debrief {
   /** Sent with every request, so the server never has to store the code. */
   payload: { commits: Commit[]; diff: string; diff_truncated: boolean };
   session: string;
+  /** Older commits the final passing answer credited (repos that count earlier work). */
+  earlierCredited: number;
 }
 
 /** "s" (or the older "skip") stops the debrief for now. */
@@ -101,6 +103,7 @@ async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<
       return failure(out, error);
     }
     debrief.session = result.session;
+    debrief.earlierCredited = result.earlier_credited ?? 0;
     if (result.pass) {
       out.write(`${c.green('✓ Passed.')}\n${c.dim(wrap(result.feedback))}\n`);
       return null;
@@ -144,12 +147,14 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
 
   out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to stop and finish later.\n`));
   if (start.answers_public) out.write(c.yellow('Note: this repo shows passing answers on its public Ownit page.\n'));
-  const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session };
+  const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session, earlierCredited: 0 };
   for (const question of start.questions) {
     const ended = await askUntilPassed(debrief, question);
     if (ended) return ended;
   }
   out.write(`\n${c.green(c.bold('✓ Push verified.'))} ${c.dim(`${target.commits.length} ${commitWord} owned. Nice work.`)}\n`);
+  const earlier = debrief.earlierCredited;
+  if (earlier) out.write(c.dim(`${earlier} earlier ${plural(earlier, 'commit')} now ${earlier === 1 ? 'counts' : 'count'} as verified.\n`));
   return { status: 'verified' };
 }
 

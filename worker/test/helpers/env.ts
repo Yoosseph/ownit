@@ -12,6 +12,8 @@ export class FakeGitHub implements GitHub {
   installations = new Map<string, { installationId: number; private: boolean }>([['octo/shop', { installationId: INSTALLATION_ID, private: false }]]);
   checkRuns: (CheckRunBody & { id: number; repo: string })[] = [];
   permissions = new Map<string, string>();
+  /** Commits that exist on GitHub, as "owner/repo:sha". */
+  commits = new Set<string>();
 
   async repoInstallation(owner: string, repo: string) {
     return this.installations.get(`${owner}/${repo}`.toLowerCase()) ?? null;
@@ -27,6 +29,10 @@ export class FakeGitHub implements GitHub {
   }
   async permission(_installationId: number, owner: string, repo: string, username: string) {
     return this.permissions.get(`${owner}/${repo}:${username}`) ?? 'write';
+  }
+
+  async commitExists(_installationId: number, owner: string, repo: string, sha: string) {
+    return this.commits.has(`${owner}/${repo}:${sha}`);
   }
 
   /** GitHub user tokens this fake accepts; any other token is a 401. */

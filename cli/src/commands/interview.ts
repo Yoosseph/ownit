@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 import { createApi, type ApiClient, type PushStatus } from '../api.js';
 import { buildDiff } from '../diff.js';
 import { LATER, runDebrief, type DebriefOutcome } from '../debrief.js';
-import { githubRepo, listCommits, objectExists, resolveCommit, type Commit } from '../git.js';
+import { githubRepo, listCommits, objectExists, resolveCommit, tryGit, type Commit } from '../git.js';
 import { rangeForRecordedPush } from '../pushRange.js';
 import { createPrompter, paint, plural, type Prompter } from '../ui.js';
 
@@ -41,15 +41,17 @@ function exitCode(outcome: DebriefOutcome | null): number {
   return outcome && (outcome.status === 'verified' || outcome.reason === LATER) ? 0 : 1;
 }
 
-async function debriefRange(api: ApiClient, prompter: Prompter, repo: string, range: string): Promise<DebriefOutcome | null> {
+/** A range "A..B", or a single commit, which means just that commit. */
+function parseRange(range: string): { base: string | null; head: string } {
   const match = range.match(/^(.+?)\.\.(.+)$/);
-  if (!match) {
-    prompter.out.write('Ownit: --range must look like A..B.\n');
-    return null;
-  }
-  const base = resolveCommit(match[1]!);
-  const head = resolveCommit(match[2]!);
-  const commits = listCommits([`${base}..${head}`]);
+  if (match) return { base: resolveCommit(match[1]!), head: resolveCommit(match[2]!) };
+  const head = resolveCommit(range);
+  return { base: tryGit(['rev-parse', '--verify', '--quiet', `${head}^`])?.trim() || null, head };
+}
+
+async function debriefRange(api: ApiClient, prompter: Prompter, repo: string, range: string): Promise<DebriefOutcome | null> {
+  const { base, head } = parseRange(range);
+  const commits = base ? listCommits([`${base}..${head}`]) : listCommits(['-1', head]);
   if (!commits.length) {
     prompter.out.write(`Ownit: no commits in ${range}.\n`);
     return null;

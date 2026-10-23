@@ -1,10 +1,11 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getPush, getRepoById, isVerified, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
+import { attachCommits, creditEarlierWork, createPush, findPushForCommits, getPush, getRepoById, isVerified, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
 import { judgeAnswer, MAX_ANSWER_CHARS, writeQuestions, type Question, type Verdict } from '../debrief';
 import { cappedDemoModel, LIMITS, rateLimit } from '../limits';
 import { log, type LogFields } from '../log';
+import { GitHubError } from '../github';
 import { createModel, isProvider, ProviderError, type ChatModel } from '../model';
 import { countChangedLines, questionCount } from '../questionCount';
 import { seal, unseal } from '../seal';
@@ -110,6 +111,24 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
 
 export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
 
+/**
+ * Once a push is verified in a repo that allows backfill, its commits from
+ * before tracking count as verified too. The head commit must exist on GitHub,
+ * so only real history can be credited. Returns how many commits were credited.
+ */
+async function creditBackfill(c: Context<AppEnv>, repo: RepoRow, pushId: number): Promise<number> {
+  if (!repo.allow_backfill || !repo.installation_id) return 0;
+  const push = await getPush(c.env.DB, pushId);
+  if (!push) return 0;
+  try {
+    if (!(await c.get('github').commitExists(repo.installation_id, repo.owner, repo.name, push.head_sha))) return 0;
+  } catch (error) {
+    if (error instanceof GitHubError) return 0;
+    throw error;
+  }
+  return creditEarlierWork(c.env.DB, repo, pushId, c.get('login') ?? null);
+}
+
 /** Whether the repo's public page shows passing answers, so they are worth keeping. */
 const showsAnswers = (repo: RepoRow | null) => Boolean(repo && repo.show_answers && !repo.private);
 
@@ -208,7 +227,8 @@ interview.post('/answer', async (c) => {
   }
   const { pass, feedback, followUp } = verdict;
 
-  const keep = pass && showsAnswers(await getRepoById(c.env.DB, state.repoId));
+  const repo = pass ? await getRepoById(c.env.DB, state.repoId) : null;
+  const keep = pass && showsAnswers(repo);
   await recordAttempt(c.env.DB, state.pushId, body.idx, {
     passed: pass,
     nextText: followUp?.question,
@@ -219,14 +239,17 @@ interview.post('/answer', async (c) => {
   const done = state.questions.every((q) => q.passed);
   if (done) await updateStatus(c, state.pushId, 'verified');
   else await setPushStatus(c.env.DB, state.pushId, 'pending');
+  const earlier = done && repo ? await creditBackfill(c, repo, state.pushId) : 0;
 
-  log('interview.answer', { push: state.pushId, status: pass ? 'pass' : 'fail', done, ms: Date.now() - started });
+  log('interview.answer', { push: state.pushId, status: pass ? 'pass' : 'fail', done, earlier, ms: Date.now() - started });
   return c.json({
     pass,
     feedback,
     done,
     status: done ? 'verified' : 'pending',
     followup: followUp ? publicQuestion(followUp, body.idx) : null,
+    // Commits from before tracking that now count as verified.
+    earlier_credited: earlier,
     session: await sealState(c, state),
   });
 });

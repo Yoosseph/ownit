@@ -45,7 +45,7 @@ describe('unknown commands', () => {
 
   it('suggests the command a typo meant', async () => {
     const home = mkdtempSync(join(tmpdir(), 'ownit-home-'));
-    const res = await run(process.execPath, [CLI, 'interviews'], home, cleanEnv({ OWNIT_HOME: home }));
+    const res = await run(process.execPath, [CLI, 'intervew'], home, cleanEnv({ OWNIT_HOME: home }));
     expect(res.code).toBe(1);
     expect(res.output).toContain('Did you mean "ownit interview"?');
     expect(res.output).not.toContain('Usage:');
@@ -56,6 +56,40 @@ describe('unknown commands', () => {
     const res = await run(process.execPath, [CLI, 'deploy'], home, cleanEnv({ OWNIT_HOME: home }));
     expect(res.output).toContain('Unknown command "deploy".');
     expect(res.output).toContain('Usage:');
+  });
+});
+
+describe('help in the terminal', { timeout: 60_000 }, () => {
+  const cli = async (...args: string[]) => {
+    const home = mkdtempSync(join(tmpdir(), 'ownit-home-'));
+    return run(process.execPath, [CLI, ...args], home, cleanEnv({ OWNIT_HOME: home }));
+  };
+
+  it('starts with how to get going and points at per-command help', async () => {
+    const { output } = await cli('help');
+    expect(output).toContain('Get started:  ownit login, then ownit key set, then ownit init in your repo.');
+    expect(output).toContain('Run "ownit help <command>"');
+  });
+
+  it('explains one command with examples, by "help <command>" or "--help"', async () => {
+    for (const args of [['help', 'interview'], ['interview', '--help'], ['interviews', '-h']]) {
+      const { code, output } = await cli(...args);
+      expect(code).toBe(0);
+      expect(output).toContain('ownit interview --range 7a9e3f1..f3c9a12');
+      expect(output).not.toContain('ownit key set');
+    }
+  });
+
+  it('accepts "interviews" for "interview"', async () => {
+    const { output } = await cli('interviews', '--rnage', 'x');
+    expect(output).toContain("Unknown option '--rnage'");
+    expect(output).toContain('Run "ownit help interview" for the options.');
+  });
+
+  it('says what is missing when a setting has no on or off', async () => {
+    const { code, output } = await cli('settings', 'questions');
+    expect(code).toBe(1);
+    expect(output).toContain('Add on or off: "ownit settings questions on"');
   });
 });
 

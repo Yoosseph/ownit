@@ -90,6 +90,7 @@ GitHub shows the result as a check on the commit.
 | `ownit uninstall` | Remove the hook from this repo. |
 | `ownit logout` | Sign out. |
 | `OWNIT_SKIP=1 git push` | Push once without the prompt. The push is pending. |
+| `ownit help <command>` | Details and examples for one command (same as `ownit <command> --help`). |
 
 ### Pushes from AI agents
 

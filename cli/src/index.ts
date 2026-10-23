@@ -6,9 +6,8 @@ import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
-import { closestMatch, errorMessage } from './ui.js';
 import { pageCommand } from './commands/page.js';
-import { errorMessage } from './ui.js';
+import { closestMatch, errorMessage } from './ui.js';
 
 interface Command {
   /** [usage, description] lines for `ownit help`. Commands without them are not listed. */

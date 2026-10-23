@@ -41,11 +41,20 @@ function exitCode(outcome: DebriefOutcome | null): number {
   return outcome && (outcome.status === 'verified' || outcome.reason === LATER) ? 0 : 1;
 }
 
+/** A commit ID or ref, with a hint on where to find one when git does not know it. */
+function commitFor(rev: string): string {
+  try {
+    return resolveCommit(rev);
+  } catch {
+    throw new Error(`"${rev}" is not a commit in this repo. Find commit IDs with "git log --oneline", for example --range 7a9e3f1..f3c9a12.`);
+  }
+}
+
 /** A range "A..B", or a single commit, which means just that commit. */
 function parseRange(range: string): { base: string | null; head: string } {
   const match = range.match(/^(.+?)\.\.(.+)$/);
-  if (match) return { base: resolveCommit(match[1]!), head: resolveCommit(match[2]!) };
-  const head = resolveCommit(range);
+  if (match) return { base: commitFor(match[1]!), head: commitFor(match[2]!) };
+  const head = commitFor(range);
   return { base: tryGit(['rev-parse', '--verify', '--quiet', `${head}^`])?.trim() || null, head };
 }
 

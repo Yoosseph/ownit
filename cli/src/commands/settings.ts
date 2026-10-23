@@ -11,7 +11,7 @@ interface RepoSettings {
   page_url: string;
 }
 
-const USAGE = 'Usage: ownit settings [questions|answers|earlier] [on|off]\n';
+const USAGE = 'Usage: ownit settings [questions|answers|earlier] [on|off]\nFor example: ownit settings answers on. Run "ownit help settings" for details.\n';
 
 /** The setting each name changes on the server. */
 const SETTING = { questions: 'show_questions', answers: 'show_answers', earlier: 'allow_backfill' } as const;
@@ -29,7 +29,7 @@ function note(s: RepoSettings, changed: SettingName | undefined, on: boolean): s
   if (changed === 'answers' && on) return 'From now on, passing answers are saved and shown. Developers see a note before they answer.';
   if (changed === 'earlier' && on) return 'Debrief older commits with "ownit interview --range A..B" (or a single commit SHA). They count once verified, never as unverified.';
   if (changed === 'earlier') return 'New debriefs of older commits no longer count. Ones already verified stay.';
-  if (changed && !s.show_answers) return 'Saved answers, if any, are deleted.';
+  if ((changed === 'answers' || changed === 'questions') && !on && !s.show_answers) return 'Answers are hidden, and saved ones are deleted.';
   if (changed) return '';
   return 'Change with "ownit settings questions|answers|earlier on|off" (repo admins and maintainers).';
 }
@@ -42,6 +42,10 @@ export async function settingsCommand(args: string[]): Promise<number> {
   const out = process.stderr;
   const [what, value, ...rest] = args;
   const changed = what as SettingName | undefined;
+  if (changed !== undefined && Object.hasOwn(SETTING, changed) && value === undefined) {
+    out.write(`Add on or off: "ownit settings ${changed} on" or "ownit settings ${changed} off".\n`);
+    return 1;
+  }
   if (changed !== undefined && (!Object.hasOwn(SETTING, changed) || (value !== 'on' && value !== 'off') || rest.length)) {
     out.write(USAGE);
     return 1;

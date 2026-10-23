@@ -90,7 +90,7 @@ describe('runDebrief', () => {
     expect(text).toContain('stays unverified until you debrief it');
   });
 
-  it('stands by the missed answer with "d" on the follow-up', async () => {
+  it('lets the missed answer through with --force on the follow-up', async () => {
     const one = { ...start, total: 1, questions: [start.questions[0]] };
     const { api, calls } = fakeApi({
       '/api/interview/start': () => one,
@@ -99,9 +99,9 @@ describe('runDebrief', () => {
         () => ({ pass: true, feedback: 'Noted.', done: true, status: 'verified', followup: null, session: 's2' }),
       ],
     });
-    const { outcome, text } = await run(api, 'Totals drifted by a cent on some orders.' + String.fromCharCode(10) + 'd' + String.fromCharCode(10));
+    const { outcome, text } = await run(api, 'Totals drifted by a cent on some orders.' + String.fromCharCode(10) + '--force' + String.fromCharCode(10));
     expect(outcome.status).toBe('verified');
-    expect(text).toContain('Type "d" to stand by it');
+    expect(text).toContain('Type "--force" to let your answer through');
     const last = calls.filter((c) => c.path === '/api/interview/answer').at(-1)!;
     expect(last.body).toMatchObject({ dispute: true, answer: 'Totals drifted by a cent on some orders.', session: 's1' });
   });

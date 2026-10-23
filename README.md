@@ -69,7 +69,7 @@ Each push is **verified** (all questions passed) or **pending** (not done yet). 
 count as unverified, with no deadline. Run `ownit interview` whenever you like: it lists the
 waiting pushes by commit message, and you pick which one to debrief. Its commits then become
 verified. During a debrief, type `s` to stop and come back to it later. If an answer misses and
-you're sure it was right, type `d` on the follow-up to stand by it: it passes, shown as **disputed**
+you disagree, type `--force` at the follow-up to let it through: it passes, shown as **disputed**
 (once per debrief).
 GitHub shows the result as a check on the commit.
 

@@ -129,7 +129,7 @@ async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<
     if (!result.followup) return { status: 'pending', reason: 'no follow-up question' };
     out.write(c.dim("Here's another angle on the same topic:\n"));
     if (!debrief.disputed) {
-      out.write(c.dim('Sure your answer was right? Type "d" to stand by it. It passes, marked as disputed (once per debrief).\n'));
+      out.write(c.dim('Disagree? Type "--force" to let your answer through instead. It passes, marked as disputed (once per debrief).\n'));
     }
     missed = answer;
     question = result.followup;

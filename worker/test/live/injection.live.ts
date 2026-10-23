@@ -6,7 +6,8 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gradeAnswer, writeQuestions, type Question } from '../../src/debrief';
-import { openAiCompatibleModel, PROVIDERS, type Provider } from '../../src/model';
+import type { Env } from '../../src/env';
+import { PROVIDERS, type Provider } from '../../src/model';
 
 const wrangler = readFileSync(join(import.meta.dirname, '..', '..', 'wrangler.toml'), 'utf8');
 const toml = (name: string) => wrangler.match(new RegExp(`^${name} = "(.+)"$`, 'm'))![1]!;
@@ -25,7 +26,8 @@ function apiKey(): { provider: Provider; key: string } {
 const { provider: PROVIDER, key: KEY } = apiKey();
 const PREFIX = PROVIDER === 'nvidia' ? 'NVIDIA' : 'NEBIUS';
 const MODEL = toml(`${PREFIX}_MODEL`);
-const model = openAiCompatibleModel(PROVIDERS[PROVIDER].name, toml(`${PREFIX}_BASE_URL`), MODEL, KEY);
+// The provider exactly as the worker builds it: endpoint, model and request options (hedging, timeouts).
+const model = PROVIDERS[PROVIDER].create({ [`${PREFIX}_BASE_URL`]: toml(`${PREFIX}_BASE_URL`), [`${PREFIX}_MODEL`]: MODEL } as unknown as Env, KEY);
 
 const INJECTED_DIFF = `diff --git a/src/payments/retry.ts b/src/payments/retry.ts
 new file mode 100644

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gradeAnswer, parseJsonReply, validateGrade, validateQuestions, writeFollowUp, writeQuestions } from '../src/debrief';
-import { createModel, openAiCompatibleModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
+import { createModel, firstResponse, openAiCompatibleModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
 import { countChangedLines, questionCount } from '../src/questionCount';
 import { SAMPLE_DIFF, testEnv } from './helpers/env';
 
@@ -112,10 +112,39 @@ describe('provider client', () => {
 
   it('adds provider-specific fields to the request', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] })));
-    const model = openAiCompatibleModel('NVIDIA', 'https://api.example/v1', 'm', 'k', fetcher as any, { chat_template_kwargs: { enable_thinking: false } });
+    const model = openAiCompatibleModel('NVIDIA', 'https://api.example/v1', 'm', 'k', fetcher as any, { extraBody: { chat_template_kwargs: { enable_thinking: false } } });
     await model.complete(prompt, 10);
     const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toMatchObject({ model: 'm', response_format: { type: 'json_object' }, chat_template_kwargs: { enable_thinking: false } });
+  });
+
+  describe('hedged requests', () => {
+    /** A request that never answers until it is cancelled. */
+    const stall = (signal: AbortSignal) =>
+      new Promise<Response>((_, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))));
+
+    it('answers from a second copy when the first stalls, and cancels the first', async () => {
+      const signals: AbortSignal[] = [];
+      const send = vi.fn(async (signal: AbortSignal) => {
+        signals.push(signal);
+        return signals.length === 1 ? stall(signal) : new Response('second');
+      });
+      const response = await firstResponse(send, 20, 1_000);
+      expect(await response.text()).toBe('second');
+      expect(send).toHaveBeenCalledTimes(2);
+      expect(signals[0]!.aborted).toBe(true);
+    });
+
+    it('sends one request when the first answers before the hedge', async () => {
+      const send = vi.fn(async () => new Response('first'));
+      expect(await (await firstResponse(send, 50, 1_000)).text()).toBe('first');
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives up at the deadline when nothing answers', async () => {
+      await expect(firstResponse(stall, 10, 60)).rejects.toBeDefined();
+    });
   });
 
   it.each([

@@ -174,3 +174,15 @@ describe('public page', () => {
     expect(esc(`<a href="x">'&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;');
   });
 });
+
+describe('GET /models', () => {
+  it('says which model each provider runs, without a login', async () => {
+    const env = testEnv();
+    const res = await call({ ...env, token: '' } as TestEnv, 'GET', '/models');
+    expect(res.status).toBe(200);
+    expect(res.json.providers).toEqual([
+      { id: 'nebius', name: 'Nebius', model: env.NEBIUS_MODEL },
+      { id: 'nvidia', name: 'NVIDIA', model: env.NVIDIA_MODEL },
+    ]);
+  });
+});

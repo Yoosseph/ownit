@@ -3,6 +3,7 @@ import { ApiError, createApi } from '../api.js';
 import { readConfig, serverUrl, updateConfig } from '../config.js';
 import { describeKey, modelKey } from '../providers.js';
 import { readSecret } from '../secret.js';
+import { serverModels } from './model.js';
 import { paint } from '../ui.js';
 
 interface DeviceStart {
@@ -127,5 +128,7 @@ export async function whoamiCommand(): Promise<number> {
   out.write(`GitHub:     ${config.token ? (config.login ?? 'logged in') : 'not logged in (run "ownit login")'}\n`);
   const model = modelKey(config);
   out.write(`API key:    ${model ? `set (${describeKey(model)})` : 'not set (run "ownit key set")'}\n`);
+  const current = model && (await serverModels())?.find((m) => m.id === model.provider);
+  if (current) out.write(`Model:      ${current.model}\n`);
   return 0;
 }

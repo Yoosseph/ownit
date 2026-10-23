@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from './env';
 import { createGitHub, type GitHub } from './github';
 import { log } from './log';
+import { PROVIDERS } from './model';
 import { auth } from './routes/auth';
 import { interview } from './routes/interview';
 import { publicPages } from './routes/public';
@@ -32,6 +33,12 @@ export function createApp(deps: Deps = {}) {
 
   app.get('/', (c) => c.text('Ownit: debrief the code you ship.\n'));
   app.get('/healthz', (c) => c.json({ ok: true }));
+  // Which model each provider runs on this server, for `ownit model`. Public: it holds no secrets.
+  app.get('/models', (c) =>
+    c.json({
+      providers: Object.entries(PROVIDERS).map(([id, spec]) => ({ id, name: spec.name, model: spec.model(c.env) })),
+    }),
+  );
   app.route('/auth', auth);
   app.use('/api/*', requireSession);
   app.route('/api/interview', interview);

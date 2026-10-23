@@ -86,7 +86,8 @@ GitHub shows the result as a check on the commit.
 | `ownit settings` | Show this repo's settings and page link. |
 | `ownit settings questions\|answers on\|off` | Choose what the page shows. Repo admins and maintainers only. |
 | `ownit settings earlier on\|off` | Let older commits count once someone debriefs them. Admins and maintainers only. |
-| `ownit whoami` | Show the server, your GitHub login and your key. |
+| `ownit whoami` | Show the server, your GitHub login, your key and its model. |
+| `ownit model` | Show which provider and model your debriefs use (also `ownit plan`). Your key applies in every repo on this computer. |
 | `ownit uninstall` | Remove the hook from this repo. |
 | `ownit logout` | Sign out. |
 | `OWNIT_SKIP=1 git push` | Push once without the prompt. The push is pending. |
@@ -105,6 +106,18 @@ change; until then its commits count as unverified.
   and passing answers only if they turn that on.
 - **Badge:** like `Ownit | Verified 55% | Unverified 45%`, linking to the repo page. `ownit init` prints the code to paste
   into your README; `ownit badge` prints it again, and the repo page has a Copy button.
+
+## Updating
+
+The server updates itself; there is nothing to do for it. For the CLI:
+
+```sh
+npm install -g getownit@latest
+ownit --version
+```
+
+Releases are listed on the [releases page](https://github.com/Yoosseph/ownit/releases). Your login,
+key and repo setup are kept across updates.
 
 ## More
 

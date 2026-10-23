@@ -62,6 +62,8 @@ export class ProviderError extends Error {
 interface ProviderSpec {
   /** Display name, used in error messages. */
   name: string;
+  /** The model this server uses for the provider, as `ownit model` shows it. */
+  model(env: Env): string;
   /** A client for this provider, using the endpoint and model the server chose. */
   create(env: Env, apiKey: string): ChatModel;
 }
@@ -70,6 +72,7 @@ interface ProviderSpec {
 function openAiCompatible(name: string, endpoint: (env: Env) => { baseUrl: string; model: string }, options: RequestOptions = {}): ProviderSpec {
   return {
     name,
+    model: (env) => endpoint(env).model,
     create(env, apiKey) {
       const { baseUrl, model } = endpoint(env);
       return openAiCompatibleModel(name, baseUrl, model, apiKey, fetch, options);

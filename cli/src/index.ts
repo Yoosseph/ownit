@@ -6,6 +6,7 @@ import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
+import { modelCommand } from './commands/model.js';
 import { settingsCommand } from './commands/settings.js';
 import { closestMatch, errorMessage } from './ui.js';
 
@@ -63,6 +64,15 @@ Never type the key after the command: it would end up in your shell history.
 NVIDIA_API_KEY or NEBIUS_API_KEY in the environment work too.`,
     run: keyCommand,
   },
+  model: {
+    help: [['ownit model', 'Show the provider and model your debriefs use']],
+    details: `Shows which provider your saved key is for and which Nemotron model this server runs
+for it, plus what the other provider would use. The key is saved for your user
+(~/.ownit/config.json), so it applies in every repo on this computer. Switch with
+"ownit key set nebius" or "ownit key set nvidia". NVIDIA_API_KEY or NEBIUS_API_KEY in the
+environment override it for that terminal.`,
+    run: modelCommand,
+  },
   badge: {
     help: [['ownit badge', "Print this repo's badge Markdown for your README"]],
     details: `Paste the output into your README. To copy it straight away:
@@ -95,7 +105,7 @@ Private repos never show questions or answers.`,
   version: { run: () => print(`${version()}\n`) },
 };
 
-const ALIASES: Record<string, string> = { interviews: 'interview', setting: 'settings', page: 'settings', status: 'whoami', '--help': 'help', '-h': 'help', '--version': 'version', '-v': 'version' };
+const ALIASES: Record<string, string> = { plan: 'model', currentplan: 'model', models: 'model', interviews: 'interview', setting: 'settings', page: 'settings', status: 'whoami', '--help': 'help', '-h': 'help', '--version': 'version', '-v': 'version' };
 
 const commandName = (name: string) => (Object.hasOwn(ALIASES, name) ? ALIASES[name]! : name);
 

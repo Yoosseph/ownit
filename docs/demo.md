@@ -93,8 +93,9 @@ Press **s**. The output reads `Ownit: skipped. Push continues.`
 > "Skipping is one key. It's recorded honestly, and it shows."
 
 Refresh the page: the badge drops to **Verified 71%**. The skip isn't permanent: running
-`ownit interview` later would debrief it and raise the badge again. Scroll the page to show the per-author table and
-the push list with statuses and question text. There's no code and no answers anywhere.
+`ownit interview` later would debrief it and raise the badge again. Scroll the page to show the
+push list: statuses, commit links and question text. There's no code, and no answers unless the
+repo's admins turn them on with `ownit page answers on`.
 
 ## Scene 4: an injection attempt fails (1:55–2:40)
 

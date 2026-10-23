@@ -96,7 +96,8 @@ badge from a copy is easy to spot.
 - `db.ts`: every query on repos, users, pushes, commits and questions.
 - `debrief.ts` and `prompts.ts`: the three model calls. The prompt text is in [`/prompts`](../prompts/).
 - `model.ts`: the providers and their clients. `fixtureModel.ts`: the offline model for tests.
-- `sessions.ts` (who is calling) and `access.ts` (may they push to this repo).
+- `sessions.ts` (who is calling) and `access.ts` (may they push to this repo, or change its
+  page settings as an admin or maintainer).
 - `checks.ts` (GitHub check runs), `page.ts` and `badge.ts` (public page
   and badge), `links.ts` (public URLs).
 

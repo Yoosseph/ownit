@@ -163,6 +163,9 @@ client ID in `wrangler.toml`, set the `GITHUB_APP_PRIVATE_KEY` and `GITHUB_WEBHO
 secrets, and deploy again. Optionally set `DEMO_NEBIUS_KEY` and `DEMO_DAILY_CALL_CAP`.
 Point the CLI at your server with `ownit login --server https://ownit.<you>.workers.dev`.
 
+When you update a server you already run, apply new migrations before deploying:
+`npx wrangler d1 migrations apply ownit --remote`, then `npx wrangler deploy`.
+
 For local development, see [docs/HANDOFF.md](HANDOFF.md#running-locally). `MODEL_BACKEND =
 "fixture"` gives an offline fake model.
 

@@ -85,11 +85,12 @@ function openAiCompatible(name: string, endpoint: (env: Env) => { baseUrl: strin
 export const PROVIDERS = {
   nebius: openAiCompatible('Nebius', (env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL })),
   // NVIDIA's free endpoint serves Nemotron 3.5 Super. It usually answers in about a second but
-  // sometimes stalls for a minute, so a second copy goes out after 3s and nothing waits past 10s
-  // (measured 2026-10-23: 20/20 answered, median 0.9s, max 4.9s). Thinking off keeps the JSON whole.
+  // sometimes stalls for a minute or fails with a 5xx, so copies go out at 3s and 6s (or at once
+  // after a failure) and nothing waits past 10s (measured 2026-10-23 with one copy at 3s: 20/20
+  // answered, median 0.9s, max 4.9s). Thinking off keeps the JSON whole.
   nvidia: openAiCompatible('NVIDIA', (env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL }), {
     extraBody: { chat_template_kwargs: { enable_thinking: false } },
-    hedgeAfterMs: 3_000,
+    hedgesMs: [3_000, 6_000],
     timeoutMs: 10_000,
   }),
 } satisfies Record<string, ProviderSpec>;
@@ -119,42 +120,72 @@ function errorKind(status: number, body: string): ProviderErrorKind {
 export interface RequestOptions {
   /** Provider-specific request fields. */
   extraBody?: Record<string, unknown>;
-  /** Send a second copy of a request that has not answered after this long; the first answer wins. */
-  hedgeAfterMs?: number;
+  /**
+   * When to send extra copies of a request that has not answered yet; the first good answer wins.
+   * A copy also goes out at once when an earlier one fails with a network error or a 5xx.
+   */
+  hedgesMs?: number[];
   /** Give up after this long. */
   timeoutMs?: number;
 }
 
 /**
- * The first response from `send`, with a second copy started after
- * `hedgeAfterMs` when given. The slower request is cancelled. Some free
- * endpoints answer in about a second but now and then stall for a minute;
- * a hedge turns those stalls into a few seconds.
+ * The first good response from `send`. Extra copies start at each of `hedgesMs`,
+ * or at once when an earlier copy fails (network error or 5xx); the others are
+ * cancelled when one answers. Some free endpoints answer in about a second but
+ * now and then stall for a minute or fail; copies turn that into a few seconds.
+ * When every copy fails, the last 5xx is returned (or the last error thrown).
  */
-export async function firstResponse(
-  send: (signal: AbortSignal) => Promise<Response>,
-  hedgeAfterMs: number | undefined,
-  timeoutMs: number,
-): Promise<Response> {
+export function firstResponse(send: (signal: AbortSignal) => Promise<Response>, hedgesMs: number[], timeoutMs: number): Promise<Response> {
   const deadline = AbortSignal.timeout(timeoutMs);
-  const controllers: AbortController[] = [];
-  const start = () => {
-    const controller = new AbortController();
-    controllers.push(controller);
-    return send(AbortSignal.any([controller.signal, deadline])).then((response) => ({ response, controller }));
-  };
-  const attempts = [start()];
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  if (hedgeAfterMs !== undefined) {
-    attempts.push(new Promise((resolve, reject) => (timer = setTimeout(() => start().then(resolve, reject), hedgeAfterMs))));
-  }
-  try {
-    const winner = await Promise.any(attempts);
-    for (const controller of controllers) if (controller !== winner.controller) controller.abort();
-    return winner.response;
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
+  const maxCopies = hedgesMs.length + 1;
+  const controllers = new Set<AbortController>();
+  const timers: ReturnType<typeof setTimeout>[] = [];
+  let launched = 0;
+  let pending = 0;
+  let settled = false;
+  let lastFailure: Response | undefined;
+  let lastError: unknown = new Error('no response');
+
+  return new Promise((resolve, reject) => {
+    const finish = (settle: () => void) => {
+      if (settled) return;
+      settled = true;
+      timers.forEach(clearTimeout);
+      settle();
+    };
+    const giveUpIfDone = () => {
+      if (pending === 0 && launched >= maxCopies) finish(() => (lastFailure ? resolve(lastFailure) : reject(lastError)));
+    };
+    const launch = () => {
+      if (settled || launched >= maxCopies) return;
+      launched++;
+      pending++;
+      const controller = new AbortController();
+      controllers.add(controller);
+      send(AbortSignal.any([controller.signal, deadline])).then(
+        (response) => {
+          pending--;
+          if (response.status >= 500) {
+            lastFailure = response;
+            launch();
+            return giveUpIfDone();
+          }
+          for (const other of controllers) if (other !== controller) other.abort();
+          finish(() => resolve(response));
+        },
+        (error: unknown) => {
+          pending--;
+          lastError = error;
+          if (!deadline.aborted) launch();
+          giveUpIfDone();
+        },
+      );
+    };
+    for (const ms of hedgesMs) timers.push(setTimeout(launch, ms));
+    deadline.addEventListener('abort', () => finish(() => (lastFailure ? resolve(lastFailure) : reject(deadline.reason))));
+    launch();
+  });
 }
 
 export function openAiCompatibleModel(
@@ -163,7 +194,7 @@ export function openAiCompatibleModel(
   model: string,
   apiKey: string,
   fetcher: typeof fetch = fetch,
-  { extraBody = {}, hedgeAfterMs, timeoutMs = 90_000 }: RequestOptions = {},
+  { extraBody = {}, hedgesMs = [], timeoutMs = 90_000 }: RequestOptions = {},
 ): ChatModel {
   const url = new URL('chat/completions', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
   return {
@@ -183,7 +214,7 @@ export function openAiCompatibleModel(
         fetcher(url, { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body, signal });
       let response: Response;
       try {
-        response = await firstResponse(send, hedgeAfterMs, timeoutMs);
+        response = await firstResponse(send, hedgesMs, timeoutMs);
       } catch {
         throw new ProviderError('unavailable', name);
       }

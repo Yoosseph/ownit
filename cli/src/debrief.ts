@@ -54,6 +54,31 @@ async function withSpinner<T>(out: Writable, text: string, work: () => Promise<T
   }
 }
 
+/** A provider error worth retrying: the model did not answer in time or failed on its side. */
+const isUnavailable = (error: unknown) => error instanceof ApiError && error.isProviderError && error.body.reason === 'unavailable';
+
+/**
+ * Runs a model request. When the model doesn't answer, it tries once more by
+ * itself, then asks before each further try, so a slow moment never throws
+ * away a debrief in progress.
+ */
+async function withRetry<T>(prompter: Prompter, request: () => Promise<T>): Promise<T> {
+  const c = paint(prompter.out);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await request();
+    } catch (error) {
+      if (!isUnavailable(error)) throw error;
+      if (attempt === 1) {
+        prompter.out.write(c.dim('The model did not answer in time. Trying again…\n'));
+        continue;
+      }
+      const again = await prompter.ask(`${c.yellow((error as ApiError).message)} Try again? [Y/n] `);
+      if (again === null || /^n/i.test(again.trim())) throw error;
+    }
+  }
+}
+
 function printQuestion(out: Writable, question: PublicQuestion, total: number, followUp: boolean) {
   const c = paint(out);
   const label = `Question ${question.idx + 1}/${total}`;
@@ -91,13 +116,15 @@ async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<
 
     let result: AnswerResponse;
     try {
-      result = await withSpinner(out, 'Checking your answer…', () =>
-        api.request<AnswerResponse>('POST', '/api/interview/answer', {
-          session: debrief.session,
-          idx: question.idx,
-          answer: answer.slice(0, MAX_ANSWER_CHARS),
-          ...debrief.payload,
-        }),
+      result = await withRetry(prompter, () =>
+        withSpinner(out, 'Checking your answer…', () =>
+          api.request<AnswerResponse>('POST', '/api/interview/answer', {
+            session: debrief.session,
+            idx: question.idx,
+            answer: answer.slice(0, MAX_ANSWER_CHARS),
+            ...debrief.payload,
+          }),
+        ),
       );
     } catch (error) {
       return failure(out, error);
@@ -131,15 +158,17 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
 
   let start: StartResponse;
   try {
-    start = await withSpinner(out, 'Nemotron is reading your push…', () =>
-      api.request<StartResponse>('POST', '/api/interview/start', {
-        repo: target.repo,
-        base_sha: target.baseSha,
-        head_sha: target.headSha,
-        changed_lines: target.diff.changedLines,
-        push_id: target.pushId,
-        ...payload,
-      }),
+    start = await withRetry(prompter, () =>
+      withSpinner(out, 'Nemotron is reading your push…', () =>
+        api.request<StartResponse>('POST', '/api/interview/start', {
+          repo: target.repo,
+          base_sha: target.baseSha,
+          head_sha: target.headSha,
+          changed_lines: target.diff.changedLines,
+          push_id: target.pushId,
+          ...payload,
+        }),
+      ),
     );
   } catch (error) {
     return failure(out, error);

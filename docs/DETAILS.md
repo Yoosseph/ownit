@@ -49,8 +49,10 @@ Both run NVIDIA's Nemotron Super (120B parameters, 12B active): `nvidia/nemotron
 on Nebius at `https://api.tokenfactory.nebius.com/v1/`, and `nvidia/nemotron-3.5-super-vl-120b-a12b`
 (thinking off) on NVIDIA at `https://integrate.api.nvidia.com/v1/`, because NVIDIA's free endpoint
 no longer serves the 3.0 model to newer accounts. NVIDIA's free endpoint usually answers in about
-a second but sometimes stalls, so the worker sends a second copy of a request that hasn't answered
-after 3 seconds, uses whichever answers first, and gives up after 10 seconds.
+a second but sometimes stalls, so the worker sends another copy of a request that hasn't answered
+after 3 and 6 seconds (or right away after a server error), uses whichever answers first, and gives
+up after 10 seconds. If the model still doesn't answer, the CLI tries once more by itself and then
+asks before trying again, so the debrief in progress is kept.
 `NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
 
 If a provider says your key's account can't use the model, it answered `404 ... Not found for

@@ -25,6 +25,11 @@ How a push becomes a debrief:
 5. Nothing expires. Unverified pushes wait in `ownit interview`, which lists them by commit
    message so you pick the one to debrief.
 
+If the grader misses an answer you're sure was right, type `d` at the follow-up question to stand
+by it. That question passes without another model call and shows as **disputed** on the repo page
+and in the GitHub check, so the override is visible. It works only on a follow-up (never on a first
+answer), only once per debrief, and only for a real answer of a sentence or more.
+
 The number of questions grows with the size of the push, counted as changed lines in non-ignored
 files: under 50 → 1 question, 50–300 → 2, over 300 → 3. They come in this order:
 

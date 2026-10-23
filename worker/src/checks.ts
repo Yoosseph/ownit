@@ -56,7 +56,7 @@ export async function syncCheckRun(env: Env, github: GitHub, pushId: number): Pr
   const repo = await getRepoById(env.DB, push.repo_id);
   if (!repo?.installation_id) return;
   if (!(await isCommitLanded(env.DB, repo.id, push.head_sha))) return;
-  const questions = push.status === 'verified' ? (await listQuestions(env.DB, push.id)).map((q) => q.text) : [];
+  const questions = push.status === 'verified' ? (await listQuestions(env.DB, push.id)).map((q) => (q.disputed ? `${q.text} (disputed: the pusher stood by an answer the grader did not accept)` : q.text)) : [];
   const body = checkRunBody(push, repo, questions, env.PUBLIC_URL);
   try {
     if (push.check_run_id) {

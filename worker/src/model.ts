@@ -66,13 +66,20 @@ interface ProviderSpec {
   create(env: Env, apiKey: string): ChatModel;
 }
 
-/** A provider that serves the model through an OpenAI-compatible chat completions API. */
-function openAiCompatible(name: string, endpoint: (env: Env) => { baseUrl: string; model: string }): ProviderSpec {
+/**
+ * A provider that serves the model through an OpenAI-compatible chat completions
+ * API. `extraBody` adds provider-specific request fields.
+ */
+function openAiCompatible(
+  name: string,
+  endpoint: (env: Env) => { baseUrl: string; model: string },
+  extraBody: Record<string, unknown> = {},
+): ProviderSpec {
   return {
     name,
     create(env, apiKey) {
       const { baseUrl, model } = endpoint(env);
-      return openAiCompatibleModel(name, baseUrl, model, apiKey);
+      return openAiCompatibleModel(name, baseUrl, model, apiKey, fetch, extraBody);
     },
   };
 }
@@ -84,7 +91,10 @@ function openAiCompatible(name: string, endpoint: (env: Env) => { baseUrl: strin
  */
 export const PROVIDERS = {
   nebius: openAiCompatible('Nebius', (env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL })),
-  nvidia: openAiCompatible('NVIDIA', (env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL })),
+  // NVIDIA's free endpoint serves Nemotron 3.5 Super; thinking off keeps replies fast and the JSON whole.
+  nvidia: openAiCompatible('NVIDIA', (env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL }), {
+    chat_template_kwargs: { enable_thinking: false },
+  }),
 } satisfies Record<string, ProviderSpec>;
 
 export type Provider = keyof typeof PROVIDERS;
@@ -109,7 +119,14 @@ function errorKind(status: number, body: string): ProviderErrorKind {
   return 'unavailable';
 }
 
-export function openAiCompatibleModel(name: string, baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
+export function openAiCompatibleModel(
+  name: string,
+  baseUrl: string,
+  model: string,
+  apiKey: string,
+  fetcher: typeof fetch = fetch,
+  extraBody: Record<string, unknown> = {},
+): ChatModel {
   const url = new URL('chat/completions', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
   return {
     async complete(prompt, maxTokens) {
@@ -127,6 +144,7 @@ export function openAiCompatibleModel(name: string, baseUrl: string, model: stri
             temperature: prompt.temperature ?? 0.3,
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
+            ...extraBody,
           }),
           signal: AbortSignal.timeout(90_000),
         });

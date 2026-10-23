@@ -110,6 +110,14 @@ describe('provider client', () => {
     expect(JSON.parse(init.body as string).temperature).toBe(0);
   });
 
+  it('adds provider-specific fields to the request', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] })));
+    const model = openAiCompatibleModel('NVIDIA', 'https://api.example/v1', 'm', 'k', fetcher as any, { chat_template_kwargs: { enable_thinking: false } });
+    await model.complete(prompt, 10);
+    const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toMatchObject({ model: 'm', response_format: { type: 'json_object' }, chat_template_kwargs: { enable_thinking: false } });
+  });
+
   it.each([
     [401, '', 'invalid_key'],
     [403, '', 'invalid_key'],

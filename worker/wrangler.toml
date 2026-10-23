@@ -3,13 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
 # The server, not the client, picks the model endpoint and model. The user picks the provider
-# (Nebius or NVIDIA) with `ownit key set`; both serve the same model.
+# (Nebius or NVIDIA) with `ownit key set`. Both run NVIDIA's Nemotron Super (120B, 12B active):
+# Nebius serves Nemotron 3 Super; NVIDIA's free endpoint now serves Nemotron 3.5 Super, and
+# answers 404 for nemotron-3-super-120b-a12b on newer accounts.
 # Model lists: https://tokenfactory.nebius.com/model-catalog.md and https://integrate.api.nvidia.com/v1/models
 [vars]
 NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
 NEBIUS_MODEL = "nvidia/nemotron-3-super-120b-a12b"
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1/"
-NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"
+NVIDIA_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
 # "nebius" for real calls, "fixture" for the offline test backend.
 MODEL_BACKEND = "nebius"
 # Daily cap on model calls paid for by DEMO_NEBIUS_KEY (only used when a request carries no key).

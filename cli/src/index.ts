@@ -6,7 +6,7 @@ import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
-import { pageCommand } from './commands/page.js';
+import { settingsCommand } from './commands/settings.js';
 import { closestMatch, errorMessage } from './ui.js';
 
 interface Command {
@@ -25,7 +25,7 @@ const COMMANDS: Record<string, Command> = {
     help: [
       ['ownit interview', 'List waiting pushes and debrief the one you pick'],
       ['ownit interview --all', 'Debrief every waiting push in turn'],
-      ['ownit interview --range A..B', 'Debrief a commit range'],
+      ['ownit interview --range A..B', 'Debrief a commit range, or one commit (SHA)'],
     ],
     run: interviewCommand,
   },
@@ -37,13 +37,14 @@ const COMMANDS: Record<string, Command> = {
     run: keyCommand,
   },
   badge: { help: [['ownit badge', "Print this repo's badge Markdown for your README"]], run: badgeCommand },
-  page: {
+  settings: {
     help: [
-      ['ownit page', "Show this repo's public page and what it shows"],
-      ['ownit page questions on|off', 'Show or hide debrief questions there (admins)'],
-      ['ownit page answers on|off', 'Show or hide passing answers there (admins)'],
+      ['ownit settings', "Show this repo's settings and page link"],
+      ['ownit settings questions on|off', 'Show debrief questions on the page (admins)'],
+      ['ownit settings answers on|off', 'Show passing answers on the page (admins)'],
+      ['ownit settings earlier on|off', 'Count older commits once debriefed (admins)'],
     ],
-    run: pageCommand,
+    run: settingsCommand,
   },
   uninstall: { help: [['ownit uninstall', 'Remove the pre-push hook']], run: uninstallCommand },
   help: { help: [['ownit help', 'Show this help']], run: () => print(helpText()) },
@@ -52,7 +53,7 @@ const COMMANDS: Record<string, Command> = {
   version: { run: () => print(`${version()}\n`) },
 };
 
-const ALIASES: Record<string, string> = { status: 'whoami', '--help': 'help', '-h': 'help', '--version': 'version', '-v': 'version' };
+const ALIASES: Record<string, string> = { page: 'settings', status: 'whoami', '--help': 'help', '-h': 'help', '--version': 'version', '-v': 'version' };
 
 function findCommand(name: string): Command | undefined {
   const key = Object.hasOwn(ALIASES, name) ? ALIASES[name]! : name;

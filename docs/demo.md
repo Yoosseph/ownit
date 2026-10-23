@@ -95,7 +95,7 @@ Press **n**. The output reads `Ownit: push recorded as pending. Run "ownit inter
 Refresh the page: the badge drops to **Verified 71%**. It isn't permanent: `ownit interview`
 lists the waiting pushes by commit message, and debriefing this one raises the badge again. Scroll the page to show the
 push list: statuses, commit links and question text. There's no code, and no answers unless the
-repo's admins turn them on with `ownit page answers on`.
+repo's admins turn them on with `ownit settings answers on`.
 
 ## Scene 4: an injection attempt fails (1:55–2:40)
 

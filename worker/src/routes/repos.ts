@@ -2,7 +2,7 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
 import { checkAccess } from '../access';
-import { getRepo, setPageSettings, upsertRepo, type RepoRow } from '../db';
+import { getRepo, setRepoSettings, upsertRepo, type RepoRow } from '../db';
 import { installUrl, repoPageUrl } from '../links';
 import { log } from '../log';
 import { readJson, repoName, requireRepo } from './shared';
@@ -28,6 +28,7 @@ repos.post('/', async (c) => {
     private: installation?.private ? 1 : (existing?.private ?? 0),
     show_questions: existing?.show_questions ?? 1,
     show_answers: existing?.show_answers ?? 0,
+    allow_backfill: existing?.allow_backfill ?? 0,
   };
   const denied = await checkAccess(c, candidate);
   if (denied) {
@@ -55,7 +56,12 @@ repos.post('/', async (c) => {
   });
 });
 
-const settingsBody = z.object({ repo: repoName, show_questions: z.boolean().optional(), show_answers: z.boolean().optional() });
+const settingsBody = z.object({
+  repo: repoName,
+  show_questions: z.boolean().optional(),
+  show_answers: z.boolean().optional(),
+  allow_backfill: z.boolean().optional(),
+});
 
 function settingsJson(c: Context<AppEnv>, repo: RepoRow) {
   return {
@@ -63,11 +69,12 @@ function settingsJson(c: Context<AppEnv>, repo: RepoRow) {
     private: Boolean(repo.private),
     show_questions: Boolean(repo.show_questions),
     show_answers: Boolean(repo.show_answers),
+    allow_backfill: Boolean(repo.allow_backfill),
     page_url: repoPageUrl(c.env.PUBLIC_URL || new URL(c.req.url).origin, repo),
   };
 }
 
-/** What the repo's public page shows. Anyone who can push may look. */
+/** The repo's settings. Anyone who can push may look. */
 repos.get('/settings', async (c) => {
   const parsed = repoName.safeParse(c.req.query('repo'));
   if (!parsed.success) return c.json({ error: 'bad_request', message: 'Pass ?repo=owner/name.' }, 400);
@@ -77,21 +84,28 @@ repos.get('/settings', async (c) => {
 });
 
 /**
- * Changes what the public page shows (from `ownit page`). Admins and
- * maintainers only. Showing answers also shows questions; hiding questions
- * hides answers. Hiding answers deletes the stored ones.
+ * Changes the repo's settings (from `ownit settings`). Admins and maintainers
+ * only. Showing answers also shows questions; hiding questions hides answers;
+ * hiding answers deletes the stored ones. `allow_backfill` lets debriefs of
+ * commits from before tracking count once verified.
  */
 repos.put('/settings', async (c) => {
-  const body = await readJson(c, settingsBody, 'Pass {"repo": "owner/name", "show_questions"?: boolean, "show_answers"?: boolean}.');
+  const body = await readJson(
+    c,
+    settingsBody,
+    'Pass {"repo": "owner/name", "show_questions"?: boolean, "show_answers"?: boolean, "allow_backfill"?: boolean}.',
+  );
   if (body instanceof Response) return body;
   const repo = await requireRepo(c, body.repo, 'admin');
   if (repo instanceof Response) return repo;
-  if (repo.private) {
+  const pageChange = body.show_questions !== undefined || body.show_answers !== undefined;
+  if (repo.private && pageChange) {
     return c.json({ error: 'private_repo', message: `${body.repo} is private, so its page never shows questions or answers.` }, 400);
   }
   const showAnswers = body.show_answers ?? (body.show_questions === false ? false : Boolean(repo.show_answers));
   const showQuestions = body.show_answers ? true : (body.show_questions ?? Boolean(repo.show_questions));
-  await setPageSettings(c.env.DB, repo.id, { showQuestions, showAnswers });
-  log('repo.settings', { repo: body.repo, questions: showQuestions, answers: showAnswers && showQuestions });
+  const allowBackfill = body.allow_backfill ?? Boolean(repo.allow_backfill);
+  await setRepoSettings(c.env.DB, repo.id, { showQuestions, showAnswers, allowBackfill });
+  log('repo.settings', { repo: body.repo, questions: showQuestions, answers: showAnswers && showQuestions, backfill: allowBackfill });
   return c.json(settingsJson(c, (await getRepo(c.env.DB, repo.owner, repo.name))!));
 });

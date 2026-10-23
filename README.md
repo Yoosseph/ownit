@@ -79,12 +79,13 @@ GitHub shows the result as a check on the commit.
 | `ownit init` | Install the pre-push hook in this repo and register it. |
 | `ownit interview` | List your waiting pushes (including ones an AI agent made) and debrief the one you pick. |
 | `ownit interview --all` | Debrief every waiting push in turn. |
-| `ownit interview --range A..B` | Debrief any commit range. |
+| `ownit interview --range A..B` | Debrief any commit range, or `--range <sha>` for one commit. |
 | `ownit key set [nebius\|nvidia]` | Save your API key. Paste it at the hidden prompt, never after the command. |
 | `ownit key status` / `ownit key clear` | Show or remove the key. |
 | `ownit badge` | Print this repo's badge Markdown to paste into your README. |
-| `ownit page` | Show this repo's page link and whether it shows questions and answers. |
-| `ownit page questions\|answers on\|off` | Choose what the page shows. Repo admins and maintainers only. |
+| `ownit settings` | Show this repo's settings and page link. |
+| `ownit settings questions\|answers on\|off` | Choose what the page shows. Repo admins and maintainers only. |
+| `ownit settings earlier on\|off` | Let older commits count once someone debriefs them. Admins and maintainers only. |
 | `ownit whoami` | Show the server, your GitHub login and your key. |
 | `ownit uninstall` | Remove the hook from this repo. |
 | `ownit logout` | Sign out. |

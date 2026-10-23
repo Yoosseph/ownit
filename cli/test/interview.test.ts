@@ -100,3 +100,27 @@ describe('stopping a debrief with "s"', { timeout: 60_000 }, () => {
     expect(output.match(/3 pushes waiting for a debrief/g)).toHaveLength(2);
   });
 });
+
+describe('ownit interview --range', { timeout: 60_000 }, () => {
+  it('takes a single commit and debriefs just that one, reporting earlier work it credited', async () => {
+    const repo = makeRepo();
+    const base = repo.commit('a.txt', 'one\n', 'Start');
+    const head = repo.commit('b.txt', 'two\n', 'Add the retry helper');
+    const s = await fakeServer({
+      'POST /api/interview/start': () => ({ push_id: 7, total: 1, session: 'sess', questions: [{ idx: 0, kind: 'why', text: 'Why?' }] }),
+      'POST /api/interview/answer': () => ({ pass: true, feedback: 'Good.', done: true, status: 'verified', followup: null, earlier_credited: 1, session: 's2' }),
+    });
+    servers.push(s);
+    const { code, output } = await run(
+      process.execPath,
+      [CLI, 'interview', '--range', head.slice(0, 7)],
+      repo.work,
+      cleanEnv({ OWNIT_HOME: repo.root, OWNIT_SERVER: s.url }),
+      'It retries flaky calls.\n',
+    );
+    expect(code).toBe(0);
+    const start = s.requests.find((r) => r.path === '/api/interview/start')!;
+    expect(start.body).toMatchObject({ base_sha: base, head_sha: head, commits: [{ sha: head }] });
+    expect(output).toContain('1 earlier commit now counts as verified.');
+  });
+});

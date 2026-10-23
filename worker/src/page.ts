@@ -9,6 +9,8 @@ export interface PagePush {
   created_at: string;
   pusher: string | null;
   commits: number;
+  /** 1 when the push is earlier work, credited by a later debrief. */
+  earlier?: number;
   questions: { kind: string; text: string; passed: number; attempts: number; answer: string | null }[];
 }
 
@@ -59,7 +61,7 @@ function headerSection(repo: RepoRow, badgeUrl: string): string {
   return `<header>
   <div>
     <h1>${esc(`${repo.owner}/${repo.name}`)}</h1>
-    <p class="sub">Tracked since ${date(repo.tracked_since)}. Earlier commits don't count.</p>
+    <p class="sub">Tracked since ${date(repo.tracked_since)}. ${repo.allow_backfill ? 'Earlier commits count once debriefed.' : "Earlier commits don't count."}</p>
   </div>
   <img src="${esc(badgeUrl)}" alt="Ownit badge" height="20">
 </header>`;
@@ -106,7 +108,7 @@ function pushItem(p: PagePush, repo: RepoRow, visible: Visibility): string {
   return `<li class="push">
   <div class="push-head"><span class="pill ${p.status}">${STATUS_LABEL[p.status]}</span>
   <a class="sha" href="${esc(commitUrl)}">${esc(p.head_sha.slice(0, 7))}</a>
-  <span class="meta">${meta}</span></div>
+  <span class="meta">${meta}</span>${p.earlier ? ' <span class="tag" title="Commits from before tracking, verified by a later debrief">earlier work</span>' : ''}</div>
   ${body}
 </li>`;
 }
@@ -141,7 +143,7 @@ function footer(visible: Visibility): string {
 // --- Page --------------------------------------------------------------------
 
 const STYLES = `:root{--bg:#fbfaf7;--card:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e7e4dc;--accent:#2f7d4f;--warn:#b7791f;--skip:#8a8a85;--chip:#f1efe8}
-@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1d1d1b;--ink:#ecebe6;--muted:#a3a29b;--line:#33322f;--accent:#5cbf84;--warn:#e0a84a;--skip:#9b9a94;--chip:#2a2927}}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1011;--card:#151718;--ink:#e8eaeb;--muted:#9fa4a7;--line:#2a2d30;--accent:#5cbf84;--warn:#e0a84a;--skip:#9b9fa2;--chip:#1e2122}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:760px;margin:0 auto;padding:32px 16px 64px}
@@ -177,6 +179,7 @@ ul{list-style:none;margin:0;padding:0}
 .kind{display:inline-block;min-width:44px;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .answer{margin:4px 0 2px 44px;padding-left:10px;border-left:2px solid var(--line);color:var(--muted);font-size:.92rem;white-space:pre-wrap}
 .ok{color:var(--accent)}
+.tag{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
 .empty{color:var(--muted)}
 .embed{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
 code{background:var(--chip);border-radius:6px;padding:6px 8px;font-size:.8rem;word-break:break-all;display:block;flex:1;min-width:0}

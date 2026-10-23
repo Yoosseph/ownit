@@ -22,7 +22,7 @@ const storedAnswer = (env: TestEnv) => (env.DB.raw.prepare('SELECT answer FROM q
 describe('page settings', () => {
   it('shows questions and hides answers by default', async () => {
     const res = await call(testEnv(), 'GET', '/api/repos/settings?repo=octo/shop');
-    expect(res.json).toEqual({ repo: 'octo/shop', private: false, show_questions: true, show_answers: false, page_url: 'https://ownit.test/octo/shop' });
+    expect(res.json).toEqual({ repo: 'octo/shop', private: false, show_questions: true, show_answers: false, allow_backfill: false, page_url: 'https://ownit.test/octo/shop' });
   });
 
   it('lets only admins and maintainers change them', async () => {

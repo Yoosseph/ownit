@@ -25,6 +25,8 @@ export interface RepoRow {
   /** Public page settings (0 or 1). Private repos show neither, whatever these say. */
   show_questions: number;
   show_answers: number;
+  /** Whether debriefs of commits from before tracking count once verified (0 or 1). */
+  allow_backfill: number;
 }
 
 export interface PushRow {
@@ -92,11 +94,19 @@ export function setRepoInstallation(db: D1Database, repoId: number, installation
   return db.prepare('UPDATE repos SET installation_id = ?, private = ? WHERE id = ?').bind(installationId, isPrivate ? 1 : 0, repoId).run();
 }
 
-/** What the public page shows. Answers need questions, and turning answers off deletes the stored ones. */
-export async function setPageSettings(db: D1Database, repoId: number, settings: { showQuestions: boolean; showAnswers: boolean }) {
+export interface RepoSettings {
+  showQuestions: boolean;
+  showAnswers: boolean;
+  allowBackfill: boolean;
+}
+
+/** Saves a repo's settings. Answers need questions, and turning answers off deletes the stored ones. */
+export async function setRepoSettings(db: D1Database, repoId: number, settings: RepoSettings) {
   const showAnswers = settings.showQuestions && settings.showAnswers;
   await db.batch([
-    db.prepare('UPDATE repos SET show_questions = ?, show_answers = ? WHERE id = ?').bind(settings.showQuestions ? 1 : 0, showAnswers ? 1 : 0, repoId),
+    db
+      .prepare('UPDATE repos SET show_questions = ?, show_answers = ?, allow_backfill = ? WHERE id = ?')
+      .bind(settings.showQuestions ? 1 : 0, showAnswers ? 1 : 0, settings.allowBackfill ? 1 : 0, repoId),
     ...(showAnswers
       ? []
       : [db.prepare('UPDATE questions SET answer = NULL WHERE push_id IN (SELECT id FROM pushes WHERE repo_id = ?)').bind(repoId)]),
@@ -177,6 +187,8 @@ export interface PushSummaryRow {
   created_at: string;
   pusher: string | null;
   commits: number;
+  /** 1 when every counted commit is earlier work, credited by a later debrief. */
+  earlier: number;
   /** How many pushes the page could list in all, beyond this page's limit. */
   total_pushes: number;
 }
@@ -185,10 +197,11 @@ export async function listRecentPushes(db: D1Database, repoId: number): Promise<
   const { results } = await db
     .prepare(
       `SELECT p.id, p.status, p.head_sha, p.created_at, u.login AS pusher,
-              (SELECT count(*) FROM commits c WHERE c.push_id = p.id AND c.pushed_at IS NOT NULL) AS commits,
+              (SELECT count(*) FROM commits c WHERE c.push_id = p.id AND (c.pushed_at IS NOT NULL OR c.backfilled = 1)) AS commits,
+              NOT EXISTS (SELECT 1 FROM commits c WHERE c.push_id = p.id AND c.backfilled = 0 AND c.pushed_at IS NOT NULL) AS earlier,
               count(*) OVER () AS total_pushes
        FROM pushes p LEFT JOIN users u ON u.github_id = p.user_github_id
-       WHERE p.repo_id = ? AND EXISTS (SELECT 1 FROM commits c WHERE c.push_id = p.id AND c.pushed_at IS NOT NULL)
+       WHERE p.repo_id = ? AND EXISTS (SELECT 1 FROM commits c WHERE c.push_id = p.id AND (c.pushed_at IS NOT NULL OR c.backfilled = 1))
        ORDER BY p.created_at DESC LIMIT 30`,
     )
     .bind(repoId)
@@ -244,6 +257,22 @@ export function markCommitsLanded(db: D1Database, repoId: number, commits: Lande
     )
     .bind(pushedAt, JSON.stringify(commits), repoId)
     .run();
+}
+
+/**
+ * Credits a verified push's earlier work: its commits that did not land after
+ * tracking began. They count from now on, attributed to `login` when GitHub
+ * named no author. Returns how many were credited.
+ */
+export async function creditEarlierWork(db: D1Database, repo: RepoRow, pushId: number, login: string | null): Promise<number> {
+  const result = await db
+    .prepare(
+      `UPDATE commits SET backfilled = 1, author_login = COALESCE(author_login, ?)
+       WHERE push_id = ? AND backfilled = 0 AND (pushed_at IS NULL OR pushed_at < ?)`,
+    )
+    .bind(login, pushId, repo.tracked_since)
+    .run();
+  return result.meta.changes ?? 0;
 }
 
 /** Adds commits that landed without a debrief to `pushId`, already marked as landed. */

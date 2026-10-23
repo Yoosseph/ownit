@@ -62,7 +62,7 @@ Hackathon judges can try Ownit without a key. A server may set an optional share
 - **Code is never stored.** The diff exists only for the duration of a request. It goes to the
   model on **your** Nebius or NVIDIA account and is then discarded.
 - **Your answers are not stored by default.** Each answer goes to the grader and is then discarded.
-  The one exception is a public repo whose admins turned answers on (`ownit page answers on`):
+  The one exception is a public repo whose admins turned answers on (`ownit settings answers on`):
   then the answer that passed each question is kept and shown on the repo page, and the CLI says
   so before you answer. Failed answers are never kept. Turning answers off deletes the saved ones.
 - **Keys are never stored or logged.** Logs hold metadata only: repo, status, timings.
@@ -76,8 +76,8 @@ Hackathon judges can try Ownit without a key. A server may set an optional share
   discards the GitHub token, and issues its own session token, storing only a hash of it. Push
   access is checked with the GitHub App's installation token.
 - **Public page:** `/<owner>/<repo>` shows stats, recent pushes and, by default, question text. It
-  never shows code. Repo admins and maintainers choose what else it shows with `ownit page`:
-  `ownit page questions off` hides the questions, `ownit page answers on` shows passing answers.
+  never shows code. Repo admins and maintainers choose what else it shows with `ownit settings`:
+  `ownit settings questions off` hides the questions, `ownit settings answers on` shows passing answers.
   Private repos never show questions or answers.
 
 ## What the model sees
@@ -123,6 +123,17 @@ It reads, for example, `Ownit | Verified 55% | Unverified 45%`, with the verifie
 percentage. The percentages are commit-weighted: verified commits over all tracked commits. A commit
 is unverified until its push passes a debrief, whenever that happens; putting it off never
 locks it out. Only commits GitHub confirmed after the repo's "tracked since" date count. History before Ownit doesn't count.
+
+### Earlier commits (optional)
+
+Repo admins and maintainers can let older work count: `ownit settings earlier on`. Then anyone with
+push access can debrief commits from before tracking began with `ownit interview --range A..B`, or
+`--range <sha>` for one commit. Once that debrief passes, those commits count as verified and the
+push shows on the page as **earlier work**. They never count as unverified, so turning this on can
+only raise the percentage. The server checks that the head commit exists in the repo on GitHub, so
+only real history can be credited. Credit goes to the commit's GitHub author when Ownit knows it,
+otherwise to whoever debriefed it. Turning the setting off stops new credit; commits already
+credited stay.
 Copy the snippet from your repo's page.
 
 ### Is a badge real?

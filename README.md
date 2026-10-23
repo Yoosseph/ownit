@@ -82,6 +82,8 @@ GitHub shows the result as a check on the commit.
 | `ownit key set [nebius\|nvidia]` | Save your API key. Paste it at the hidden prompt, never after the command. |
 | `ownit key status` / `ownit key clear` | Show or remove the key. |
 | `ownit badge` | Print this repo's badge Markdown to paste into your README. |
+| `ownit page` | Show this repo's page link and whether it shows questions and answers. |
+| `ownit page questions\|answers on\|off` | Choose what the page shows. Repo admins and maintainers only. |
 | `ownit whoami` | Show the server, your GitHub login and your key. |
 | `ownit uninstall` | Remove the hook from this repo. |
 | `ownit logout` | Sign out. |
@@ -96,7 +98,8 @@ change; until then its commits count as unverified.
 ### Where to see your record
 
 - **GitHub:** each commit gets an **Ownit** check: verified, skipped, or pending.
-- **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats.
+- **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats. It shows the debrief questions unless the repo's admins hide them,
+  and passing answers only if they turn that on.
 - **Badge:** like `Ownit | Verified 55% | Unverified 45%`, linking to the repo page. `ownit init` prints the code to paste
   into your README; `ownit badge` prints it again, and the repo page has a Copy button.
 

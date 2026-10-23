@@ -139,6 +139,7 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
   }
 
   out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to skip.\n`));
+  if (start.answers_public) out.write(c.yellow('Note: this repo shows passing answers on its public Ownit page.\n'));
   const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session };
   for (const question of start.questions) {
     const ended = await askUntilPassed(debrief, question);

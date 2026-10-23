@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { attachCommits, createPush, findPushForCommits, getPush, isVerified, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
+import { attachCommits, createPush, findPushForCommits, getPush, getRepoById, isVerified, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
 import { judgeAnswer, MAX_ANSWER_CHARS, writeQuestions, type Question, type Verdict } from '../debrief';
 import { cappedDemoModel, LIMITS, rateLimit } from '../limits';
 import { log, type LogFields } from '../log';
@@ -110,6 +110,9 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
 
 export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
 
+/** Whether the repo's public page shows passing answers, so they are worth keeping. */
+const showsAnswers = (repo: RepoRow | null) => Boolean(repo && repo.show_answers && !repo.private);
+
 // --- Routes ------------------------------------------------------------------
 
 /**
@@ -180,6 +183,8 @@ interview.post('/start', async (c) => {
     total: n,
     session: await sealState(c, state),
     questions: questions.map(publicQuestion),
+    // The CLI tells the developer before they answer.
+    answers_public: showsAnswers(repo),
   });
 });
 
@@ -203,7 +208,12 @@ interview.post('/answer', async (c) => {
   }
   const { pass, feedback, followUp } = verdict;
 
-  await recordAttempt(c.env.DB, state.pushId, body.idx, pass, followUp?.question);
+  const keep = pass && showsAnswers(await getRepoById(c.env.DB, state.repoId));
+  await recordAttempt(c.env.DB, state.pushId, body.idx, {
+    passed: pass,
+    nextText: followUp?.question,
+    answer: keep ? body.answer.trim().slice(0, MAX_ANSWER_CHARS) : null,
+  });
   if (pass) question.passed = true;
   if (followUp) state.questions[body.idx] = { ...followUp, passed: false };
   const done = state.questions.every((q) => q.passed);

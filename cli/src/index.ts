@@ -6,6 +6,7 @@ import { initCommand, uninstallCommand } from './commands/init.js';
 import { interviewCommand } from './commands/interview.js';
 import { keyCommand } from './commands/key.js';
 import { loginCommand, logoutCommand, whoamiCommand } from './commands/login.js';
+import { pageCommand } from './commands/page.js';
 import { errorMessage } from './ui.js';
 
 interface Command {
@@ -35,6 +36,14 @@ const COMMANDS: Record<string, Command> = {
     run: keyCommand,
   },
   badge: { help: [['ownit badge', "Print this repo's badge Markdown for your README"]], run: badgeCommand },
+  page: {
+    help: [
+      ['ownit page', "Show this repo's public page and what it shows"],
+      ['ownit page questions on|off', 'Show or hide debrief questions there (admins)'],
+      ['ownit page answers on|off', 'Show or hide passing answers there (admins)'],
+    ],
+    run: pageCommand,
+  },
   uninstall: { help: [['ownit uninstall', 'Remove the pre-push hook']], run: uninstallCommand },
   help: { help: [['ownit help', 'Show this help']], run: () => print(helpText()) },
   // Not listed: the installed git hook calls `ownit hook pre-push`.

@@ -33,11 +33,11 @@ publicPages.get('/:owner/:repo', async (c) => {
   const recent = await listRecentPushes(c.env.DB, repo.id);
   // All questions in one query (D1 free plan: 50 queries per request).
   const questions = await listQuestionsForPushes(c.env.DB, recent.map((p) => p.id));
-  const pushes: PagePush[] = recent.map((push) => ({
+  const pushes: PagePush[] = recent.map(({ total_pushes: _total, ...push }) => ({
     ...push,
     questions: questions.filter((q) => q.push_id === push.id).map(({ push_id: _id, ...q }) => q),
   }));
   const origin = withoutTrailingSlash(c.env.PUBLIC_URL || new URL(c.req.url).origin);
   c.header('cache-control', 'public, max-age=60');
-  return c.html(renderRepoPage(origin, repo, stats, pushes));
+  return c.html(renderRepoPage(origin, repo, stats, pushes, recent[0]?.total_pushes ?? 0));
 });

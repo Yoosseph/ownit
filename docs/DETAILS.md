@@ -60,19 +60,24 @@ Hackathon judges can try Ownit without a key. A server may set an optional share
 
 - **Code is never stored.** The diff exists only for the duration of a request. It goes to the
   model on **your** Nebius or NVIDIA account and is then discarded.
-- **Your answers are never stored.** Each answer goes to the grader and is then discarded.
+- **Your answers are not stored by default.** Each answer goes to the grader and is then discarded.
+  The one exception is a public repo whose admins turned answers on (`ownit page answers on`):
+  then the answer that passed each question is kept and shown on the repo page, and the CLI says
+  so before you answer. Failed answers are never kept. Turning answers off deletes the saved ones.
 - **Keys are never stored or logged.** Logs hold metadata only: repo, status, timings.
 - **What is stored:** repos (owner, name, App installation, tracked-since date), GitHub user IDs and
   logins, pushes (SHAs, status, timestamps), commit SHAs and authors, and each question's text with
-  pass/fail and attempt count.
+  pass/fail and attempt count, plus passing answers where the repo shows them.
 - **Answer keys stay sealed.** Each question has a reference describing a good answer. It travels
   between requests inside an encrypted token that only the server can open. It is never stored,
   and your CLI cannot read it.
 - **GitHub tokens are not kept.** Login uses GitHub's device flow. The worker reads your identity,
   discards the GitHub token, and issues its own session token, storing only a hash of it. Push
   access is checked with the GitHub App's installation token.
-- **Public page:** `/<owner>/<repo>` shows stats and question text. It never shows code or answers.
-  For private repos it hides the question text too.
+- **Public page:** `/<owner>/<repo>` shows stats, recent pushes and, by default, question text. It
+  never shows code. Repo admins and maintainers choose what else it shows with `ownit page`:
+  `ownit page questions off` hides the questions, `ownit page answers on` shows passing answers.
+  Private repos never show questions or answers.
 
 ## What the model sees
 
@@ -157,6 +162,9 @@ Then create your own GitHub App ([docs/github-app.md](github-app.md)), put its I
 client ID in `wrangler.toml`, set the `GITHUB_APP_PRIVATE_KEY` and `GITHUB_WEBHOOK_SECRET`
 secrets, and deploy again. Optionally set `DEMO_NEBIUS_KEY` and `DEMO_DAILY_CALL_CAP`.
 Point the CLI at your server with `ownit login --server https://ownit.<you>.workers.dev`.
+
+When you update a server you already run, apply new migrations before deploying:
+`npx wrangler d1 migrations apply ownit --remote`, then `npx wrangler deploy`.
 
 For local development, see [docs/HANDOFF.md](HANDOFF.md#running-locally). `MODEL_BACKEND =
 "fixture"` gives an offline fake model.

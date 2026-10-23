@@ -15,6 +15,8 @@ export interface StartResponse {
   total: number;
   session: string;
   questions: PublicQuestion[];
+  /** Whether passing answers appear on the repo's public page. Older servers omit it. */
+  answers_public?: boolean;
 }
 
 export interface AnswerResponse {

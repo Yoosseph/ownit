@@ -7,9 +7,9 @@ The [README](../README.md) covers setup and use. This page has everything else.
 | Status | Meaning | On the badge |
 | --- | --- | --- |
 | **verified** | Every question passed. All commits in the push are verified. | Yes |
-| **skipped** | You pressed `s`. You can still debrief it later with `ownit interview`. | Unverified |
-| **pending** | No debrief yet. This covers no terminal (GUI clients, coding agents, CI), `--no-verify`, edits on github.com, the hook not installed, or `n` at the prompt. Run `ownit interview`. | Not until it resolves |
-| **provider_error** | Nebius or NVIDIA rejected the key, ran out of credit, or was down. | No, until you retry with `ownit interview` |
+| **pending** | No debrief yet. This covers `n` at the prompt, `s` during a debrief, no terminal (GUI clients, coding agents, CI), `--no-verify`, edits on github.com, and the hook not installed. Run `ownit interview`. | Unverified |
+| **skipped** | Only from CLI versions before 0.1.2, which had an `s=skip` choice. Treated like pending. | Unverified |
+| **provider_error** | Nebius or NVIDIA rejected the key, ran out of credit, or was down. Retry with `ownit interview`. | Unverified |
 
 How a push becomes a debrief:
 
@@ -22,7 +22,8 @@ How a push becomes a debrief:
    SHA and sets the check run: **Ownit: verified**, **skipped**, or **pending**. Commits that
    landed without a debrief become a pending push. The merge commit GitHub's **Merge pull request**
    or **Update branch** button makes is ignored, because it adds no code of its own.
-5. Nothing expires. Pending and skipped pushes wait in `ownit interview` until you debrief them.
+5. Nothing expires. Unverified pushes wait in `ownit interview`, which lists them by commit
+   message so you pick the one to debrief.
 
 The number of questions grows with the size of the push, counted as changed lines in non-ignored
 files: under 50 → 1 question, 50–300 → 2, over 300 → 3. They come in this order:
@@ -120,7 +121,7 @@ is retried once, and a second failure records a provider error.
 
 It reads, for example, `Ownit | Verified 55% | Unverified 45%`, with the verified part colored by
 percentage. The percentages are commit-weighted: verified commits over all tracked commits. A commit
-is unverified until its push passes a debrief, whenever that happens; skipping or forgetting never
+is unverified until its push passes a debrief, whenever that happens; putting it off never
 locks it out. Only commits GitHub confirmed after the repo's "tracked since" date count. History before Ownit doesn't count.
 Copy the snippet from your repo's page.
 

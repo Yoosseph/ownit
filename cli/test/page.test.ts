@@ -22,7 +22,7 @@ async function page(args: string[]) {
   return { ...result, requests: s.requests };
 }
 
-describe('ownit page', () => {
+describe('ownit page', { timeout: 60_000 }, () => {
   it("shows the repo's page and what it shows", async () => {
     const { code, output } = await page([]);
     expect(code).toBe(0);

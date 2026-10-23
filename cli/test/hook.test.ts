@@ -72,7 +72,7 @@ describe('pre-push hook (real git push)', () => {
     const s = await server();
     const result = await push(repo, { OWNIT_SERVER: s.url, OWNIT_TTY_DEVICE: ttyFile(repo, ['y', 'Totals were off for several items.']) });
     expect(result.code).toBe(0);
-    expect(result.output).toContain('Debrief now? [Y/n/s=skip]');
+    expect(result.output).toContain('Debrief now? [Y/n]');
     expect(result.output).toContain('Question 1/1');
     expect(result.output).toContain('Push verified');
     expect(remoteHead(repo)).toBe(localHead(repo));
@@ -116,12 +116,12 @@ describe('pre-push hook (real git push)', () => {
     expect(remoteHead(repo)).toBe(localHead(repo));
   }, 60_000);
 
-  it('s records a skip and pushes', async () => {
+  it('an old habit of typing s just leaves the push for later', async () => {
     const repo = setup();
     const s = await server();
     const result = await push(repo, { OWNIT_SERVER: s.url, OWNIT_TTY_DEVICE: ttyFile(repo, ['s']) });
     expect(result.code).toBe(0);
-    expect(s.requests.find((r) => r.path === '/api/pushes')?.body.status).toBe('skipped');
+    expect(s.requests.find((r) => r.path === '/api/pushes')?.body.status).toBe('pending');
     expect(s.requests.some((r) => r.path === '/api/interview/start')).toBe(false);
     expect(remoteHead(repo)).toBe(localHead(repo));
   }, 60_000);
@@ -275,7 +275,7 @@ describe('prompt handling', () => {
     expect(interpretChoice('')).toBe('debrief');
     expect(interpretChoice('Y')).toBe('debrief');
     expect(interpretChoice('n')).toBe('later');
-    expect(interpretChoice('s')).toBe('skip');
+    expect(interpretChoice('s')).toBe('later');
     expect(interpretChoice(null)).toBe('later');
     expect(interpretChoice('whatever')).toBe('later');
   });

@@ -1,8 +1,8 @@
 # Demo video script
 
 About 3 minutes. The story: a push leads to a debrief, one answer fails and gets feedback, a
-follow-up passes, and the badge goes up. Then a skip lowers the badge, and an injection attempt
-fails.
+follow-up passes, and the badge goes up. Then putting one off lowers the badge, and an injection
+attempt fails.
 
 ## Before recording
 
@@ -15,7 +15,7 @@ fails.
    the demo repo, `ownit init`.
 4. **Model check.** Run `scripts/live-injection-check` once. It should report the injected
    answers as failed and the honest rough answer as passed.
-5. **Baseline.** Before recording, make four small one-commit pushes: verify three and skip one.
+5. **Baseline.** Before recording, make four small one-commit pushes: verify three and answer `n` to one.
    The badge then reads **Verified 75% | Unverified 25%** (3 of 4). Add the badge to the demo repo's README:
    `[![Ownit](https://<server>/badge/you/ownit-demo.svg)](https://<server>/you/ownit-demo)`.
 6. **Prepare the three demo changes** (below) so each scene is one `git commit` away. Keep them
@@ -30,7 +30,7 @@ Expected badge values, commit-weighted:
 | --- | --- | --- |
 | Baseline | 3 / 4 | 75% |
 | Scene 2 (2 commits verified) | 5 / 6 | 83% |
-| Scene 3 (1 commit skipped) | 5 / 7 | 71% |
+| Scene 3 (1 commit left for later) | 5 / 7 | 71% |
 | Scene 4 (injection attempt, then a real answer) | 6 / 8 | 75% |
 
 ## Scene 1: the problem (0:00–0:20)
@@ -65,7 +65,7 @@ export async function chargeWithRetry(charge, maxAttempts = 3) {
 git push
 ```
 
-1. At `Debrief now? [Y/n/s=skip]`, press **Enter**.
+1. At `Debrief now? [Y/n]`, press **Enter**.
 2. **Question 1/2 (why).** Give a rough, honest answer, for example
    `so a temporary card error doesn't lose the whole order`. It passes.
    > "Rough is fine. It's generous on purpose."
@@ -80,7 +80,7 @@ git push
 Switch to GitHub and open the commit's **Checks**. It shows **Ownit: verified**, with the questions
 in the summary. Then refresh the Ownit page: the badge reads **Verified 83%**.
 
-## Scene 3: a skip lowers the badge (1:30–1:55)
+## Scene 3: putting it off lowers the badge (1:30–1:55)
 
 Change: a one-line copy fix (`Fix typo in receipt email`).
 
@@ -88,12 +88,12 @@ Change: a one-line copy fix (`Fix typo in receipt email`).
 git commit -am "Fix typo in receipt email" && git push
 ```
 
-Press **s**. The output reads `Ownit: skipped. Push continues.`
+Press **n**. The output reads `Ownit: push recorded as pending. Run "ownit interview" when you're ready.`
 
-> "Skipping is one key. It's recorded honestly, and it shows."
+> "Not now is one key. It's recorded honestly, and it shows."
 
-Refresh the page: the badge drops to **Verified 71%**. The skip isn't permanent: running
-`ownit interview` later would debrief it and raise the badge again. Scroll the page to show the
+Refresh the page: the badge drops to **Verified 71%**. It isn't permanent: `ownit interview`
+lists the waiting pushes by commit message, and debriefing this one raises the badge again. Scroll the page to show the
 push list: statuses, commit links and question text. There's no code, and no answers unless the
 repo's admins turn them on with `ownit page answers on`.
 

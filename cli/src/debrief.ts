@@ -34,9 +34,13 @@ interface Debrief {
   session: string;
 }
 
-function isSkip(answer: string) {
+/** "s" (or the older "skip") stops the debrief for now. */
+function isLater(answer: string) {
   return /^(s|skip|:skip)$/i.test(answer.trim());
 }
+
+/** The reason on a debrief the developer stopped with "s", as opposed to one that was cut off. */
+export const LATER = 'later';
 
 /** Shows a spinner while `work` runs. */
 async function withSpinner<T>(out: Writable, text: string, work: () => Promise<T>): Promise<T> {
@@ -81,7 +85,7 @@ async function askUntilPassed(debrief: Debrief, first: PublicQuestion): Promise<
       out.write(`\n${c.yellow('Debrief paused.')} ${RESUME_HINT}\n`);
       return { status: 'pending', reason: 'debrief paused' };
     }
-    if (isSkip(answer)) return skip(api, out, debrief.session);
+    if (isLater(answer)) return later(out);
 
     let result: AnswerResponse;
     try {
@@ -138,7 +142,7 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
     return failure(out, error);
   }
 
-  out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to skip.\n`));
+  out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to stop and finish later.\n`));
   if (start.answers_public) out.write(c.yellow('Note: this repo shows passing answers on its public Ownit page.\n'));
   const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session };
   for (const question of start.questions) {
@@ -149,14 +153,10 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
   return { status: 'verified' };
 }
 
-async function skip(api: ApiClient, out: Writable, session: string): Promise<DebriefOutcome> {
-  try {
-    await api.request('POST', '/api/interview/skip', { session });
-  } catch (error) {
-    return failure(out, error);
-  }
-  out.write(`${paint(out).dim('Skipped. This push is recorded as skipped.')}\n`);
-  return { status: 'skipped' };
+/** "s" stops for now. Nothing is recorded: the push stays pending, so it waits in `ownit interview`. */
+function later(out: Writable): DebriefOutcome {
+  out.write(`${paint(out).dim(`Stopped. This push stays unverified until you debrief it. ${RESUME_HINT}`)}\n`);
+  return { status: 'pending', reason: LATER };
 }
 
 /** Prints a one-line reason. Provider problems stay out of the stats until retried. */

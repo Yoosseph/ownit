@@ -23,7 +23,8 @@ const COMMANDS: Record<string, Command> = {
   init: { help: [['ownit init [--repo owner/name]', 'Install the pre-push hook in this repo']], run: initCommand },
   interview: {
     help: [
-      ['ownit interview', 'Debrief pushes that are still pending'],
+      ['ownit interview', 'List waiting pushes and debrief the one you pick'],
+      ['ownit interview --all', 'Debrief every waiting push in turn'],
       ['ownit interview --range A..B', 'Debrief a commit range'],
     ],
     run: interviewCommand,

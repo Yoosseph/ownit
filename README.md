@@ -17,7 +17,7 @@ NVIDIA Nemotron (on Nebius or NVIDIA) writes the questions and grades your answe
 
 ```text
 $ git push
-Ownit (2 commits to octo/shop) Debrief now? [Y/n/s=skip] y
+Ownit (2 commits to octo/shop) Debrief now? [Y/n] y
 
 Question 1/2 (why)
   Why does checkout now retry some failed card payments instead of failing the order right away?
@@ -36,7 +36,7 @@ Question 2/2 (how)
 
 Coding agents let you ship code faster than you can read it. Ownit makes understanding your own
 code a habit: a two-minute check while the change is still fresh. Rough answers are fine. A miss
-gets a hint and a new question, and you can always retry or skip.
+gets a hint and a new question, and you can always stop and finish later.
 
 ## Setup
 
@@ -62,13 +62,13 @@ Push as usual. Ownit asks before each push:
 | --- | --- |
 | **Y** or Enter | Answer the questions now. |
 | **n** | Do it later with `ownit interview`. |
-| **s** | Skip this push. |
 
 Your push always goes through, whatever you answer.
 
-Each push is marked **verified** (all questions passed), **skipped**, or **pending** (not done yet).
-Only verified commits count as verified; everything else is unverified, with no deadline. Run
-`ownit interview` whenever you like, even for a push you skipped, and its commits become verified.
+Each push is **verified** (all questions passed) or **pending** (not done yet). Pending commits
+count as unverified, with no deadline. Run `ownit interview` whenever you like: it lists the
+waiting pushes by commit message, and you pick which one to debrief. Its commits then become
+verified. During a debrief, type `s` to stop and come back to it later.
 GitHub shows the result as a check on the commit.
 
 ### Commands
@@ -77,7 +77,8 @@ GitHub shows the result as a check on the commit.
 | --- | --- |
 | `ownit login` | Sign in with GitHub. |
 | `ownit init` | Install the pre-push hook in this repo and register it. |
-| `ownit interview` | Debrief your pending pushes, including ones an AI agent made. |
+| `ownit interview` | List your waiting pushes (including ones an AI agent made) and debrief the one you pick. |
+| `ownit interview --all` | Debrief every waiting push in turn. |
 | `ownit interview --range A..B` | Debrief any commit range. |
 | `ownit key set [nebius\|nvidia]` | Save your API key. Paste it at the hidden prompt, never after the command. |
 | `ownit key status` / `ownit key clear` | Show or remove the key. |
@@ -97,7 +98,7 @@ change; until then its commits count as unverified.
 
 ### Where to see your record
 
-- **GitHub:** each commit gets an **Ownit** check: verified, skipped, or pending.
+- **GitHub:** each commit gets an **Ownit** check: verified or pending.
 - **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats. It shows the debrief questions unless the repo's admins hide them,
   and passing answers only if they turn that on.
 - **Badge:** like `Ownit | Verified 55% | Unverified 45%`, linking to the repo page. `ownit init` prints the code to paste

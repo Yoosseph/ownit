@@ -85,7 +85,7 @@ one line with `\n` in place of each line break, inside double quotes.
 - Push a commit to the repo, then open it on GitHub. The **Checks** list should show **Ownit**
   with one of:
   - **Ownit: verified** (green): you passed the debrief.
-  - **Ownit: skipped** (grey): you chose `s`. Run `ownit interview` to debrief it later.
+  - **Ownit: skipped** (grey): only from CLI versions before 0.1.2. Run `ownit interview` to debrief it.
   - **Ownit: pending** (yellow, in progress): no debrief yet. Run `ownit interview`.
 - A delivery that returns `401` means `GITHUB_WEBHOOK_SECRET` doesn't match the App's secret.
 

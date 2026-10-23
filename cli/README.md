@@ -11,8 +11,8 @@ ownit key set     # pick Nebius or NVIDIA, then paste your key; stored only in ~
 ownit init        # in a repo: installs the pre-push hook
 ```
 
-On each push: `Debrief now? [Y/n/s=skip]`. Ownit never blocks a push. Pending debriefs can be
-finished any time with `ownit interview`.
+On each push: `Debrief now? [Y/n]`. Ownit never blocks a push. Pending debriefs can be
+finished any time with `ownit interview`, which lets you pick the push.
 
 Your code is never stored, your answers only if the repo's admins choose to show them on its page, and your key is never stored or logged by the server.
 

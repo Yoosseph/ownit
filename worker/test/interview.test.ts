@@ -163,37 +163,3 @@ describe('POST /api/interview/skip', () => {
     expect((await call(env, 'GET', '/api/pushes/open?repo=octo/shop')).json.pushes).toEqual([]);
   });
 });
-
-describe('standing by an answer on a follow-up', () => {
-  const dispute = (session: string, idx: number, text: string) => ({ ...answer(session, idx, text), dispute: true });
-  const FAIR = 'It counts quantity so bulk orders are charged correctly.';
-
-  it('is not allowed on the first answer', async () => {
-    const { env, start } = await started();
-    const res = await call(env, 'POST', '/api/interview/answer', dispute(start.session, 0, FAIR));
-    expect(res.status).toBe(400);
-    expect(res.json).toMatchObject({ error: 'dispute_refused', message: 'You can stand by an answer only on a follow-up question.' });
-  });
-
-  it('passes the follow-up and marks the question disputed', async () => {
-    const { env, start } = await started();
-    const fail = await call(env, 'POST', '/api/interview/answer', answer(start.session, 0, "I don't know"));
-    const res = await call(env, 'POST', '/api/interview/answer', dispute(fail.json.session, 0, FAIR));
-    expect(res.json).toMatchObject({ pass: true, done: true, status: 'verified' });
-    expect(env.DB.raw.prepare('SELECT passed, disputed FROM questions').get()).toEqual({ passed: 1, disputed: 1 });
-    env.DB.raw.prepare('UPDATE commits SET pushed_at = ?').run(new Date().toISOString());
-    expect((await call(env, 'GET', '/octo/shop')).text).toContain('✓ disputed');
-  });
-
-  it('needs a real answer, and is allowed once per debrief', async () => {
-    const { env, start } = await started(testEnv(), { changed_lines: 120 });
-    const fail0 = await call(env, 'POST', '/api/interview/answer', answer(start.session, 0, "I don't know"));
-    const short = await call(env, 'POST', '/api/interview/answer', dispute(fail0.json.session, 0, 'it is fine'));
-    expect(short.json.message).toBe('Stand by a real answer: a sentence or more.');
-    const first = await call(env, 'POST', '/api/interview/answer', dispute(fail0.json.session, 0, FAIR));
-    expect(first.json).toMatchObject({ pass: true, done: false });
-    const fail1 = await call(env, 'POST', '/api/interview/answer', answer(first.json.session, 1, "I don't know"));
-    const second = await call(env, 'POST', '/api/interview/answer', dispute(fail1.json.session, 1, FAIR));
-    expect(second.json.message).toBe('You already stood by one answer in this debrief.');
-  });
-});

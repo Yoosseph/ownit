@@ -43,8 +43,7 @@ repo; if it isn't, init prints the link. Use --repo owner/name when the remote i
     details: `With no options, it lists the pushes waiting for a debrief and asks which one to do:
   a number   that push           Enter   the newest
   a          all, one by one     q       quit
-During a debrief, type "s" to stop and finish later. After a miss, type "d" on the follow-up
-to stand by your answer: it passes, shown as disputed (once per debrief).
+During a debrief, type "s" to stop and finish later.
 
 Older commits (count once verified, if "ownit settings earlier on"):
   ownit interview --range 8d21b07            just that commit

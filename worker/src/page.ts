@@ -11,7 +11,7 @@ export interface PagePush {
   commits: number;
   /** 1 when the push is earlier work, credited by a later debrief. */
   earlier?: number;
-  questions: { kind: string; text: string; passed: number; attempts: number; answer: string | null; disputed?: number }[];
+  questions: { kind: string; text: string; passed: number; attempts: number; answer: string | null }[];
 }
 
 /** Escapes text for HTML. Question text is model output about user code, so it is untrusted. */
@@ -93,11 +93,7 @@ function authorsSection(authors: RepoStats['authors']): string {
 }
 
 function questionItem(q: PagePush['questions'][number], showAnswer: boolean): string {
-  const passed = q.disputed
-    ? ' <span class="tag" title="The developer stood by an answer the grader did not accept">✓ disputed</span>'
-    : q.passed
-      ? ` <span class="ok" title="Passed after ${q.attempts} ${plural(q.attempts, 'attempt')}">✓</span>`
-      : '';
+  const passed = q.passed ? ` <span class="ok" title="Passed after ${q.attempts} ${plural(q.attempts, 'attempt')}">✓</span>` : '';
   const answer = showAnswer && q.answer ? `<p class="answer">${esc(q.answer)}</p>` : '';
   return `<li><span class="kind">${esc(q.kind)}</span> ${esc(q.text)}${passed}${answer}</li>`;
 }

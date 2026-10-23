@@ -27,7 +27,7 @@ flowchart LR
 
 ## What happens on a push
 
-1. **You push.** The pre-push hook asks: debrief now? (`Y` / `n` / `s`). It never blocks the push.
+1. **You push.** The pre-push hook asks: debrief now? (`Y` / `n`). It never blocks the push.
 2. **The CLI builds the diff** locally, drops lockfiles, build output and anything in
    `.ownitignore`, and sends it with the commit messages to the worker.
 3. **The worker asks the model for 1–3 questions** (more for bigger pushes): *why*, *how*, *next*.
@@ -47,7 +47,7 @@ Missed the prompt? Run `ownit interview` later to debrief pending pushes.
 | Status | Meaning |
 | --- | --- |
 | verified | All questions passed. |
-| skipped | You pressed `s`. Still debriefable later. |
+| skipped | Only from CLIs before 0.1.2. Treated like pending. |
 | pending | No debrief yet. |
 | provider_error | The model call failed (bad key, no credit, outage). Retry with `ownit interview`. |
 
@@ -67,8 +67,8 @@ worker checks that you have push access to the repo.
 | `/auth/*` | `ownit login` / `logout` |
 | `/api/repos` | `ownit init` (registers the repo) |
 | `/api/repos/settings` | `ownit page` (what the public page shows; changing it needs admin or maintain) |
-| `/api/pushes` | The hook (records a pending or skipped push) |
-| `/api/interview/start`, `/answer`, `/skip` | The debrief itself |
+| `/api/pushes` | The hook (records a pending push) |
+| `/api/interview/start`, `/answer`, `/skip` | The debrief itself (`/skip` only for older CLIs) |
 | `/webhooks/github` | GitHub push events |
 | `/:owner/:repo`, `/badge/...` | Public page and badge |
 

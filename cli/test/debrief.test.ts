@@ -82,14 +82,12 @@ describe('runDebrief', () => {
     expect(answers[0]!.body.diff).toBe(target.diff.diff);
   });
 
-  it('skips on "s"', async () => {
-    const { api, calls } = fakeApi({
-      '/api/interview/start': () => start,
-      '/api/interview/skip': () => ({ status: 'skipped' }),
-    });
-    const { outcome } = await run(api, 's\n');
-    expect(outcome.status).toBe('skipped');
-    expect(calls.at(-1)).toEqual({ path: '/api/interview/skip', body: { session: 's0' } });
+  it('stops for later on "s", without recording anything', async () => {
+    const { api, calls } = fakeApi({ '/api/interview/start': () => start });
+    const { outcome, text } = await run(api, 's\n');
+    expect(outcome).toEqual({ status: 'pending', reason: 'later' });
+    expect(calls.map((c) => c.path)).toEqual(['/api/interview/start']);
+    expect(text).toContain('stays unverified until you debrief it');
   });
 
   it('pauses as pending when input ends', async () => {

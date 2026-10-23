@@ -39,26 +39,19 @@ async function readStdin(): Promise<string> {
   return text;
 }
 
-export function interpretChoice(answer: string | null): 'debrief' | 'later' | 'skip' {
-  if (answer === null) return 'later';
-  const value = answer.trim().toLowerCase();
-  if (value === '' || value === 'y' || value === 'yes') return 'debrief';
-  if (value === 's' || value === 'skip') return 'skip';
-  return 'later';
-}
-
-async function record(api: ApiClient, repo: string, push: PushRange, status: 'pending' | 'skipped'): Promise<PushStatus> {
-  const res = await api.request<{ status: PushStatus }>(
-    'POST',
-    '/api/pushes',
-    { repo, base_sha: push.base, head_sha: push.head, commits: push.commits.map((c) => ({ sha: c.sha })), status },
-    { timeoutMs: QUICK_TIMEOUT_MS },
-  );
-  return res.status;
+/** Yes (or Enter) debriefs now; anything else, including the old "s", leaves it for later. */
+export function interpretChoice(answer: string | null): 'debrief' | 'later' {
+  const value = answer?.trim().toLowerCase();
+  return value === '' || value === 'y' || value === 'yes' ? 'debrief' : 'later';
 }
 
 async function recordPending(api: ApiClient, repo: string, push: PushRange, out: Writable): Promise<number> {
-  await record(api, repo, push, 'pending');
+  await api.request(
+    'POST',
+    '/api/pushes',
+    { repo, base_sha: push.base, head_sha: push.head, commits: push.commits.map((c) => ({ sha: c.sha })), status: 'pending' },
+    { timeoutMs: QUICK_TIMEOUT_MS },
+  );
   out.write(`Ownit: push recorded as pending. ${RESUME_HINT}\n`);
   return 0;
 }
@@ -82,23 +75,17 @@ async function knownStatus(api: ApiClient, repo: string, push: PushRange): Promi
   return known.status;
 }
 
-/** Asks whether to debrief now, then debriefs, records a skip, or leaves the push pending. */
+/** Asks whether to debrief now, then debriefs or leaves the push pending for `ownit interview`. */
 async function askAndDebrief(api: ApiClient, terminal: Readable, repo: string, push: PushRange, out: Writable): Promise<number> {
   const c = paint(out);
   const prompter = createPrompter(terminal, out);
   try {
     const n = push.commits.length;
     const answer = await prompter.ask(
-      `${c.bold('Ownit')} ${c.dim(`(${n} ${plural(n, 'commit')} to ${repo})`)} Debrief now? [Y/n/s=skip] `,
+      `${c.bold('Ownit')} ${c.dim(`(${n} ${plural(n, 'commit')} to ${repo})`)} Debrief now? [Y/n] `,
       PROMPT_TIMEOUT_MS,
     );
-    const choice = interpretChoice(answer);
-    if (choice === 'skip') {
-      await record(api, repo, push, 'skipped');
-      out.write(c.dim('Ownit: skipped. Push continues.\n'));
-      return 0;
-    }
-    if (choice === 'later') return await recordPending(api, repo, push, out);
+    if (interpretChoice(answer) === 'later') return await recordPending(api, repo, push, out);
     await runDebrief(api, prompter, {
       repo,
       baseSha: push.base,

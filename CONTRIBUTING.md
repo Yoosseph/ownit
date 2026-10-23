@@ -74,3 +74,26 @@ older x-nebius-key header").
 - **A CLI command:** a file in `cli/src/commands/` and an entry in the `COMMANDS` table in
   `cli/src/index.ts`. Its help lines go in that entry, so `ownit help` lists it.
 - **A worker route:** a router in `worker/src/routes/`, mounted in `worker/src/app.ts`.
+
+## Releasing and deploying (maintainers)
+
+Three workflows live in `.github/workflows/`:
+
+- **CI** (`ci.yml`) typechecks and tests both packages on Node 22 and 24, on every pull request
+  and every push to `main`.
+- **Release** (`release.yml`) runs when a tag like `v0.1.3` is pushed. It checks that the tag
+  matches `cli/package.json`, runs the tests, publishes `getownit` to npm with provenance, and
+  creates the GitHub release with generated notes. To cut a release: bump `version` in
+  `cli/package.json` (and `package-lock.json`), merge it, then
+  `git tag -a v0.1.3 -m "getownit 0.1.3" && git push origin v0.1.3`.
+- **Deploy** (`deploy.yml`) runs when worker or prompt changes reach `main`. It tests the worker,
+  applies D1 migrations, then deploys it, and shows up under **Deployments** as `production`.
+
+One-time setup:
+
+- **npm:** on npmjs.com, open `getownit` → Settings → Trusted publishing, and add GitHub Actions
+  with owner `Yoosseph`, repository `ownit`, workflow `release.yml`. No npm token is stored in
+  GitHub.
+- **Cloudflare:** create an API token with the "Edit Cloudflare Workers" template plus
+  D1 edit access, then add the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+  Until both exist, the deploy workflow skips itself with a notice.

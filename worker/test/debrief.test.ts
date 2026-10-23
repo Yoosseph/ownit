@@ -129,7 +129,7 @@ describe('provider client', () => {
         signals.push(signal);
         return signals.length === 1 ? stall(signal) : new Response('second');
       });
-      const response = await firstResponse(send, 20, 1_000);
+      const response = await firstResponse(send, [20], 1_000);
       expect(await response.text()).toBe('second');
       expect(send).toHaveBeenCalledTimes(2);
       expect(signals[0]!.aborted).toBe(true);
@@ -137,13 +137,27 @@ describe('provider client', () => {
 
     it('sends one request when the first answers before the hedge', async () => {
       const send = vi.fn(async () => new Response('first'));
-      expect(await (await firstResponse(send, 50, 1_000)).text()).toBe('first');
+      expect(await (await firstResponse(send, [50], 1_000)).text()).toBe('first');
       await new Promise((resolve) => setTimeout(resolve, 80));
       expect(send).toHaveBeenCalledTimes(1);
     });
 
     it('gives up at the deadline when nothing answers', async () => {
-      await expect(firstResponse(stall, 10, 60)).rejects.toBeDefined();
+      await expect(firstResponse(stall, [10], 60)).rejects.toBeDefined();
+    });
+
+    it('sends another copy at once after a 5xx, without waiting for the hedge', async () => {
+      const send = vi.fn(async () => (send.mock.calls.length === 1 ? new Response('busy', { status: 503 }) : new Response('ok')));
+      const started = Date.now();
+      expect(await (await firstResponse(send, [500], 1_000)).text()).toBe('ok');
+      expect(Date.now() - started).toBeLessThan(400);
+    });
+
+    it('returns the last 5xx when every copy fails', async () => {
+      const send = vi.fn(async () => new Response('busy', { status: 502 }));
+      const response = await firstResponse(send, [10, 20], 1_000);
+      expect(response.status).toBe(502);
+      expect(send).toHaveBeenCalledTimes(3);
     });
   });
 

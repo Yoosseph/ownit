@@ -107,4 +107,38 @@ describe('runDebrief', () => {
     expect(outcome).toEqual({ status: 'provider_error', reason: 'Nebius rejected the API key.' });
     expect(text).toContain('stay unverified until you retry');
   });
+
+  const slow = () => {
+    throw new ApiError('NVIDIA is unreachable right now.', 502, 'provider_error', { reason: 'unavailable' });
+  };
+
+  it('retries once by itself when the model does not answer, keeping the debrief', async () => {
+    const { api, calls } = fakeApi({
+      '/api/interview/start': () => ({ ...start, total: 1, questions: [start.questions[0]] }),
+      '/api/interview/answer': [slow, () => ({ pass: true, feedback: 'Yes.', done: true, status: 'verified', followup: null, session: 's1' })],
+    });
+    const { outcome, text } = await run(api, 'Totals drifted by a cent.\n');
+    expect(outcome.status).toBe('verified');
+    expect(text).toContain('Trying again');
+    const answers = calls.filter((c) => c.path === '/api/interview/answer');
+    expect(answers.map((c) => c.body.answer)).toEqual(['Totals drifted by a cent.', 'Totals drifted by a cent.']);
+  });
+
+  it('asks before trying a third time, and stops on n', async () => {
+    const { api, calls } = fakeApi({ '/api/interview/start': [slow, slow, () => start] });
+    const { outcome, text } = await run(api, 'n\n');
+    expect(outcome.status).toBe('provider_error');
+    expect(text).toContain('Try again? [Y/n]');
+    expect(calls).toHaveLength(2);
+  });
+
+  it('does not retry a rejected key', async () => {
+    const { api, calls } = fakeApi({
+      '/api/interview/start': () => {
+        throw new ApiError('NVIDIA rejected the API key.', 502, 'provider_error', { reason: 'invalid_key' });
+      },
+    });
+    await run(api, '');
+    expect(calls).toHaveLength(1);
+  });
 });

@@ -52,8 +52,6 @@ export interface QuestionRow {
   attempts: number;
   /** The passing answer, kept only while the repo shows answers. */
   answer: string | null;
-  /** 1 when the developer stood by an answer the grader did not accept. */
-  disputed: number;
 }
 
 /** A commit from a GitHub push webhook. */
@@ -305,18 +303,13 @@ export async function replaceQuestions(db: D1Database, pushId: number, questions
  * Records one graded attempt. A follow-up replaces the question text shown on
  * the public page. `answer` is the passing answer to keep, or null to keep none.
  */
-export function recordAttempt(
-  db: D1Database,
-  pushId: number,
-  idx: number,
-  attempt: { passed: boolean; nextText?: string; answer: string | null; disputed?: boolean },
-) {
+export function recordAttempt(db: D1Database, pushId: number, idx: number, attempt: { passed: boolean; nextText?: string; answer: string | null }) {
   return db
     .prepare(
-      `UPDATE questions SET attempts = attempts + 1, passed = ?, text = COALESCE(?, text), answer = ?, disputed = ?
+      `UPDATE questions SET attempts = attempts + 1, passed = ?, text = COALESCE(?, text), answer = ?
        WHERE push_id = ? AND idx = ?`,
     )
-    .bind(attempt.passed ? 1 : 0, attempt.nextText ?? null, attempt.answer, attempt.disputed ? 1 : 0, pushId, idx)
+    .bind(attempt.passed ? 1 : 0, attempt.nextText ?? null, attempt.answer, pushId, idx)
     .run();
 }
 
@@ -325,13 +318,13 @@ export async function listQuestions(db: D1Database, pushId: number): Promise<Que
   return results;
 }
 
-export type QuestionSummaryRow = Pick<QuestionRow, 'push_id' | 'kind' | 'text' | 'passed' | 'attempts' | 'answer' | 'disputed'>;
+export type QuestionSummaryRow = Pick<QuestionRow, 'push_id' | 'kind' | 'text' | 'passed' | 'attempts' | 'answer'>;
 
 /** The questions of several pushes in one query, ordered by push and position. */
 export async function listQuestionsForPushes(db: D1Database, pushIds: number[]): Promise<QuestionSummaryRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT push_id, kind, text, passed, attempts, answer, disputed FROM questions
+      `SELECT push_id, kind, text, passed, attempts, answer FROM questions
        WHERE push_id IN (SELECT value FROM json_each(?)) ORDER BY push_id, idx`,
     )
     .bind(JSON.stringify(pushIds))

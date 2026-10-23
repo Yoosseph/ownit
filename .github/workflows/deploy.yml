@@ -1,0 +1,57 @@
+name: Deploy
+
+# Deploys the worker when server code reaches main, after the tests pass.
+# It stays off until the repo has the CLOUDFLARE_API_TOKEN and
+# CLOUDFLARE_ACCOUNT_ID secrets (see CONTRIBUTING, "Deploying").
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', 'prompts/**', 'package-lock.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://ownit.ownit-worker.workers.dev/Yoosseph/ownit
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check for Cloudflare credentials
+        id: ready
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Skipping deploy: add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to the repo secrets to turn it on."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.ready.outputs.ok == 'true'
+        uses: actions/checkout@v4
+      - if: steps.ready.outputs.ok == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - if: steps.ready.outputs.ok == 'true'
+        run: npm ci
+      - if: steps.ready.outputs.ok == 'true'
+        run: npm run typecheck --workspace worker && npm test --workspace worker
+      # Migrations first, so new code never runs against an old schema.
+      - if: steps.ready.outputs.ok == 'true'
+        name: Apply database migrations
+        working-directory: worker
+        run: npx wrangler d1 migrations apply ownit --remote
+      - if: steps.ready.outputs.ok == 'true'
+        name: Deploy the worker
+        working-directory: worker
+        run: npx wrangler deploy

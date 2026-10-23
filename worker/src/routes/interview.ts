@@ -67,7 +67,7 @@ export function modelFor(c: Context<AppEnv>): ChatModel {
 async function providerFailure(c: Context<AppEnv>, error: unknown, pushId: number, event: string, fields: LogFields, started: number): Promise<Response> {
   if (!(error instanceof ProviderError)) throw error;
   await updateStatus(c, pushId, 'provider_error');
-  log(event, { ...fields, push: pushId, status: 'provider_error', reason: error.kind, ms: Date.now() - started });
+  log(event, { ...fields, push: pushId, status: 'provider_error', reason: error.kind, http: error.httpStatus, ms: Date.now() - started });
   return c.json({ error: 'provider_error', reason: error.kind, message: error.message, push_id: pushId }, 502);
 }
 

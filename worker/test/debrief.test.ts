@@ -117,6 +117,7 @@ describe('provider client', () => {
     [400, '{"detail":"Insufficient balance"}', 'no_credit'],
     [429, 'slow down', 'rate_limited'],
     [503, '', 'unavailable'],
+    [404, '{"title":"Not Found","detail":"Function \'x\': Not found for account \'y\'"}', 'model_unavailable'],
   ])('maps HTTP %i to %s', async (status, body, kind) => {
     const model = openAiCompatibleModel('Nebius', 'https://api.example/v1', 'm', 'k', (async () => new Response(body, { status })) as any);
     await expect(model.complete(prompt, 10)).rejects.toMatchObject({ kind });

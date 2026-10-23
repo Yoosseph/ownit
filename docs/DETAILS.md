@@ -49,6 +49,12 @@ The model is `nvidia/nemotron-3-super-120b-a12b` on both: Nebius at
 `https://api.tokenfactory.nebius.com/v1/`, NVIDIA at `https://integrate.api.nvidia.com/v1/`.
 `NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
 
+If NVIDIA says your key's account can't use the model, NVIDIA answered `404 Function ... Not found
+for account`: the key works, but its account isn't enabled for the hosted model. Make a new key
+from the model's own page on build.nvidia.com under your personal organization (with Public API
+Endpoints access). If that doesn't help, ask on NVIDIA's developer forum, or use a Nebius key,
+which runs the same model.
+
 Adding a provider means an entry in `PROVIDERS` in both `worker/src/model.ts` and
 `cli/src/providers.ts`, plus its endpoint and model in `worker/wrangler.toml`. Both current providers
 use the OpenAI-compatible chat API, so each is one `openAiCompatible(...)` line; a provider with a

@@ -15,6 +15,7 @@ export type ProviderErrorKind =
   | 'invalid_key'
   | 'no_credit'
   | 'rate_limited'
+  | 'model_unavailable'
   | 'unavailable'
   | 'bad_output'
   | 'demo_cap';
@@ -31,6 +32,8 @@ function reason(kind: ProviderErrorKind, name: string): string {
       return `Your ${name} account has no credit left.`;
     case 'rate_limited':
       return `${name} is rate limiting this key. Try again in a minute.`;
+    case 'model_unavailable':
+      return `${name} says this key's account can't use the Nemotron model. Make a key on the model's page (build.nvidia.com for NVIDIA), or switch provider with "ownit key set".`;
     case 'unavailable':
       return `${name} is unreachable right now.`;
     case 'bad_output':
@@ -46,6 +49,8 @@ export class ProviderError extends Error {
     public kind: ProviderErrorKind,
     /** The provider's display name, used in the message. */
     providerName = 'Nebius',
+    /** The provider's HTTP status, logged so a vague message never hides the cause. */
+    public httpStatus?: number,
   ) {
     super(reason(kind, providerName));
     this.name = 'ProviderError';
@@ -99,6 +104,8 @@ function errorKind(status: number, body: string): ProviderErrorKind {
   if (status === 401 || status === 403) return 'invalid_key';
   if (status === 402 || /insufficient|balance|credit|quota/i.test(body)) return 'no_credit';
   if (status === 429) return 'rate_limited';
+  // NVIDIA answers 404 "Function ... Not found for account" when the account lacks the model.
+  if (status === 404) return 'model_unavailable';
   return 'unavailable';
 }
 
@@ -128,7 +135,7 @@ export function openAiCompatibleModel(name: string, baseUrl: string, model: stri
       }
       if (!response.ok) {
         const body = await response.text().catch(() => '');
-        throw new ProviderError(errorKind(response.status, body), name);
+        throw new ProviderError(errorKind(response.status, body), name, response.status);
       }
       const data = (await response.json().catch(() => null)) as
         | { choices?: { message?: { content?: string | null } }[] }

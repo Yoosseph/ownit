@@ -22,7 +22,7 @@ flowchart LR
 | CLI | `cli/` | Installs the pre-push hook, builds the diff, asks you the questions, sends your answers. |
 | Worker | `worker/` | Writes and grades questions with the model, records pushes, talks to GitHub. |
 | Database | Cloudflare D1 (`worker/migrations/`) | Repos (with settings), users, pushes, commit SHAs, question text and pass/fail. No code. Answers only where a public repo shows them. |
-| Model | Nebius Token Factory or NVIDIA's API, whichever your key is for | `nvidia/nemotron-3-super-120b-a12b`, paid with your own key. |
+| Model | Nebius Token Factory or NVIDIA's API, whichever your key is for | Nemotron Super: `nvidia/nemotron-3-super-120b-a12b` on Nebius, `nvidia/nemotron-3.5-super-vl-120b-a12b` on NVIDIA. Paid with your own key. |
 | GitHub App | `ownit-app` | Sends push webhooks and shows the **Ownit** check run on each commit. |
 
 ## What happens on a push

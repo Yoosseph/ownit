@@ -45,9 +45,18 @@ for that request and then drops it. It never stores or logs the key. A debrief u
 under a cent, and a few cents at most for a large push with several follow-ups.
 
 The server chooses the endpoint and model for each provider, and the client cannot change them.
-The model is `nvidia/nemotron-3-super-120b-a12b` on both: Nebius at
-`https://api.tokenfactory.nebius.com/v1/`, NVIDIA at `https://integrate.api.nvidia.com/v1/`.
+Both run NVIDIA's Nemotron Super (120B parameters, 12B active): `nvidia/nemotron-3-super-120b-a12b`
+on Nebius at `https://api.tokenfactory.nebius.com/v1/`, and `nvidia/nemotron-3.5-super-vl-120b-a12b`
+(thinking off) on NVIDIA at `https://integrate.api.nvidia.com/v1/`, because NVIDIA's free endpoint
+no longer serves the 3.0 model to newer accounts. NVIDIA's free endpoint usually answers in about
+a second but sometimes stalls, so the worker sends a second copy of a request that hasn't answered
+after 3 seconds, uses whichever answers first, and gives up after 10 seconds.
 `NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
+
+If a provider says your key's account can't use the model, it answered `404 ... Not found for
+account`: the key works, but its account isn't enabled for that hosted model. Make a new key from
+the model's own page on build.nvidia.com, ask on NVIDIA's developer forum, or use the other
+provider.
 
 Adding a provider means an entry in `PROVIDERS` in both `worker/src/model.ts` and
 `cli/src/providers.ts`, plus its endpoint and model in `worker/wrangler.toml`. Both current providers

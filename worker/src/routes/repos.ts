@@ -1,11 +1,11 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
-import { checkPushAccess } from '../access';
-import { getRepo, upsertRepo, type RepoRow } from '../db';
+import { checkAccess } from '../access';
+import { getRepo, setPageSettings, upsertRepo, type RepoRow } from '../db';
 import { installUrl, repoPageUrl } from '../links';
 import { log } from '../log';
-import { readJson, repoName } from './shared';
+import { readJson, repoName, requireRepo } from './shared';
 
 export const repos = new Hono<AppEnv>();
 
@@ -26,8 +26,10 @@ repos.post('/', async (c) => {
     installation_id: installation?.installationId ?? existing?.installation_id ?? null,
     tracked_since: existing?.tracked_since ?? '',
     private: installation?.private ? 1 : (existing?.private ?? 0),
+    show_questions: existing?.show_questions ?? 1,
+    show_answers: existing?.show_answers ?? 0,
   };
-  const denied = await checkPushAccess(c, candidate);
+  const denied = await checkAccess(c, candidate);
   if (denied) {
     if (denied.status === 403 && !candidate.installation_id) {
       return c.json(
@@ -51,4 +53,45 @@ repos.post('/', async (c) => {
     install_url: repo.installation_id ? null : installUrl(c.env.GITHUB_APP_SLUG),
     page_url: c.env.PUBLIC_URL ? repoPageUrl(c.env.PUBLIC_URL, repo) : null,
   });
+});
+
+const settingsBody = z.object({ repo: repoName, show_questions: z.boolean().optional(), show_answers: z.boolean().optional() });
+
+function settingsJson(c: Context<AppEnv>, repo: RepoRow) {
+  return {
+    repo: `${repo.owner}/${repo.name}`,
+    private: Boolean(repo.private),
+    show_questions: Boolean(repo.show_questions),
+    show_answers: Boolean(repo.show_answers),
+    page_url: repoPageUrl(c.env.PUBLIC_URL || new URL(c.req.url).origin, repo),
+  };
+}
+
+/** What the repo's public page shows. Anyone who can push may look. */
+repos.get('/settings', async (c) => {
+  const parsed = repoName.safeParse(c.req.query('repo'));
+  if (!parsed.success) return c.json({ error: 'bad_request', message: 'Pass ?repo=owner/name.' }, 400);
+  const repo = await requireRepo(c, parsed.data);
+  if (repo instanceof Response) return repo;
+  return c.json(settingsJson(c, repo));
+});
+
+/**
+ * Changes what the public page shows (from `ownit page`). Admins and
+ * maintainers only. Showing answers also shows questions; hiding questions
+ * hides answers. Hiding answers deletes the stored ones.
+ */
+repos.put('/settings', async (c) => {
+  const body = await readJson(c, settingsBody, 'Pass {"repo": "owner/name", "show_questions"?: boolean, "show_answers"?: boolean}.');
+  if (body instanceof Response) return body;
+  const repo = await requireRepo(c, body.repo, 'admin');
+  if (repo instanceof Response) return repo;
+  if (repo.private) {
+    return c.json({ error: 'private_repo', message: `${body.repo} is private, so its page never shows questions or answers.` }, 400);
+  }
+  const showAnswers = body.show_answers ?? (body.show_questions === false ? false : Boolean(repo.show_answers));
+  const showQuestions = body.show_answers ? true : (body.show_questions ?? Boolean(repo.show_questions));
+  await setPageSettings(c.env.DB, repo.id, { showQuestions, showAnswers });
+  log('repo.settings', { repo: body.repo, questions: showQuestions, answers: showAnswers && showQuestions });
+  return c.json(settingsJson(c, (await getRepo(c.env.DB, repo.owner, repo.name))!));
 });

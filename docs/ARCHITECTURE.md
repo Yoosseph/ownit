@@ -21,7 +21,7 @@ flowchart LR
 | --- | --- | --- |
 | CLI | `cli/` | Installs the pre-push hook, builds the diff, asks you the questions, sends your answers. |
 | Worker | `worker/` | Writes and grades questions with the model, records pushes, talks to GitHub. |
-| Database | Cloudflare D1 (`worker/migrations/`) | Repos, users, pushes, commit SHAs, question text and pass/fail. No code, no answers. |
+| Database | Cloudflare D1 (`worker/migrations/`) | Repos (with page settings), users, pushes, commit SHAs, question text and pass/fail. No code. Answers only where a public repo shows them. |
 | Model | Nebius Token Factory or NVIDIA's API, whichever your key is for | `nvidia/nemotron-3-super-120b-a12b`, paid with your own key. |
 | GitHub App | `ownit-app` | Sends push webhooks and shows the **Ownit** check run on each commit. |
 
@@ -66,6 +66,7 @@ worker checks that you have push access to the repo.
 | --- | --- |
 | `/auth/*` | `ownit login` / `logout` |
 | `/api/repos` | `ownit init` (registers the repo) |
+| `/api/repos/settings` | `ownit page` (what the public page shows; changing it needs admin or maintain) |
 | `/api/pushes` | The hook (records a pending or skipped push) |
 | `/api/interview/start`, `/answer`, `/skip` | The debrief itself |
 | `/webhooks/github` | GitHub push events |
@@ -95,7 +96,8 @@ badge from a copy is easy to spot.
 - `db.ts`: every query on repos, users, pushes, commits and questions.
 - `debrief.ts` and `prompts.ts`: the three model calls. The prompt text is in [`/prompts`](../prompts/).
 - `model.ts`: the providers and their clients. `fixtureModel.ts`: the offline model for tests.
-- `sessions.ts` (who is calling) and `access.ts` (may they push to this repo).
+- `sessions.ts` (who is calling) and `access.ts` (may they push to this repo, or change its
+  page settings as an admin or maintainer).
 - `checks.ts` (GitHub check runs), `page.ts` and `badge.ts` (public page
   and badge), `links.ts` (public URLs).
 

@@ -14,6 +14,6 @@ ownit init        # in a repo: installs the pre-push hook
 On each push: `Debrief now? [Y/n/s=skip]`. Ownit never blocks a push. Pending debriefs can be
 finished any time with `ownit interview`.
 
-Your code and answers are never stored, and your key is never stored or logged by the server.
+Your code is never stored, your answers only if the repo's admins choose to show them on its page, and your key is never stored or logged by the server.
 
 Full documentation: [github.com/Yoosseph/ownit](https://github.com/Yoosseph/ownit).

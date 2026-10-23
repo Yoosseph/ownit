@@ -53,7 +53,7 @@ older x-nebius-key header").
 ## Things to keep true
 
 - **A push is never blocked.** The hook exits 0 whatever happens.
-- **No code, answers or keys are stored**, on the server or in logs. See [Privacy](docs/DETAILS.md#privacy).
+- **No code or keys are stored**, on the server or in logs. Answers are stored only for public repos whose admins turned them on. See [Privacy](docs/DETAILS.md#privacy).
 - **The server picks the model and endpoint**, never the client.
 - **The worker stays compatible with older CLIs**, since people update the CLI on their own schedule.
 - **Grading is generous.** Ownit is a learning habit, not an exam.

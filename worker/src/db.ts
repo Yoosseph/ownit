@@ -22,6 +22,9 @@ export interface RepoRow {
   installation_id: number | null;
   tracked_since: string;
   private: number;
+  /** Public page settings (0 or 1). Private repos show neither, whatever these say. */
+  show_questions: number;
+  show_answers: number;
 }
 
 export interface PushRow {
@@ -45,6 +48,8 @@ export interface QuestionRow {
   text: string;
   passed: number;
   attempts: number;
+  /** The passing answer, kept only while the repo shows answers. */
+  answer: string | null;
 }
 
 /** A commit from a GitHub push webhook. */
@@ -85,6 +90,17 @@ export async function upsertRepo(
 
 export function setRepoInstallation(db: D1Database, repoId: number, installationId: number | null, isPrivate: boolean) {
   return db.prepare('UPDATE repos SET installation_id = ?, private = ? WHERE id = ?').bind(installationId, isPrivate ? 1 : 0, repoId).run();
+}
+
+/** What the public page shows. Answers need questions, and turning answers off deletes the stored ones. */
+export async function setPageSettings(db: D1Database, repoId: number, settings: { showQuestions: boolean; showAnswers: boolean }) {
+  const showAnswers = settings.showQuestions && settings.showAnswers;
+  await db.batch([
+    db.prepare('UPDATE repos SET show_questions = ?, show_answers = ? WHERE id = ?').bind(settings.showQuestions ? 1 : 0, showAnswers ? 1 : 0, repoId),
+    ...(showAnswers
+      ? []
+      : [db.prepare('UPDATE questions SET answer = NULL WHERE push_id IN (SELECT id FROM pushes WHERE repo_id = ?)').bind(repoId)]),
+  ]);
 }
 
 // --- Users -----------------------------------------------------------------
@@ -157,16 +173,20 @@ export async function listOpenPushes(db: D1Database, repoId: number, userId: num
 export interface PushSummaryRow {
   id: number;
   status: PushStatus;
+  head_sha: string;
   created_at: string;
   pusher: string | null;
   commits: number;
+  /** How many pushes the page could list in all, beyond this page's limit. */
+  total_pushes: number;
 }
 
 export async function listRecentPushes(db: D1Database, repoId: number): Promise<PushSummaryRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT p.id, p.status, p.created_at, u.login AS pusher,
-              (SELECT count(*) FROM commits c WHERE c.push_id = p.id AND c.pushed_at IS NOT NULL) AS commits
+      `SELECT p.id, p.status, p.head_sha, p.created_at, u.login AS pusher,
+              (SELECT count(*) FROM commits c WHERE c.push_id = p.id AND c.pushed_at IS NOT NULL) AS commits,
+              count(*) OVER () AS total_pushes
        FROM pushes p LEFT JOIN users u ON u.github_id = p.user_github_id
        WHERE p.repo_id = ? AND EXISTS (SELECT 1 FROM commits c WHERE c.push_id = p.id AND c.pushed_at IS NOT NULL)
        ORDER BY p.created_at DESC LIMIT 30`,
@@ -250,14 +270,17 @@ export async function replaceQuestions(db: D1Database, pushId: number, questions
   ]);
 }
 
-/** Records one graded attempt. A follow-up replaces the question text shown on the public page. */
-export function recordAttempt(db: D1Database, pushId: number, idx: number, passed: boolean, nextText?: string) {
+/**
+ * Records one graded attempt. A follow-up replaces the question text shown on
+ * the public page. `answer` is the passing answer to keep, or null to keep none.
+ */
+export function recordAttempt(db: D1Database, pushId: number, idx: number, attempt: { passed: boolean; nextText?: string; answer: string | null }) {
   return db
     .prepare(
-      `UPDATE questions SET attempts = attempts + 1, passed = ?, text = COALESCE(?, text)
+      `UPDATE questions SET attempts = attempts + 1, passed = ?, text = COALESCE(?, text), answer = ?
        WHERE push_id = ? AND idx = ?`,
     )
-    .bind(passed ? 1 : 0, nextText ?? null, pushId, idx)
+    .bind(attempt.passed ? 1 : 0, attempt.nextText ?? null, attempt.answer, pushId, idx)
     .run();
 }
 
@@ -266,13 +289,13 @@ export async function listQuestions(db: D1Database, pushId: number): Promise<Que
   return results;
 }
 
-export type QuestionSummaryRow = Pick<QuestionRow, 'push_id' | 'kind' | 'text' | 'passed' | 'attempts'>;
+export type QuestionSummaryRow = Pick<QuestionRow, 'push_id' | 'kind' | 'text' | 'passed' | 'attempts' | 'answer'>;
 
 /** The questions of several pushes in one query, ordered by push and position. */
 export async function listQuestionsForPushes(db: D1Database, pushIds: number[]): Promise<QuestionSummaryRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT push_id, kind, text, passed, attempts FROM questions
+      `SELECT push_id, kind, text, passed, attempts, answer FROM questions
        WHERE push_id IN (SELECT value FROM json_each(?)) ORDER BY push_id, idx`,
     )
     .bind(JSON.stringify(pushIds))

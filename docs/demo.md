@@ -129,7 +129,8 @@ the push is verified. The badge reads **75%**.
 Show the [Privacy](DETAILS.md#privacy) section in docs/DETAILS.md, or say:
 
 > "NVIDIA Nemotron on Nebius writes and grades the questions, using your own Nebius key. Your
-> code and answers are never stored. The server keeps only question text and pass or fail. Pushes
+> code is never stored. The server keeps question text and pass or fail, and answers only if the
+> repo chooses to show them. Pushes
 > from agents or GUIs wait as pending until you run `ownit interview`. It's a learning tool, not
 > proof of authorship."
 

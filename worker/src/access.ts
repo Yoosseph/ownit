@@ -1,5 +1,5 @@
-// Who may record debriefs for a repo: users with push access, checked with the
-// GitHub App's installation token.
+// Who may do what in a repo, checked with the GitHub App's installation token:
+// users with push access record debriefs; admins and maintainers change settings.
 import type { Context } from 'hono';
 import type { AppEnv } from './app';
 import type { RepoRow } from './db';
@@ -7,11 +7,21 @@ import { GitHubError } from './github';
 import { installUrl } from './links';
 import { log } from './log';
 
-const PUSH_ACCESS = new Set(['admin', 'maintain', 'write']);
+export type AccessLevel = 'push' | 'admin';
 
-// Permission answers are cached briefly per isolate to keep debriefs snappy.
+const ROLES: Record<AccessLevel, Set<string>> = {
+  push: new Set(['admin', 'maintain', 'write']),
+  admin: new Set(['admin', 'maintain']),
+};
+
+const DENIED: Record<AccessLevel, string> = {
+  push: 'You need push access to {repo} to record debriefs for it.',
+  admin: 'Only admins and maintainers of {repo} can change its Ownit settings.',
+};
+
+// GitHub's answers are cached briefly per isolate to keep debriefs snappy.
 // A user whose access is revoked keeps it for at most five minutes.
-const permissionCache = new Map<string, { ok: boolean; until: number }>();
+const permissionCache = new Map<string, { permission: string; until: number }>();
 
 export function clearPermissionCache() {
   permissionCache.clear();
@@ -23,10 +33,10 @@ function isLocalRequest(c: Context<AppEnv>) {
 }
 
 /**
- * Confirms the logged-in user can push to the repo, using the App's
- * installation token. Returns an error response when they cannot.
+ * Confirms the logged-in user has `level` access to the repo, using the App's
+ * installation token. Returns an error response when they do not.
  */
-export async function checkPushAccess(c: Context<AppEnv>, repo: RepoRow): Promise<Response | null> {
+export async function checkAccess(c: Context<AppEnv>, repo: RepoRow, level: AccessLevel = 'push'): Promise<Response | null> {
   // Local development without a GitHub App. Never true on a deployed worker.
   if (c.env.DEV_LOCAL_TRUST === '1' && isLocalRequest(c)) return null;
   const full = `${repo.owner}/${repo.name}`;
@@ -38,18 +48,18 @@ export async function checkPushAccess(c: Context<AppEnv>, repo: RepoRow): Promis
   const login = c.get('login')!;
   const key = `${repo.installation_id}:${full}:${login}`.toLowerCase();
   const cached = permissionCache.get(key);
-  let ok = cached && cached.until > Date.now() ? cached.ok : undefined;
-  if (ok === undefined) {
+  let permission = cached && cached.until > Date.now() ? cached.permission : undefined;
+  if (permission === undefined) {
     try {
-      ok = PUSH_ACCESS.has(await c.get('github').permission(repo.installation_id, repo.owner, repo.name, login));
+      permission = await c.get('github').permission(repo.installation_id, repo.owner, repo.name, login);
     } catch (error) {
       if (!(error instanceof GitHubError)) throw error;
       log('permission.error', { repo: full, status: error.status });
       return c.json({ error: 'github_unavailable', message: 'Could not check your access with GitHub. Try again.' }, 503);
     }
-    permissionCache.set(key, { ok, until: Date.now() + 5 * 60_000 });
+    permissionCache.set(key, { permission, until: Date.now() + 5 * 60_000 });
   }
-  if (ok) return null;
-  log('permission.denied', { repo: full });
-  return c.json({ error: 'forbidden', message: `You need push access to ${full} to record debriefs for it.` }, 403);
+  if (ROLES[level].has(permission)) return null;
+  log('permission.denied', { repo: full, level });
+  return c.json({ error: 'forbidden', message: DENIED[level].replace('{repo}', full) }, 403);
 }

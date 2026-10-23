@@ -1,7 +1,7 @@
 // Helpers shared by the API routes, so route modules never import each other.
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { checkPushAccess } from '../access';
+import { checkAccess, type AccessLevel } from '../access';
 import type { AppEnv } from '../app';
 import { background } from '../background';
 import { syncCheckRun } from '../checks';
@@ -18,16 +18,16 @@ export async function readJson<T>(c: Context<AppEnv>, schema: z.ZodType<T>, mess
 }
 
 /**
- * The registered repo named "owner/name", provided the logged-in user can
- * push to it. Otherwise an error response to return as is.
+ * The registered repo named "owner/name", provided the logged-in user has
+ * `level` access to it. Otherwise an error response to return as is.
  */
-export async function requireRepo(c: Context<AppEnv>, fullName: string): Promise<RepoRow | Response> {
+export async function requireRepo(c: Context<AppEnv>, fullName: string, level: AccessLevel = 'push'): Promise<RepoRow | Response> {
   const [owner, name] = fullName.split('/') as [string, string];
   const repo = await getRepo(c.env.DB, owner, name);
   if (!repo) {
     return c.json({ error: 'not_registered', message: `${fullName} is not set up for Ownit. Run "ownit init" in the repo.` }, 404);
   }
-  return (await checkPushAccess(c, repo)) ?? repo;
+  return (await checkAccess(c, repo, level)) ?? repo;
 }
 
 /** Sets a push's status and brings its GitHub check run up to date. */

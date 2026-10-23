@@ -98,14 +98,12 @@ describe('public page', () => {
     const res = await call(seededRepo(), 'GET', '/octo/shop');
     expect(res.status).toBe(200);
     const text = res.text.replace(/\s+/g, ' ');
-    expect(text).toContain('<div class="big">50%</div><div class="label">of commits verified</div>');
-    expect(text).toContain('<div class="big">50%</div><div class="label">of commits unverified</div>');
-    expect(text).toContain('<div class="big">14</div><div class="label">commits tracked</div>');
-    expect(text).toContain('<div class="big">7</div><div class="label">waiting for a debrief</div>');
-    expect(text).toContain('<tr><td>alice</td><td class="num">9</td><td class="num">67%</td><td class="num">33%</td>');
-    expect(text).toContain('<tr><td>bob</td><td class="num">5</td><td class="num">20%</td><td class="num">80%</td>');
+    expect(text).toContain('<div class="big">50% <span>verified</span></div>');
+    expect(text).toContain('7 of 14 commits verified · 7 waiting for a debrief');
+    expect(text).toContain('<tr><td>alice</td><td class="num">9</td><td class="num">67%</td>');
+    expect(text).toContain('<tr><td>bob</td><td class="num">5</td><td class="num">20%</td>');
     expect(text).not.toContain('carol');
-    expect(text).toContain('Tracked by Ownit since Oct 1, 2026');
+    expect(text).toContain('Tracked since Oct 1, 2026');
     expect(text).toContain('href="https://github.com/Yoosseph/ownit"');
     expect(text).toContain('The official server is <strong>ownit.ownit-worker.workers.dev</strong>');
   });
@@ -129,7 +127,42 @@ describe('public page', () => {
     env.DB.raw.prepare('UPDATE repos SET private = 1').run();
     const res = await call(env, 'GET', '/octo/shop');
     expect(res.text).not.toContain('retries?');
-    expect(res.text).toContain('question text is hidden');
+    expect(res.text).toContain('This repo is private, so debrief questions are hidden.');
+  });
+
+  it('hides questions when the admins turned them off, and never shows answers unless turned on', async () => {
+    const env = seededRepo();
+    env.DB.raw.prepare("UPDATE questions SET answer = 'Retries <b>help</b> flaky calls.'").run();
+    const shown = await call(env, 'GET', '/octo/shop');
+    expect(shown.text).toContain('retries?');
+    expect(shown.text).not.toContain('flaky calls');
+    expect(shown.text).toContain('No code or answers are shown.');
+
+    env.DB.raw.prepare('UPDATE repos SET show_answers = 1').run();
+    const answers = await call(env, 'GET', '/octo/shop');
+    expect(answers.text).toContain('<p class="answer">Retries &lt;b&gt;help&lt;/b&gt; flaky calls.</p>');
+    expect(answers.text).toContain("Answers appear because this repo's admins chose to show them.");
+
+    env.DB.raw.prepare('UPDATE repos SET show_questions = 0').run();
+    const hidden = await call(env, 'GET', '/octo/shop');
+    expect(hidden.text).not.toContain('retries?');
+    expect(hidden.text).not.toContain('flaky calls');
+    expect(hidden.text).toContain("This repo's admins keep debrief questions private.");
+  });
+
+  it('links each push to its commit and marks pushes nobody debriefed', async () => {
+    const env = testEnv();
+    seedPush(env, { status: 'pending', author: 'alice', n: 1 });
+    const text = (await call(env, 'GET', '/octo/shop')).text;
+    expect(text).toMatch(/<a class="sha" href="https:\/\/github.com\/octo\/shop\/commit\/[0-9a-f]{40}">[0-9a-f]{7}<\/a>/);
+    expect(text).toContain('Not debriefed yet.');
+    expect(text).not.toContain('By author');
+  });
+
+  it('says when older pushes are left out', async () => {
+    const env = testEnv();
+    for (let i = 0; i < 31; i++) seedPush(env, { status: 'verified', author: 'alice', n: 1, createdAgo: HOUR + i });
+    expect((await call(env, 'GET', '/octo/shop')).text).toContain('Showing the latest 30 of 31 pushes.');
   });
 
   it('404s for untracked repos and leaves API routes alone', async () => {

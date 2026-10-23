@@ -9,7 +9,7 @@ You'll get a reply within a few days, and credit in the fix if you'd like it.
 
 Especially in scope:
 
-- Leaking or storing code, answers, API keys or GitHub tokens.
+- Leaking or storing code, API keys or GitHub tokens, or storing answers for a repo that does not show them.
 - Getting a push marked verified without passing its questions, including prompt injection through
   a diff, a commit message or an answer.
 - Debriefing or changing pushes in a repo you have no push access to.

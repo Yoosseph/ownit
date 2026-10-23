@@ -38,9 +38,9 @@ interface Debrief {
   disputed: boolean;
 }
 
-/** "d" on a follow-up stands by the answer that did not pass. */
+/** "--force" (or "force", "d") on a follow-up lets the answer that did not pass through. */
 function isDispute(answer: string) {
-  return /^(d|dispute)$/i.test(answer.trim());
+  return /^(--force|force|d|dispute)$/i.test(answer.trim());
 }
 
 /** "s" (or the older "skip") stops the debrief for now. */

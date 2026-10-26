@@ -1,4 +1,4 @@
-"""Render the narrated Ownit launch film offline from its committed edit timeline."""
+"""Render a continuous laptop-to-CLI Ownit demo from captured application output."""
 
 import argparse
 from functools import lru_cache
@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "media"
 SOURCE = OUT / "source"
-TMP = ROOT / ".tmp" / "ad-v2"
+TMP = ROOT / ".tmp" / "ad-product"
 W, H, FPS = 1920, 1080, 30
 WHITE, MINT, MUTED = "#f0f5f3", "#8af3c8", "#8caaa1"
 TIMELINE = json.loads((SOURCE / "timeline.json").read_text(encoding="utf-8"))
@@ -74,157 +74,149 @@ def reveal(image, value, x, y, size, elapsed, delay=0, color=WHITE, style="regul
     put(image, value, x, y + (1 - p) * 34, size, color, style, p, align)
 
 
-BASE = Image.new("RGB", (W, H), (9, 13, 12))
-PHOTOS = {name: Image.open(ROOT / "docs/assets" / filename).convert("RGB") for name, filename in {
-    "hero": "ownit-hero.png", "team": "ownit-understanding.png", "work": "ownit-workspace.png"
-}.items()}
-shade = np.tile(np.linspace(175, 18, W, dtype=np.uint8), (H, 1))
-PHOTO_MASK = Image.fromarray(shade)
+BASE = Image.new("RGB", (W, H), "#0d1117")
+PLATE_ORIGINAL = Image.open(ROOT / "docs/assets/ownit-laptop.png").convert("RGB")
+PLATE = PLATE_ORIGINAL.resize((W, H), Image.Resampling.LANCZOS)
+PLATE_SPEC = json.loads((SOURCE / "laptop-plate.json").read_text(encoding="utf-8"))
+QUAD = np.array(PLATE_SPEC["screenCornersOriginal"], dtype=float)
+QUAD *= np.array([W / PLATE_ORIGINAL.width, H / PLATE_ORIGINAL.height])
+FULL = np.array([[0, 0], [W, 0], [W, H], [0, H]], dtype=float)
+DEMO = json.loads((SOURCE / "cli-demo.json").read_text(encoding="utf-8"))
 
 
-def mark(im, x=110, y=72, size=38):
-    layer = Image.new("RGBA", (size * 5, size + 12))
-    d = ImageDraw.Draw(layer)
-    d.line([(3, 5), (size * .35, size * .42), (3, size * .8)], fill=MINT, width=3)
-    d.line([(size * .48, size * .8), (size * .83, size * .8)], fill=MINT, width=3)
-    put(layer, "ownit", size + 4, 0, size, WHITE, "bold")
-    im.paste(layer, (int(x), int(y)), layer)
+def perspective(destination, source):
+    """Pillow's inverse homography: destination pixel -> source pixel."""
+    a, b = [], []
+    for (x, y), (u, v) in zip(destination, source):
+        a.extend([[x, y, 1, 0, 0, 0, -u*x, -u*y], [0, 0, 0, x, y, 1, -v*x, -v*y]])
+        b.extend([u, v])
+    return tuple(np.linalg.solve(np.asarray(a), np.asarray(b)))
 
 
-def photo_background(scene, t):
-    key = {"hook": "hero", "brand": "hero", "push": "work", "questions": "team",
-           "answer": "work", "later": "hero", "close": "team"}[scene["id"]]
-    original = PHOTOS[key]
-    p = clamp((t - scene["start"]) / scene["duration"])
-    # Slow camera moves over photographic stills. Original PNGs stay untouched.
-    zoom = 1.015 + .045 * p
-    crop_w = original.width / zoom
-    crop_h = crop_w * H / W
-    x = (original.width - crop_w) * (.35 + .2 * p)
-    y = (original.height - crop_h) * .45
-    im = original.resize((W, H), Image.Resampling.BICUBIC, box=(x, y, x + crop_w, y + crop_h))
-    im = Image.composite(BASE, im, PHOTO_MASK)
-    mark(im)
-    return im
+def mono(im, value, x, y, size=29, color=WHITE):
+    # Consolas lacks this glyph on some Windows systems; draw a real vector tick.
+    if value.startswith("✓"):
+        d = ImageDraw.Draw(im)
+        d.line([(x+2, y+14), (x+9, y+21), (x+23, y+3)], fill=color, width=3)
+        value = value[1:]
+        x += font(size, "mono").getlength(" ")
+    put(im, value, x, y, size, color, "mono")
 
 
-def panel(width, height):
-    im = Image.new("RGBA", (width, height))
+def color_code(im, line, x, y, size=29):
+    import re
+    pieces = re.split(r"(\b(?:export|async|function|const|for|let|try|return|await|catch|if|throw)\b|\b\d+\b)", line)
+    keywords = {"export", "async", "function", "const", "for", "let", "try", "return", "await", "catch", "if", "throw"}
+    for part in pieces:
+        color = "#c9a7ff" if part in keywords else "#ecc48d" if part.isdigit() else "#cbd5df"
+        mono(im, part, x, y, size, color)
+        x += font(size, "mono").getlength(part)
+
+
+def terminal_text(t):
+    # Shell entry is staged; all debrief output below comes from the actual CLI.
+    command = "git push"[:max(0, int((t - 1.70) * 18))]
+    text = "$ " + command
+    if t >= 3.0:
+        text += "\nOwnit (1 commit to demo/shop) Debrief now? [Y/n] "
+    if t >= 3.45:
+        text += "y"
+    for event in DEMO["events"]:
+        if event["time"] <= t:
+            text += event["text"]
+    return text
+
+
+def screen(t):
+    im = BASE.copy()
     d = ImageDraw.Draw(im)
-    d.rounded_rectangle((0, 0, width - 1, height - 1), 24, fill="#0e191a", outline="#304c42", width=2)
-    d.line((1, 66, width - 2, 66), fill="#253b34", width=1)
-    for i, c in enumerate(["#55746b", "#6f8c81", "#8af3c8"]):
-        d.ellipse((28 + i * 24, 28, 37 + i * 24, 37), fill=c)
-    put(im, "~/shop", width - 34, 25, 20, MUTED, "mono", align="right")
-    return im
-
-
-def float_panel(im, card, x, y, p):
-    scale = .97 + .03 * ease(p)
-    card = card.resize((round(card.width * scale), round(card.height * scale)), Image.Resampling.BICUBIC)
-    im.paste(card, (round(x + (1 - scale) * card.width / 2), round(y + 35 * (1 - ease(p)))), card)
-
-
-def check(d, x, y, p):
-    points = [(x, y), (x + 11, y + 11), (x + 32, y - 15)]
-    if p < .3:
-        q = p / .3
-        points = [points[0], (x + 11 * q, y + 11 * q)]
-    else:
-        q = clamp((p - .3) / .7)
-        points[2] = (x + 11 + 21 * q, y + 11 - 26 * q)
-    d.line(points, fill=MINT, width=3)
-
-
-def scene_image(scene, t):
-    u, sid = t - scene["start"], scene["id"]
-    im = photo_background(scene, t)
-    d = ImageDraw.Draw(im)
-    if sid == "hook":
-        phase = smooth((u - 2.35) / .45)
-        intro = ease(u / .85) * (1 - phase)
-        put(im, "Code moves", 135, 340 - 20 * phase, 91, WHITE, "bold", intro)
-        put(im, "fast.", 135, 455 - 20 * phase, 106, WHITE, "bold", intro)
-        reveal(im, "Can you", 135, 340, 96, u, 2.5, WHITE, "bold")
-        reveal(im, "explain it?", 135, 458, 96, u, 2.62, MINT, "bold")
-        reveal(im, "Understand the code you ship.", 141, 620, 30, u, 3.15, WHITE)
-    elif sid == "brand":
-        reveal(im, "Meet", 142, 300, 33, u, .05, WHITE)
-        reveal(im, "ownit", 130, 390, 165, u, .18, WHITE, "bold")
-        reveal(im, "Own the code you ship.", 142, 618, 36, u, .65, MINT)
-    elif sid == "push":
-        reveal(im, "Your next push.", 140, 212, 80, u, .05, style="bold")
-        reveal(im, "A short debrief, right in your terminal.", 145, 332, 31, u, .25, WHITE)
-        card = panel(1010, 322)
-        put(card, "$", 48, 116, 57, MINT, "mono")
-        command = "git push"[:int(max(0, u - .25) * 12)]
-        put(card, command, 102, 116, 57, WHITE, "mono")
-        if u < 1.4:
-            cx = 102 + font(57, "mono").getlength(command) + 5
-            ImageDraw.Draw(card).rectangle((cx, 118, cx + 3, 173), fill=MINT)
-        prompt = "Ownit   Debrief now? [Y/n]"
-        reveal(card, prompt, 48, 236, 32, u, 1.1, MUTED, "mono")
-        reveal(card, "y", 66 + font(32, "mono").getlength(prompt), 236, 32, u, 2.6, MINT, "mono")
-        float_panel(im, card, 140, 460, u / 1.4)
-    elif sid == "questions":
-        reveal(im, "A little clarity.", 135, 215, 72, u, .1, style="bold")
-        reveal(im, "One to three short questions.", 140, 320, 29, u, .3, WHITE)
-        labels = [("Why", "The purpose.", 1.85), ("How", "The approach.", 3.33), ("Next", "The tradeoffs.", 4.50)]
-        for i, (title, sub, activation) in enumerate(labels):
-            yy = 430 + i * 156
-            p = ease((u - activation) / .7)
-            reveal(im, title, 140, yy, 68, u, .5 + i * .13, MINT if p > .4 else "#c0cbc5", "light")
-            reveal(im, sub, 335, yy + 28, 27, u, activation, WHITE)
-            d.line((140, yy + 105, 140 + max(1, 420 * p), yy + 105), fill=MINT, width=2)
-    elif sid == "answer":
-        reveal(im, "Your words.", 140, 185, 76, u, .1, style="bold")
-        reveal(im, "Your understanding.", 145, 291, 46, u, .3, MINT, "light")
-        card = panel(920, 510)
-        put(card, "WHY", 42, 112, 22, MINT, "mono")
-        put(card, "Why retry temporary", 42, 162, 35)
-        put(card, "payment failures?", 42, 209, 35)
-        answer = "So a temporary error\ndoesn't lose the sale."
-        count = int(max(0, u - .8) * 30)
-        for i, line in enumerate(answer[:count].split("\n")):
-            put(card, ("> " if i == 0 else "  ") + line, 42, 289 + i * 42, 30, WHITE, "mono")
-        if u > 3.2:
-            cd = ImageDraw.Draw(card)
-            cd.line((42, 400, 876, 400), fill="#294139", width=1)
-            check(cd, 48, 450, ease((u - 3.2) / .6))
-            reveal(card, "Push verified.", 102, 432, 31, u, 3.35, MINT)
-        float_panel(im, card, 140, 390, u / 1.1)
-        reveal(im, "Illustrative session", 1060, 935, 21, u, .7, WHITE, align="right")
-    elif sid == "later":
-        reveal(im, "On your", 135, 300, 91, u, .1, style="bold")
-        reveal(im, "schedule.", 135, 415, 91, u, .22, style="bold")
-        reveal(im, "Debrief now. Or pick it up later.", 142, 568, 30, u, .45, WHITE)
-        p = ease((u - .7) / .85)
-        pill = Image.new("RGBA", (750, 116))
-        ImageDraw.Draw(pill).rounded_rectangle((1, 1, 748, 114), 18, fill="#102720", outline="#507b63", width=2)
-        put(pill, "$ ownit interview", 375, 36, 39, MINT, "mono", align="center")
-        if p < 1:
-            pill.putalpha(pill.getchannel("A").point(lambda a: round(a * p)))
-        im.paste(pill, (140, round(675 + (1 - p) * 35)), pill)
-    else:
-        reveal(im, "Own the code", 135, 280, 90, u, .05, WHITE, "bold")
-        reveal(im, "you ship.", 135, 405, 108, u, .22, MINT, "bold")
-        reveal(im, "$ npm i -g getownit", 145, 620, 35, u, .8, WHITE, "mono")
-        reveal(im, "github.com/Yoosseph/ownit", 145, 724, 27, u, 1.1, WHITE)
-        reveal(im, "Open source  /  Setup in the README", 145, 890, 22, u, 1.45, WHITE)
+    # One persistent editor window: the terminal expands within it.
+    d.rectangle((0, 0, W, 57), fill="#1a2029")
+    for i, c in enumerate(["#ff6a65", "#eabb55", "#5acb81"]):
+        d.ellipse((24+i*27, 21, 36+i*27, 33), fill=c)
+    put(im, "shop — Ownit", W/2, 17, 22, "#d4dbe3", align="center")
+    put(im, "CLI DEMO", W-32, 20, 15, "#8c9aa9", align="right")
+    d.rectangle((0, H-32, W, H), fill="#182d27")
+    put(im, "main     1 commit ready to push", 23, H-24, 17, "#a0b8af")
+    put(im, "TypeScript     UTF-8", W-24, H-24, 17, "#a0b8af", align="right")
+    expand = smooth((t - 2.65) / 1.05)
+    terminal_y = round(657 - 546 * expand)
+    if terminal_y > 150:
+        editor = Image.new("RGB", (W, 600), "#0d1117")
+        ed = ImageDraw.Draw(editor)
+        ed.rectangle((0, 0, 245, 600), fill="#111820")
+        put(editor, "EXPLORER", 30, 28, 19, "#8d9baa")
+        for i, label in enumerate(["SHOP", "  src", "    checkout.ts", "    payments.ts", "  test", "  package.json"]):
+            if i == 2:
+                ed.rectangle((0, 102+i*39, 244, 137+i*39), fill="#203028")
+            put(editor, label, 26, 105+i*39, 22, MINT if i == 2 else "#a7b3bf")
+        ed.rectangle((245, 0, W, 55), fill="#151d26")
+        put(editor, "TS   checkout.ts", 275, 16, 23, "#d2dce6")
+        ed.line((245, 0, 490, 0), fill=MINT, width=3)
+        put(editor, "src  /  checkout.ts  /  chargeWithRetry", 280, 76, 20, "#6f8395")
+        for i, line in enumerate(DEMO["code"]):
+            y = 125 + i * 34
+            if i == 1:
+                ed.rectangle((266, y-5, W-30, y+29), fill="#162b22")
+                line = line[:min(len(line), max(0, int((t - .15) * 37)))]
+                if t < 1.0:
+                    cursor = 345 + font(29, "mono").getlength(line)
+                    ed.rectangle((cursor, y, cursor+2, y+27), fill=MINT)
+            mono(editor, str(i+1).rjust(2), 278, y, 24, "#516577")
+            color_code(editor, line, 345, y, 29)
+        visible = terminal_y - 57
+        im.paste(editor.crop((0, 0, W, visible)), (0, 57))
+    d.rectangle((0, terminal_y, W, H-33), fill="#0c1218")
+    d.line((0, terminal_y, W, terminal_y), fill="#344337", width=2)
+    put(im, "TERMINAL", 35, terminal_y+20, 19, WHITE)
+    d.line((35, terminal_y+48, 145, terminal_y+48), fill=MINT, width=2)
+    put(im, "zsh  ·  ~/shop", W-40, terminal_y+20, 19, "#81968d", align="right")
+    if expand > .98:
+        put(im, "checkout.ts", 30, 76, 19, "#81968d")
+        put(im, "Ownit / push debrief", W-40, 76, 19, MINT, align="right")
+    body_y = terminal_y + 82
+    raw = terminal_text(t)
+    lines = raw.split("\n")
+    available = max(1, int((H-65-body_y) / 39))
+    if t > 18.5:
+        available = min(available, 15)
+    lines = lines[-available:]
+    for i, line in enumerate(lines):
+        color = (MINT if line.startswith(("✓", "Question")) else
+                 "#93a4b2" if line.startswith(("Nemotron", "Answer in", "Checking", "  Nice")) else WHITE)
+        mono(im, line, 50, body_y + i*39, 28, color)
+    if t < 12.4 and int(t*2) % 2 == 0 and lines:
+        last = lines[-1]
+        x = 50 + font(28, "mono").getlength(last)
+        y = body_y + (len(lines)-1)*39
+        d.rectangle((x+3, y, x+5, y+27), fill=MINT)
+    # Keep the completed terminal on screen; the invitation joins its lower edge.
+    cta = ease((t - 18.5) / .8)
+    if cta:
+        panel = Image.new("RGBA", (W, 158), (13, 30, 24, round(255*cta)))
+        pd = ImageDraw.Draw(panel)
+        pd.line((0, 0, W, 0), fill="#345847", width=2)
+        put(panel, "Own the code you ship.", 50, 28, 43, WHITE, "bold", cta)
+        put(panel, "$ npm i -g getownit", W-50, 33, 32, MINT, "mono", cta, "right")
+        put(panel, "github.com/Yoosseph/ownit", 54, 100, 23, "#a8bdb4", alpha=cta)
+        im.paste(panel, (0, H-190), panel)
     return im
 
 
 def frame(t):
-    index = max(i for i, s in enumerate(SCENES) if s["start"] <= t)
-    image = scene_image(SCENES[index], t)
-    if index and t - SCENES[index]["start"] < .45:
-        mix = smooth((t - SCENES[index]["start"]) / .45)
-        image = Image.blend(scene_image(SCENES[index - 1], t), image, mix)
-    if t < .25:
-        image = Image.blend(BASE, image, smooth(t / .25))
-    if t > DURATION - .5:
-        image = Image.blend(image, BASE, smooth((t - DURATION + .5) / .5))
-    return image
+    ui = screen(t)
+    if t >= 1.75:
+        return ui
+    # A single perspective camera move, not a crossfade to another shot.
+    p = smooth((t - .18) / 1.57)
+    destination = QUAD * (1 - p) + FULL * p
+    camera = PLATE.transform((W, H), Image.Transform.PERSPECTIVE,
+        perspective(destination, QUAD), Image.Resampling.BICUBIC)
+    display = ui.transform((W, H), Image.Transform.PERSPECTIVE,
+        perspective(destination, FULL), Image.Resampling.BICUBIC)
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).polygon([tuple(point) for point in destination], fill=255)
+    return Image.composite(display, camera, mask)
 
 
 def audio_mix(ffmpeg):
@@ -302,8 +294,8 @@ def main():
     captions()
     for scene in SCENES:
         frame(scene["start"] + scene["duration"] - .7).save(TMP / (scene["id"] + ".png"))
-    frame(SCENES[-1]["start"] + 3).save(OUT / "ownit-ad-poster.jpg", quality=95)
-    frame(next(s["start"] for s in SCENES if s["id"] == "answer") + 4.6).save(ROOT / "docs/assets/ownit-terminal-demo.png")
+    frame(0.10).save(OUT / "ownit-ad-poster.jpg", quality=95)
+    frame(15.0).save(ROOT / "docs/assets/ownit-terminal-demo.png")
     if args.stills_only:
         return
     if not args.ffmpeg:

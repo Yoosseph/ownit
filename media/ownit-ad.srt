@@ -1,57 +1,33 @@
 1
-00:00:00,559 --> 00:00:02,153
-AI helps you ship faster.
+00:00:00,559 --> 00:00:01,460
+Make your change.
 
 2
-00:00:02,515 --> 00:00:04,504
-But can you explain the code you just
-pushed?
+00:00:01,822 --> 00:00:02,547
+Push your code.
 
 3
-00:00:06,389 --> 00:00:06,964
-Meet Ownit.
+00:00:03,889 --> 00:00:06,421
+Ownit asks a short question about the
+change.
 
 4
-00:00:09,589 --> 00:00:11,944
-A short debrief, right in your terminal.
+00:00:08,389 --> 00:00:10,051
+Why retry failed payments?
 
 5
-00:00:14,389 --> 00:00:15,657
-One to three questions.
+00:00:10,400 --> 00:00:13,054
+So a temporary error doesn't lose the
+sale.
 
 6
-00:00:16,019 --> 00:00:17,138
-Why you made the change.
+00:00:15,389 --> 00:00:16,073
+Explain it.
 
 7
-00:00:17,487 --> 00:00:18,293
-How it works.
-
-8
-00:00:18,641 --> 00:00:19,625
-What comes next.
-
-9
-00:00:22,789 --> 00:00:24,112
-Answer in your own words.
-
-10
-00:00:24,473 --> 00:00:27,427
-Build understanding while the change is
-still fresh.
-
-11
-00:00:28,589 --> 00:00:29,205
-Busy now?
-
-12
-00:00:29,553 --> 00:00:30,373
-Come back later.
-
-13
-00:00:32,589 --> 00:00:32,988
+00:00:16,421 --> 00:00:16,820
 Ownit.
 
-14
-00:00:33,336 --> 00:00:34,414
+8
+00:00:18,889 --> 00:00:19,967
 Own the code you ship.

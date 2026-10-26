@@ -1,0 +1,23 @@
+{
+  "use": "Photorealistic laptop compositing plate for the continuous product-demo opening",
+  "mode": "Built-in image_gen",
+  "prompt": "Use case: photorealistic-natural. Asset: opening shot of a software product demo film, landscape 16:9. A real-looking unbranded slim graphite laptop open on a clean matte oak desk, photographed from a three-quarter front-left angle, around 20 degrees off center and slightly above the keyboard. No people, no hands. The camera is close: laptop occupies most of the composition, with the full display and keyboard visible. The open display is large, a crisp physically plausible quadrilateral, all four inner screen corners unobstructed and clearly visible, mostly facing camera with modest perspective. Screen is powered on but uniformly very dark charcoal grey with NO content or reflections; this is a compositing plate where the real software recording will be inserted later. Real thin bezel, subtle natural screen glow, correct laptop hinge, realistic keyboard rows, understated trackpad. Soft daylight from the left, neutral studio-home-office environment, off-white wall, gentle desk shadow. Tangible materials and authentic product photography, 50mm lens, enough depth of field for both display and keyboard to be sharp. Laptop centered, generous enough margin to see its silhouette, screen roughly fills the central 60 percent of the frame. No logos, no lettering, no UI, no decorative props, no watermark, no plastic CGI look, no dramatic neon, no floating objects. Photographic precision and understated realism. Wide 16:9.",
+  "screenCornersOriginal": [
+    [
+      348,
+      104
+    ],
+    [
+      1155,
+      81
+    ],
+    [
+      1198,
+      551
+    ],
+    [
+      379,
+      612
+    ]
+  ]
+}

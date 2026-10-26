@@ -1,0 +1,288 @@
+{
+  "provenance": "Output captured by running cli/src/debrief.ts with controlled offline demo API replies. Shell command and hook prompt are staged. No live model or remote push.",
+  "code": [
+    "export async function chargeWithRetry(pay) {",
+    "  const maxAttempts = 3;",
+    "  for (let attempt = 1; attempt <= maxAttempts; attempt++) {",
+    "    try {",
+    "      return await pay();",
+    "    } catch (error) {",
+    "      if (!error.temporary || attempt === maxAttempts) {",
+    "        throw error;",
+    "      }",
+    "      await sleep(250 * attempt);",
+    "    }",
+    "  }",
+    "}"
+  ],
+  "events": [
+    {
+      "time": 3.7,
+      "kind": "output",
+      "text": "\nOwnit debrief · demo/shop · 1 commit · 14 changed lines\n"
+    },
+    {
+      "time": 3.7,
+      "kind": "output",
+      "text": "Nemotron is reading your push…\n"
+    },
+    {
+      "time": 4.35,
+      "kind": "output",
+      "text": "Answer in your own words, up to 5 sentences. Rough is fine. Type \"s\" to stop and finish later.\n"
+    },
+    {
+      "time": 4.35,
+      "kind": "output",
+      "text": "\nQuestion 1/1 (why)\n"
+    },
+    {
+      "time": 4.35,
+      "kind": "output",
+      "text": "  Why retry temporary payment failures?\n"
+    },
+    {
+      "time": 4.35,
+      "kind": "output",
+      "text": "> "
+    },
+    {
+      "time": 8.9,
+      "kind": "input",
+      "text": "S"
+    },
+    {
+      "time": 8.957,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 9.014,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 9.071,
+      "kind": "input",
+      "text": "a"
+    },
+    {
+      "time": 9.128,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 9.185,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 9.242,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 9.299,
+      "kind": "input",
+      "text": "m"
+    },
+    {
+      "time": 9.356,
+      "kind": "input",
+      "text": "p"
+    },
+    {
+      "time": 9.413,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 9.47,
+      "kind": "input",
+      "text": "r"
+    },
+    {
+      "time": 9.527,
+      "kind": "input",
+      "text": "a"
+    },
+    {
+      "time": 9.584,
+      "kind": "input",
+      "text": "r"
+    },
+    {
+      "time": 9.641,
+      "kind": "input",
+      "text": "y"
+    },
+    {
+      "time": 9.698,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 9.755,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 9.812,
+      "kind": "input",
+      "text": "r"
+    },
+    {
+      "time": 9.869,
+      "kind": "input",
+      "text": "r"
+    },
+    {
+      "time": 9.926,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 9.983,
+      "kind": "input",
+      "text": "r"
+    },
+    {
+      "time": 10.04,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 10.097,
+      "kind": "input",
+      "text": "d"
+    },
+    {
+      "time": 10.154,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 10.211,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 10.268,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 10.325,
+      "kind": "input",
+      "text": "n"
+    },
+    {
+      "time": 10.382,
+      "kind": "input",
+      "text": "'"
+    },
+    {
+      "time": 10.439,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 10.496,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 10.553,
+      "kind": "input",
+      "text": "l"
+    },
+    {
+      "time": 10.61,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 10.667,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 10.724,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 10.781,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 10.838,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 10.895,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 10.952,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 11.009,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 11.066,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 11.123,
+      "kind": "input",
+      "text": "a"
+    },
+    {
+      "time": 11.18,
+      "kind": "input",
+      "text": "l"
+    },
+    {
+      "time": 11.237,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 11.294,
+      "kind": "input",
+      "text": "."
+    },
+    {
+      "time": 11.444,
+      "kind": "input",
+      "text": "\n"
+    },
+    {
+      "time": 11.444,
+      "kind": "output",
+      "text": "Checking your answer…\n"
+    },
+    {
+      "time": 12.4,
+      "kind": "output",
+      "text": "✓ Passed.\n  Nice, you covered the main idea.\n"
+    },
+    {
+      "time": 12.4,
+      "kind": "output",
+      "text": "\n✓ Push verified. 1 commit owned. Nice work.\n"
+    }
+  ],
+  "result": {
+    "status": "verified"
+  }
+}

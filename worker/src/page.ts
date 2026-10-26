@@ -92,6 +92,26 @@ function authorsSection(authors: RepoStats['authors']): string {
 </table></div>`;
 }
 
+/**
+ * Whoever authors a commit owes its debrief, so the page names everyone whose
+ * commits are still waiting, most first.
+ */
+function waitingSection(authors: RepoStats['authors']): string {
+  const waiting = authors
+    .filter((a) => a.stats.unverified > 0)
+    .sort((a, b) => b.stats.unverified - a.stats.unverified || a.author.localeCompare(b.author));
+  if (!waiting.length) return '';
+  const rows = waiting
+    .map(({ author, stats }) => {
+      const name = author === 'unknown' ? 'Unknown author' : esc(author);
+      return `<li><strong>${name}</strong> <span class="meta">${stats.unverified} ${plural(stats.unverified, 'commit')} not debriefed yet</span></li>`;
+    })
+    .join('');
+  return `<h2>Waiting on a debrief</h2>
+<p class="sub notice">Whoever authors a commit owes its debrief. These people pushed commits without finishing theirs; running <code class="inline">ownit interview</code> clears them.</p>
+<ul class="waiting">${rows}</ul>`;
+}
+
 function questionItem(q: PagePush['questions'][number], showAnswer: boolean): string {
   const passed = q.passed ? ` <span class="ok" title="Passed after ${q.attempts} ${plural(q.attempts, 'attempt')}">✓</span>` : '';
   const answer = showAnswer && q.answer ? `<p class="answer">${esc(q.answer)}</p>` : '';
@@ -104,7 +124,7 @@ function pushItem(p: PagePush, repo: RepoRow, visible: Visibility): string {
   const questions = visible.questions ? p.questions.map((q) => questionItem(q, visible.answers)).join('') : '';
   let body = '';
   if (questions) body = `<ul class="questions">${questions}</ul>`;
-  else if (p.status !== 'verified') body = '<p class="note">Not debriefed yet.</p>';
+  else if (p.status !== 'verified') body = `<p class="note">Not debriefed yet.${p.pusher ? ` Waiting on ${esc(p.pusher)}.` : ''}</p>`;
   return `<li class="push">
   <div class="push-head"><span class="pill ${p.status}">${STATUS_LABEL[p.status]}</span>
   <a class="sha" href="${esc(commitUrl)}">${esc(p.head_sha.slice(0, 7))}</a>
@@ -181,6 +201,8 @@ ul{list-style:none;margin:0;padding:0}
 .ok{color:var(--accent)}
 .tag{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
 .empty{color:var(--muted)}
+.waiting li{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:12px;padding:10px 16px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+code.inline{display:inline;padding:1px 6px;word-break:normal}
 .embed{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
 code{background:var(--chip);border-radius:6px;padding:6px 8px;font-size:.8rem;word-break:break-all;display:block;flex:1;min-width:0}
 footer{margin-top:40px;color:var(--muted);font-size:.85rem}
@@ -210,6 +232,7 @@ export function renderRepoPage(origin: string, repo: RepoRow, stats: RepoStats, 
   const sections = [
     headerSection(repo, badgeUrl),
     summarySection(stats.overall),
+    waitingSection(stats.authors),
     authorsSection(stats.authors),
     pushesSection(pushes, totalPushes, repo, visible),
     badgeSection(markdown),

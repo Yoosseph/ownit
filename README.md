@@ -70,20 +70,43 @@ You need Node 20+, a GitHub repo and an API key from [Nebius Token Factory](http
 or, if you have no Nebius account, from [NVIDIA](https://build.nvidia.com/). Both serve the same Nemotron
 model. `ownit key set` asks which one your key is for (or name it: `ownit key set nvidia`).
 
+**1. Install the CLI.**
+
 ```sh
 npm i -g getownit
-ownit login       # sign in with GitHub
-ownit key set     # pick Nebius or NVIDIA, then paste your key (stays on your machine)
-cd your-repo
-ownit init        # installs the pre-push hook
 ```
 
-The repository owner must also [install the Ownit GitHub App](https://github.com/apps/ownit-app/installations/new)
-and select this repository. Signing in with `ownit login` does not install it. If you push to a
-fork, select that fork. After installing the App, run `ownit init` again.
+**2. Sign in with GitHub.**
 
-If setup says the GitHub App is missing, Git pushes still work, but Ownit cannot record debriefs
-until the App covers the repo named in the message. You do not need to download a desktop app.
+```sh
+ownit login
+```
+
+**3. Save your API key.** Pick Nebius or NVIDIA, then paste your key at the hidden prompt. It stays on your machine.
+
+```sh
+ownit key set
+```
+
+**4. Set up your repo.** Run this inside your clone. It installs the pre-push hook and registers the repo.
+
+```sh
+cd your-repo
+ownit init
+```
+
+**5. Install the Ownit GitHub App when `ownit init` asks.** If the App is not on the repo yet,
+`ownit init` opens the [install page](https://github.com/apps/ownit-app/installations/new) in your
+browser and waits. On that page:
+
+1. Pick the account or organization that owns the repo.
+2. Choose **Only select repositories** and select the repo (or your fork, if that is where you push).
+3. Click **Install**, go back to the terminal and press Enter.
+
+`ownit init` checks again and finishes setup. If you are not the repo's owner, send them the link and
+ask them to install it for the repo; press `q` to finish later, then run `ownit init` again once it is
+installed. Signing in with `ownit login` does not install the App, and there is no desktop app to download.
+Until the App covers the repo, Git pushes still work but Ownit cannot record debriefs.
 
 On Windows, use Git Bash in Windows Terminal for the interactive debrief.
 
@@ -104,12 +127,19 @@ waiting pushes by commit message, and you pick which one to debrief. Its commits
 verified. During a debrief, type `s` to stop and come back to it later.
 GitHub shows the result as a check on the commit.
 
+### Who owes the debrief
+
+Once Ownit is set up on a repo, everyone who commits to it is responsible for debriefing their own
+commits. If someone pushes without finishing their debrief, the repo page lists them under
+**Waiting on a debrief**, with how many of their commits are still open, until they run `ownit interview`.
+Each pending push also says whose debrief it is waiting on.
+
 ### Commands
 
 | Command | What it does |
 | --- | --- |
 | `ownit login` | Sign in with GitHub. |
-| `ownit init` | Install the pre-push hook in this repo and register it. |
+| `ownit init` | Install the pre-push hook in this repo and register it. Opens the GitHub App install page if the App is missing. |
 | `ownit interview` | List your waiting pushes (including ones an AI agent made) and debrief the one you pick. |
 | `ownit interview --all` | Debrief every waiting push in turn. |
 | `ownit interview --range A..B` | Debrief any commit range, or `--range <sha>` for one commit. |
@@ -135,7 +165,7 @@ change; until then its commits count as unverified.
 ### Where to see your record
 
 - **GitHub:** each commit gets an **Ownit** check: verified or pending.
-- **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes and stats. It shows the debrief questions unless the repo's admins hide them,
+- **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes, stats, and who still owes a debrief. It shows the debrief questions unless the repo's admins hide them,
   and passing answers only if they turn that on.
 - **Badge:** like `Ownit | Verified 55% | Unverified 45%`, linking to the repo page. `ownit init` prints the code to paste
   into your README; `ownit badge` prints it again, and the repo page has a Copy button.

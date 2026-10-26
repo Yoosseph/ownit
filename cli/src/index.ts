@@ -32,7 +32,9 @@ Use --server URL only for a self-hosted Ownit server.`,
     help: [['ownit init [--repo owner/name]', 'Install the pre-push hook in this repo']],
     details: `Run it inside a clone of your GitHub repo. It installs the pre-push hook, registers the
 repo with Ownit, and prints the README badge. The Ownit GitHub App must be installed on the
-repo; if it isn't, init prints the link. Use --repo owner/name when the remote isn't GitHub.`,
+repo; if it isn't, init opens the install page in your browser and waits while you install
+it (outside a terminal it prints the link instead). Use --repo owner/name when the remote
+isn't GitHub.`,
     run: initCommand,
   },
   interview: {

@@ -1,0 +1,14 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "rate": "-8%",
+  "pitch": "-2Hz",
+  "scenes": [
+    {"id": "hook", "minimum_seconds": 6.0, "speech": "AI helps you ship faster. But can you explain the code you just pushed?"},
+    {"id": "brand", "minimum_seconds": 3.2, "speech": "Meet Own it."},
+    {"id": "push", "minimum_seconds": 4.8, "speech": "A short debrief, right in your terminal."},
+    {"id": "questions", "minimum_seconds": 8.4, "speech": "One to three questions. Why you made the change. How it works. What comes next."},
+    {"id": "answer", "minimum_seconds": 5.8, "speech": "Answer in your own words. Build understanding while the change is still fresh."},
+    {"id": "later", "minimum_seconds": 4.0, "speech": "Busy now? Come back later."},
+    {"id": "close", "minimum_seconds": 5.2, "speech": "Own it. Own the code you ship."}
+  ]
+}

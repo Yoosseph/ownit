@@ -1,0 +1,391 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "rate": "-8%",
+  "pitch": "-2Hz",
+  "duration": 37.4,
+  "scenes": [
+    {
+      "id": "hook",
+      "minimum_seconds": 6.0,
+      "speech": "AI helps you ship faster. But can you explain the code you just pushed?",
+      "start": 0.0,
+      "duration": 6.0,
+      "words": [
+        {
+          "text": "AI",
+          "start": 0.558708,
+          "end": 0.857624
+        },
+        {
+          "text": "helps",
+          "start": 0.871208,
+          "end": 1.115791
+        },
+        {
+          "text": "you",
+          "start": 1.129333,
+          "end": 1.210874
+        },
+        {
+          "text": "ship",
+          "start": 1.224458,
+          "end": 1.469041
+        },
+        {
+          "text": "faster",
+          "start": 1.482625,
+          "end": 2.053291
+        },
+        {
+          "text": "But",
+          "start": 2.515208,
+          "end": 2.583124
+        },
+        {
+          "text": "can",
+          "start": 2.59675,
+          "end": 2.732625
+        },
+        {
+          "text": "you",
+          "start": 2.746208,
+          "end": 2.854916
+        },
+        {
+          "text": "explain",
+          "start": 2.868458,
+          "end": 3.235291
+        },
+        {
+          "text": "the",
+          "start": 3.248916,
+          "end": 3.330457
+        },
+        {
+          "text": "code",
+          "start": 3.344041,
+          "end": 3.588624
+        },
+        {
+          "text": "you",
+          "start": 3.602166,
+          "end": 3.656499
+        },
+        {
+          "text": "just",
+          "start": 3.670125,
+          "end": 3.8875
+        },
+        {
+          "text": "pushed",
+          "start": 3.901083,
+          "end": 4.403791
+        }
+      ]
+    },
+    {
+      "id": "brand",
+      "minimum_seconds": 3.2,
+      "speech": "Meet Own it.",
+      "start": 6.0,
+      "duration": 3.2,
+      "words": [
+        {
+          "text": "Meet",
+          "start": 6.388708,
+          "end": 6.524583
+        },
+        {
+          "text": "Own",
+          "start": 6.538166,
+          "end": 6.701207
+        },
+        {
+          "text": "it",
+          "start": 6.714791,
+          "end": 6.864249
+        }
+      ]
+    },
+    {
+      "id": "push",
+      "minimum_seconds": 4.8,
+      "speech": "A short debrief, right in your terminal.",
+      "start": 9.2,
+      "duration": 4.8,
+      "words": [
+        {
+          "text": "A",
+          "start": 9.588708,
+          "end": 9.629458
+        },
+        {
+          "text": "short",
+          "start": 9.643041,
+          "end": 9.982707
+        },
+        {
+          "text": "debrief",
+          "start": 9.996291,
+          "end": 10.675624
+        },
+        {
+          "text": "right",
+          "start": 11.00175,
+          "end": 11.151208
+        },
+        {
+          "text": "in",
+          "start": 11.164791,
+          "end": 11.219124
+        },
+        {
+          "text": "your",
+          "start": 11.232708,
+          "end": 11.327833
+        },
+        {
+          "text": "terminal",
+          "start": 11.341416,
+          "end": 11.844124
+        }
+      ]
+    },
+    {
+      "id": "questions",
+      "minimum_seconds": 8.4,
+      "speech": "One to three questions. Why you made the change. How it works. What comes next.",
+      "start": 14.0,
+      "duration": 8.4,
+      "words": [
+        {
+          "text": "One",
+          "start": 14.388708,
+          "end": 14.551749
+        },
+        {
+          "text": "to",
+          "start": 14.565333,
+          "end": 14.646874
+        },
+        {
+          "text": "three",
+          "start": 14.660416,
+          "end": 14.877791
+        },
+        {
+          "text": "questions",
+          "start": 14.891416,
+          "end": 15.557166
+        },
+        {
+          "text": "Why",
+          "start": 16.019125,
+          "end": 16.141416
+        },
+        {
+          "text": "you",
+          "start": 16.155,
+          "end": 16.250125
+        },
+        {
+          "text": "made",
+          "start": 16.263708,
+          "end": 16.440333
+        },
+        {
+          "text": "the",
+          "start": 16.453916,
+          "end": 16.521832
+        },
+        {
+          "text": "change",
+          "start": 16.535416,
+          "end": 17.038124
+        },
+        {
+          "text": "How",
+          "start": 17.486541,
+          "end": 17.608832
+        },
+        {
+          "text": "it",
+          "start": 17.622375,
+          "end": 17.703916
+        },
+        {
+          "text": "works",
+          "start": 17.7175,
+          "end": 18.193041
+        },
+        {
+          "text": "What",
+          "start": 18.641416,
+          "end": 18.750124
+        },
+        {
+          "text": "comes",
+          "start": 18.763708,
+          "end": 18.981083
+        },
+        {
+          "text": "next",
+          "start": 18.994666,
+          "end": 19.524541
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "minimum_seconds": 5.8,
+      "speech": "Answer in your own words. Build understanding while the change is still fresh.",
+      "start": 22.4,
+      "duration": 5.8,
+      "words": [
+        {
+          "text": "Answer",
+          "start": 22.788708,
+          "end": 23.074041
+        },
+        {
+          "text": "in",
+          "start": 23.087625,
+          "end": 23.169166
+        },
+        {
+          "text": "your",
+          "start": 23.182708,
+          "end": 23.304999
+        },
+        {
+          "text": "own",
+          "start": 23.318583,
+          "end": 23.468041
+        },
+        {
+          "text": "words",
+          "start": 23.481625,
+          "end": 24.0115
+        },
+        {
+          "text": "Build",
+          "start": 24.473458,
+          "end": 24.690833
+        },
+        {
+          "text": "understanding",
+          "start": 24.704458,
+          "end": 25.424583
+        },
+        {
+          "text": "while",
+          "start": 25.438166,
+          "end": 25.587624
+        },
+        {
+          "text": "the",
+          "start": 25.601208,
+          "end": 25.682749
+        },
+        {
+          "text": "change",
+          "start": 25.696291,
+          "end": 26.212582
+        },
+        {
+          "text": "is",
+          "start": 26.334875,
+          "end": 26.43
+        },
+        {
+          "text": "still",
+          "start": 26.443583,
+          "end": 26.728916
+        },
+        {
+          "text": "fresh",
+          "start": 26.7425,
+          "end": 27.32675
+        }
+      ]
+    },
+    {
+      "id": "later",
+      "minimum_seconds": 4.0,
+      "speech": "Busy now? Come back later.",
+      "start": 28.2,
+      "duration": 4.0,
+      "words": [
+        {
+          "text": "Busy",
+          "start": 28.588708,
+          "end": 28.792499
+        },
+        {
+          "text": "now",
+          "start": 28.806083,
+          "end": 29.104999
+        },
+        {
+          "text": "Come",
+          "start": 29.553375,
+          "end": 29.662083
+        },
+        {
+          "text": "back",
+          "start": 29.675666,
+          "end": 29.920249
+        },
+        {
+          "text": "later",
+          "start": 29.933791,
+          "end": 30.273457
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "minimum_seconds": 5.2,
+      "speech": "Own it. Own the code you ship.",
+      "start": 32.2,
+      "duration": 5.2,
+      "words": [
+        {
+          "text": "Own",
+          "start": 32.588708,
+          "end": 32.738166
+        },
+        {
+          "text": "it",
+          "start": 32.75175,
+          "end": 32.887625
+        },
+        {
+          "text": "Own",
+          "start": 33.335958,
+          "end": 33.444666
+        },
+        {
+          "text": "the",
+          "start": 33.45825,
+          "end": 33.539791
+        },
+        {
+          "text": "code",
+          "start": 33.553375,
+          "end": 33.825125
+        },
+        {
+          "text": "you",
+          "start": 33.838708,
+          "end": 33.920249
+        },
+        {
+          "text": "ship",
+          "start": 33.933791,
+          "end": 34.314207
+        }
+      ]
+    }
+  ]
+}

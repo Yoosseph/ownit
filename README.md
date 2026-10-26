@@ -1,13 +1,13 @@
 # Ownit
 
-![Ownit campaign artwork: tangled code paths resolve into three illuminated checkpoints.](docs/assets/ownit-hero.png)
+![A developer thinking through her work at a laptop in a naturally lit home office.](docs/assets/ownit-hero.png)
 
 ## Own the code you ship.
 
 **A short debrief for the code you just pushed.** Ownit asks one to three questions about
 your change, right in your terminal. Build understanding alongside your AI coding workflow.
 
-[Watch the 30-second ad](media/ownit-ad-1080p.mp4) · [Get started](#setup) · [See how it works](docs/DETAILS.md)
+[Watch the narrated ad](media/ownit-ad-1080p.mp4) · [Get started](#setup) · [See how it works](docs/DETAILS.md)
 
 [![Ownit](https://ownit.ownit-worker.workers.dev/badge/Yoosseph/ownit.svg)](https://ownit.ownit-worker.workers.dev/Yoosseph/ownit)
 [![CI](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml)
@@ -55,7 +55,7 @@ Coding agents let you ship code faster than you can read it. Ownit makes underst
 code a habit: a two-minute check while the change is still fresh. Rough answers are fine. A miss
 gets a hint and a new question, and you can always stop and finish later.
 
-![Three illuminated glass forms represent purpose, understanding, and the path ahead.](docs/assets/ownit-understanding.png)
+![Two developers discussing a change together at a desk with a laptop and notebook.](docs/assets/ownit-understanding.png)
 
 | Why | How | Next |
 | --- | --- | --- |

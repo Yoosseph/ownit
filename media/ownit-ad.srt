@@ -1,23 +1,57 @@
 1
-00:00:00,280 --> 00:00:03,780
-You shipped the code. Can you explain it?
+00:00:00,559 --> 00:00:02,153
+AI helps you ship faster.
 
 2
-00:00:04,280 --> 00:00:07,780
-Ownit. 1–3 short questions about your change, right in your terminal.
+00:00:02,515 --> 00:00:04,504
+But can you explain the code you just
+pushed?
 
 3
-00:00:08,280 --> 00:00:13,780
-Start with why. Explain the purpose of your change.
+00:00:06,389 --> 00:00:06,964
+Meet Ownit.
 
 4
-00:00:14,280 --> 00:00:19,780
-Explain how it works. Pass the debrief to verify the push.
+00:00:09,589 --> 00:00:11,944
+A short debrief, right in your terminal.
 
 5
-00:00:20,280 --> 00:00:24,780
-A small habit. A clearer understanding. Debrief now or come back later.
+00:00:14,389 --> 00:00:15,657
+One to three questions.
 
 6
-00:00:25,280 --> 00:00:30,000
-Own the code you ship. Install getownit. Setup in the README.
+00:00:16,019 --> 00:00:17,138
+Why you made the change.
+
+7
+00:00:17,487 --> 00:00:18,293
+How it works.
+
+8
+00:00:18,641 --> 00:00:19,625
+What comes next.
+
+9
+00:00:22,789 --> 00:00:24,112
+Answer in your own words.
+
+10
+00:00:24,473 --> 00:00:27,427
+Build understanding while the change is
+still fresh.
+
+11
+00:00:28,589 --> 00:00:29,205
+Busy now?
+
+12
+00:00:29,553 --> 00:00:30,373
+Come back later.
+
+13
+00:00:32,589 --> 00:00:32,988
+Ownit.
+
+14
+00:00:33,336 --> 00:00:34,414
+Own the code you ship.

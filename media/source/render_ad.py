@@ -1,0 +1,328 @@
+"""Render a continuous laptop-to-CLI Ownit demo from captured application output."""
+
+import argparse
+from functools import lru_cache
+import json
+import math
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import textwrap
+import wave
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / "media"
+SOURCE = OUT / "source"
+TMP = ROOT / ".tmp" / "ad-product"
+W, H, FPS = 1920, 1080, 30
+WHITE, MINT, MUTED = "#f0f5f3", "#8af3c8", "#8caaa1"
+TIMELINE = json.loads((SOURCE / "timeline.json").read_text(encoding="utf-8"))
+SCENES = TIMELINE["scenes"]
+DURATION = TIMELINE["duration"]
+
+
+def clamp(x):
+    return max(0, min(1, x))
+
+
+def ease(x):
+    return 1 - (1 - clamp(x)) ** 4
+
+
+def smooth(x):
+    x = clamp(x)
+    return x * x * (3 - 2 * x)
+
+
+@lru_cache(maxsize=64)
+def font(size, style="regular"):
+    names = {"regular": "segoeui.ttf", "bold": "segoeuib.ttf", "light": "segoeuil.ttf", "mono": "consola.ttf"}
+    path = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / names[style]
+    if not path.exists():
+        path = Path("/usr/share/fonts/truetype/dejavu") / (
+            "DejaVuSansMono.ttf" if style == "mono" else "DejaVuSans-Bold.ttf" if style == "bold" else "DejaVuSans.ttf")
+    return ImageFont.truetype(str(path), size)
+
+
+@lru_cache(maxsize=512)
+def glyph(value, size, color, style):
+    f = font(size, style)
+    box = f.getbbox(value)
+    im = Image.new("RGBA", (max(1, box[2] - box[0] + 4), max(1, box[3] - box[1] + 4)))
+    ImageDraw.Draw(im).text((2 - box[0], 2 - box[1]), value, font=f, fill=color)
+    return im
+
+
+def put(image, value, x, y, size=40, color=WHITE, style="regular", alpha=1, align="left"):
+    sprite = glyph(value, size, color, style)
+    if align == "center":
+        x -= sprite.width / 2
+    elif align == "right":
+        x -= sprite.width
+    if alpha < 1:
+        sprite = sprite.copy()
+        sprite.putalpha(sprite.getchannel("A").point(lambda p: int(p * clamp(alpha))))
+    image.paste(sprite, (round(x), round(y)), sprite)
+
+
+def reveal(image, value, x, y, size, elapsed, delay=0, color=WHITE, style="regular", align="left"):
+    p = ease((elapsed - delay) / .85)
+    put(image, value, x, y + (1 - p) * 34, size, color, style, p, align)
+
+
+BASE = Image.new("RGB", (W, H), "#0d1117")
+PLATE_ORIGINAL = Image.open(ROOT / "docs/assets/ownit-laptop.png").convert("RGB")
+PLATE = PLATE_ORIGINAL.resize((W, H), Image.Resampling.LANCZOS)
+PLATE_SPEC = json.loads((SOURCE / "laptop-plate.json").read_text(encoding="utf-8"))
+QUAD = np.array(PLATE_SPEC["screenCornersOriginal"], dtype=float)
+QUAD *= np.array([W / PLATE_ORIGINAL.width, H / PLATE_ORIGINAL.height])
+FULL = np.array([[0, 0], [W, 0], [W, H], [0, H]], dtype=float)
+DEMO = json.loads((SOURCE / "cli-demo.json").read_text(encoding="utf-8"))
+
+
+def perspective(destination, source):
+    """Pillow's inverse homography: destination pixel -> source pixel."""
+    a, b = [], []
+    for (x, y), (u, v) in zip(destination, source):
+        a.extend([[x, y, 1, 0, 0, 0, -u*x, -u*y], [0, 0, 0, x, y, 1, -v*x, -v*y]])
+        b.extend([u, v])
+    return tuple(np.linalg.solve(np.asarray(a), np.asarray(b)))
+
+
+def mono(im, value, x, y, size=29, color=WHITE):
+    # Consolas lacks this glyph on some Windows systems; draw a real vector tick.
+    if value.startswith("✓"):
+        d = ImageDraw.Draw(im)
+        d.line([(x+2, y+14), (x+9, y+21), (x+23, y+3)], fill=color, width=3)
+        value = value[1:]
+        x += font(size, "mono").getlength(" ")
+    put(im, value, x, y, size, color, "mono")
+
+
+def color_code(im, line, x, y, size=29):
+    import re
+    pieces = re.split(r"(\b(?:export|async|function|const|for|let|try|return|await|catch|if|throw)\b|\b\d+\b)", line)
+    keywords = {"export", "async", "function", "const", "for", "let", "try", "return", "await", "catch", "if", "throw"}
+    for part in pieces:
+        color = "#c9a7ff" if part in keywords else "#ecc48d" if part.isdigit() else "#cbd5df"
+        mono(im, part, x, y, size, color)
+        x += font(size, "mono").getlength(part)
+
+
+def terminal_text(t):
+    # Shell entry is staged; all debrief output below comes from the actual CLI.
+    command = "git push"[:max(0, int((t - 1.70) * 18))]
+    text = "$ " + command
+    if t >= 3.0:
+        text += "\nOwnit (1 commit to demo/shop) Debrief now? [Y/n] "
+    if t >= 3.45:
+        text += "y"
+    for event in DEMO["events"]:
+        if event["time"] <= t:
+            text += event["text"]
+    return text
+
+
+def screen(t):
+    im = BASE.copy()
+    d = ImageDraw.Draw(im)
+    # One persistent editor window: the terminal expands within it.
+    d.rectangle((0, 0, W, 57), fill="#1a2029")
+    for i, c in enumerate(["#ff6a65", "#eabb55", "#5acb81"]):
+        d.ellipse((24+i*27, 21, 36+i*27, 33), fill=c)
+    put(im, "shop — Ownit", W/2, 17, 22, "#d4dbe3", align="center")
+    put(im, "CLI DEMO", W-32, 20, 15, "#8c9aa9", align="right")
+    d.rectangle((0, H-32, W, H), fill="#182d27")
+    put(im, "main     1 commit ready to push", 23, H-24, 17, "#a0b8af")
+    put(im, "TypeScript     UTF-8", W-24, H-24, 17, "#a0b8af", align="right")
+    expand = smooth((t - 2.65) / 1.05)
+    terminal_y = round(657 - 546 * expand)
+    if terminal_y > 150:
+        editor = Image.new("RGB", (W, 600), "#0d1117")
+        ed = ImageDraw.Draw(editor)
+        ed.rectangle((0, 0, 245, 600), fill="#111820")
+        put(editor, "EXPLORER", 30, 28, 19, "#8d9baa")
+        for i, label in enumerate(["SHOP", "  src", "    checkout.ts", "    payments.ts", "  test", "  package.json"]):
+            if i == 2:
+                ed.rectangle((0, 102+i*39, 244, 137+i*39), fill="#203028")
+            put(editor, label, 26, 105+i*39, 22, MINT if i == 2 else "#a7b3bf")
+        ed.rectangle((245, 0, W, 55), fill="#151d26")
+        put(editor, "TS   checkout.ts", 275, 16, 23, "#d2dce6")
+        ed.line((245, 0, 490, 0), fill=MINT, width=3)
+        put(editor, "src  /  checkout.ts  /  chargeWithRetry", 280, 76, 20, "#6f8395")
+        for i, line in enumerate(DEMO["code"]):
+            y = 125 + i * 34
+            if i == 1:
+                ed.rectangle((266, y-5, W-30, y+29), fill="#162b22")
+                line = line[:min(len(line), max(0, int((t - .15) * 37)))]
+                if t < 1.0:
+                    cursor = 345 + font(29, "mono").getlength(line)
+                    ed.rectangle((cursor, y, cursor+2, y+27), fill=MINT)
+            mono(editor, str(i+1).rjust(2), 278, y, 24, "#516577")
+            color_code(editor, line, 345, y, 29)
+        visible = terminal_y - 57
+        im.paste(editor.crop((0, 0, W, visible)), (0, 57))
+    d.rectangle((0, terminal_y, W, H-33), fill="#0c1218")
+    d.line((0, terminal_y, W, terminal_y), fill="#344337", width=2)
+    put(im, "TERMINAL", 35, terminal_y+20, 19, WHITE)
+    d.line((35, terminal_y+48, 145, terminal_y+48), fill=MINT, width=2)
+    put(im, "zsh  ·  ~/shop", W-40, terminal_y+20, 19, "#81968d", align="right")
+    if expand > .98:
+        put(im, "checkout.ts", 30, 76, 19, "#81968d")
+        put(im, "Ownit / push debrief", W-40, 76, 19, MINT, align="right")
+    body_y = terminal_y + 82
+    raw = terminal_text(t)
+    lines = raw.split("\n")
+    available = max(1, int((H-65-body_y) / 39))
+    if t > 18.5:
+        available = min(available, 15)
+    lines = lines[-available:]
+    for i, line in enumerate(lines):
+        color = (MINT if line.startswith(("✓", "Question")) else
+                 "#93a4b2" if line.startswith(("Nemotron", "Answer in", "Checking", "  Nice")) else WHITE)
+        mono(im, line, 50, body_y + i*39, 28, color)
+    if t < 12.4 and int(t*2) % 2 == 0 and lines:
+        last = lines[-1]
+        x = 50 + font(28, "mono").getlength(last)
+        y = body_y + (len(lines)-1)*39
+        d.rectangle((x+3, y, x+5, y+27), fill=MINT)
+    # Keep the completed terminal on screen; the invitation joins its lower edge.
+    cta = ease((t - 18.5) / .8)
+    if cta:
+        panel = Image.new("RGBA", (W, 158), (13, 30, 24, round(255*cta)))
+        pd = ImageDraw.Draw(panel)
+        pd.line((0, 0, W, 0), fill="#345847", width=2)
+        put(panel, "Own the code you ship.", 50, 28, 43, WHITE, "bold", cta)
+        put(panel, "$ npm i -g getownit", W-50, 33, 32, MINT, "mono", cta, "right")
+        put(panel, "github.com/Yoosseph/ownit", 54, 100, 23, "#a8bdb4", alpha=cta)
+        im.paste(panel, (0, H-190), panel)
+    return im
+
+
+def frame(t):
+    ui = screen(t)
+    if t >= 1.75:
+        return ui
+    # A single perspective camera move, not a crossfade to another shot.
+    p = smooth((t - .18) / 1.57)
+    destination = QUAD * (1 - p) + FULL * p
+    camera = PLATE.transform((W, H), Image.Transform.PERSPECTIVE,
+        perspective(destination, QUAD), Image.Resampling.BICUBIC)
+    display = ui.transform((W, H), Image.Transform.PERSPECTIVE,
+        perspective(destination, FULL), Image.Resampling.BICUBIC)
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).polygon([tuple(point) for point in destination], fill=255)
+    return Image.composite(display, camera, mask)
+
+
+def audio_mix(ffmpeg):
+    """Keep the voice prominently above an original, softly ducked ambient score."""
+    rate, count = 48000, round(DURATION * 48000)
+    decoded = subprocess.run([ffmpeg, "-v", "error", "-i", str(SOURCE / "narration.mp3"),
+        "-ar", str(rate), "-ac", "1", "-f", "f32le", "-"], capture_output=True, check=True)
+    voice = np.frombuffer(decoded.stdout, dtype="<f4")
+    voice = np.pad(voice, (0, max(0, count - len(voice))))[:count]
+    time = np.arange(count, dtype=np.float64) / rate
+    music = np.zeros((count, 2), dtype=np.float64)
+    chords = [(130.81, 164.81, 196, 246.94), (110, 130.81, 164.81, 196),
+              (87.31, 130.81, 174.61, 220), (98, 146.83, 196, 246.94)]
+    for n, start in enumerate(np.arange(0, DURATION, 8)):
+        local = time - start
+        env = np.clip(local / 2, 0, 1) * np.clip((10 - local) / 2, 0, 1)
+        for freq in chords[n % len(chords)]:
+            for channel in range(2):
+                phase = 2 * math.pi * freq * time + channel * .19 + .04 * np.sin(time * .6)
+                music[:, channel] += .012 * env * (np.sin(phase) + .12 * np.sin(phase * 2))
+    for i, beat in enumerate(np.arange(1, DURATION, 1.5)):
+        local = np.maximum(time - beat, 0)
+        env = np.where(time >= beat, (1 - np.exp(-local * 80)) * np.exp(-local * 2.8), 0)
+        note = [523.25, 659.25, 783.99, 987.77, 783.99, 659.25][i % 6]
+        pluck = .013 * env * (np.sin(2 * math.pi * note * local) + .09 * np.sin(2 * math.pi * note * 2 * local))
+        music[:, i % 2] += pluck
+        music[:, (i + 1) % 2] += .55 * pluck
+    block = 4800
+    rms = np.array([np.sqrt(np.mean(voice[i:i + block] ** 2)) for i in range(0, count, block)])
+    envelope = np.interp(np.arange(count), np.arange(len(rms)) * block, rms)
+    music *= (1 - .65 * np.clip(envelope / .035, 0, 1))[:, None]
+    music *= (np.minimum(time / 2, 1) * np.clip((DURATION - time) / 1.6, 0, 1))[:, None]
+    mix = music + voice[:, None]
+    peak = float(np.max(np.abs(mix)))
+    if peak > .93:
+        mix *= .93 / peak
+    target = TMP / "mix.wav"
+    with wave.open(str(target), "wb") as wav:
+        wav.setnchannels(2)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        wav.writeframes((np.clip(mix, -1, 1) * 32767).astype("<i2").tobytes())
+    return target
+
+
+def srt_time(seconds):
+    ms = round(seconds * 1000)
+    return f"{ms // 3600000:02}:{ms // 60000 % 60:02}:{ms // 1000 % 60:02},{ms % 1000:03}"
+
+
+def captions():
+    cues = []
+    for scene in SCENES:
+        words, tokens = scene["words"], scene["speech"].split()
+        if len(tokens) != len(words):
+            raise ValueError("Narration words and script differ; regenerate timeline")
+        start = 0
+        for i, token in enumerate(tokens):
+            if token.endswith((".", "?")) or i == len(tokens) - 1:
+                phrase = textwrap.fill(" ".join(tokens[start:i + 1]).replace("Own it", "Ownit"), width=42)
+                end = words[i]['end'] + .1
+                if i + 1 < len(words):
+                    end = min(end, words[i + 1]['start'])
+                cues.append(f"{len(cues) + 1}\n{srt_time(words[start]['start'])} --> {srt_time(end)}\n{phrase}\n")
+                start = i + 1
+    (OUT / "ownit-ad.srt").write_text("\n".join(cues), encoding="utf-8")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg"))
+    parser.add_argument("--stills-only", action="store_true")
+    args = parser.parse_args()
+    TMP.mkdir(parents=True, exist_ok=True)
+    captions()
+    for scene in SCENES:
+        frame(scene["start"] + scene["duration"] - .7).save(TMP / (scene["id"] + ".png"))
+    frame(0.10).save(OUT / "ownit-ad-poster.jpg", quality=95)
+    frame(15.0).save(ROOT / "docs/assets/ownit-terminal-demo.png")
+    if args.stills_only:
+        return
+    if not args.ffmpeg:
+        import imageio_ffmpeg
+        args.ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    mix = audio_mix(args.ffmpeg)
+    destination = OUT / "ownit-ad-1080p.mp4"
+    command = [args.ffmpeg, "-v", "warning", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
+        "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-i", str(mix),
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-af", "loudnorm=I=-16:TP=-1:LRA=9", "-ar", "48000", "-c:a", "aac", "-b:a", "256k",
+        "-t", str(DURATION), "-movflags", "+faststart", str(destination)]
+    with (TMP / "render.log").open("wb") as log:
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=log)
+        try:
+            for i in range(round(FPS * DURATION)):
+                process.stdin.write(frame(i / FPS).tobytes())
+                if i % (FPS * 5) == 0:
+                    print(f"Rendered {i / FPS:.0f}/{DURATION}s", flush=True)
+        finally:
+            process.stdin.close()
+        if process.wait():
+            raise RuntimeError(f"FFmpeg failed: see {TMP / 'render.log'}")
+    subprocess.run([args.ffmpeg, "-v", "error", "-xerror", "-i", str(destination),
+                    "-map", "0:v:0", "-map", "0:a:0", "-f", "null", "-"], check=True)
+    print(f"Created and fully decoded {destination} ({DURATION}s, {FPS} fps)", flush=True)
+
+
+if __name__ == "__main__":
+    main()

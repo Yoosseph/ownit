@@ -1,0 +1,233 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "rate": "-8%",
+  "pitch": "-2Hz",
+  "duration": 22.5,
+  "scenes": [
+    {
+      "id": "intro",
+      "minimum_seconds": 3.5,
+      "speech": "Make your change. Push your code.",
+      "start": 0.0,
+      "duration": 3.5,
+      "words": [
+        {
+          "text": "Make",
+          "start": 0.558708,
+          "end": 0.721749
+        },
+        {
+          "text": "your",
+          "start": 0.735333,
+          "end": 0.844041
+        },
+        {
+          "text": "change",
+          "start": 0.857625,
+          "end": 1.360333
+        },
+        {
+          "text": "Push",
+          "start": 1.822291,
+          "end": 1.971749
+        },
+        {
+          "text": "your",
+          "start": 1.985333,
+          "end": 2.107624
+        },
+        {
+          "text": "code",
+          "start": 2.121208,
+          "end": 2.447291
+        }
+      ]
+    },
+    {
+      "id": "debrief",
+      "minimum_seconds": 4.5,
+      "speech": "Own it asks a short question about the change.",
+      "start": 3.5,
+      "duration": 4.5,
+      "words": [
+        {
+          "text": "Own",
+          "start": 3.888708,
+          "end": 4.051749
+        },
+        {
+          "text": "it",
+          "start": 4.065333,
+          "end": 4.174041
+        },
+        {
+          "text": "asks",
+          "start": 4.187625,
+          "end": 4.59525
+        },
+        {
+          "text": "a",
+          "start": 4.608791,
+          "end": 4.663124
+        },
+        {
+          "text": "short",
+          "start": 4.67675,
+          "end": 5.016416
+        },
+        {
+          "text": "question",
+          "start": 5.03,
+          "end": 5.464791
+        },
+        {
+          "text": "about",
+          "start": 5.478375,
+          "end": 5.69575
+        },
+        {
+          "text": "the",
+          "start": 5.709333,
+          "end": 5.777249
+        },
+        {
+          "text": "change",
+          "start": 5.790875,
+          "end": 6.32075
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "minimum_seconds": 7.0,
+      "speech": "Why retry failed payments? So a temporary error doesn't lose the sale.",
+      "start": 8.0,
+      "duration": 7.0,
+      "words": [
+        {
+          "text": "Why",
+          "start": 8.388708,
+          "end": 8.565333
+        },
+        {
+          "text": "retry",
+          "start": 8.578916,
+          "end": 9.027291
+        },
+        {
+          "text": "failed",
+          "start": 9.040875,
+          "end": 9.339791
+        },
+        {
+          "text": "payments",
+          "start": 9.353375,
+          "end": 9.951208
+        },
+        {
+          "text": "So",
+          "start": 10.399583,
+          "end": 10.549041
+        },
+        {
+          "text": "a",
+          "start": 10.562625,
+          "end": 10.616958
+        },
+        {
+          "text": "temporary",
+          "start": 10.630541,
+          "end": 11.187624
+        },
+        {
+          "text": "error",
+          "start": 11.201208,
+          "end": 11.554458
+        },
+        {
+          "text": "doesn't",
+          "start": 11.75825,
+          "end": 12.1115
+        },
+        {
+          "text": "lose",
+          "start": 12.125125,
+          "end": 12.383291
+        },
+        {
+          "text": "the",
+          "start": 12.396833,
+          "end": 12.491958
+        },
+        {
+          "text": "sale",
+          "start": 12.505541,
+          "end": 12.953916
+        }
+      ]
+    },
+    {
+      "id": "verified",
+      "minimum_seconds": 3.5,
+      "speech": "Explain it. Own it.",
+      "start": 15.0,
+      "duration": 3.5,
+      "words": [
+        {
+          "text": "Explain",
+          "start": 15.388708,
+          "end": 15.809916
+        },
+        {
+          "text": "it",
+          "start": 15.823458,
+          "end": 15.972916
+        },
+        {
+          "text": "Own",
+          "start": 16.421291,
+          "end": 16.570749
+        },
+        {
+          "text": "it",
+          "start": 16.584333,
+          "end": 16.720208
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "minimum_seconds": 4.0,
+      "speech": "Own the code you ship.",
+      "start": 18.5,
+      "duration": 4.0,
+      "words": [
+        {
+          "text": "Own",
+          "start": 18.888708,
+          "end": 18.997416
+        },
+        {
+          "text": "the",
+          "start": 19.010958,
+          "end": 19.092499
+        },
+        {
+          "text": "code",
+          "start": 19.106083,
+          "end": 19.377833
+        },
+        {
+          "text": "you",
+          "start": 19.391416,
+          "end": 19.472957
+        },
+        {
+          "text": "ship",
+          "start": 19.486541,
+          "end": 19.866957
+        }
+      ]
+    }
+  ]
+}

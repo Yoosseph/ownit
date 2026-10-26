@@ -1,0 +1,13 @@
+
+Ownit debrief · demo/shop · 1 commit · 14 changed lines
+Nemotron is reading your push…
+Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to stop and finish later.
+
+Question 1/1 (why)
+  Why retry temporary payment failures?
+> So a temporary error doesn't lose the sale.
+Checking your answer…
+✓ Passed.
+  Nice, you covered the main idea.
+
+✓ Push verified. 1 commit owned. Nice work.

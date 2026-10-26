@@ -1,0 +1,33 @@
+1
+00:00:00,559 --> 00:00:01,460
+Make your change.
+
+2
+00:00:01,822 --> 00:00:02,547
+Push your code.
+
+3
+00:00:03,889 --> 00:00:06,421
+Ownit asks a short question about the
+change.
+
+4
+00:00:08,389 --> 00:00:10,051
+Why retry failed payments?
+
+5
+00:00:10,400 --> 00:00:13,054
+So a temporary error doesn't lose the
+sale.
+
+6
+00:00:15,389 --> 00:00:16,073
+Explain it.
+
+7
+00:00:16,421 --> 00:00:16,820
+Ownit.
+
+8
+00:00:18,889 --> 00:00:19,967
+Own the code you ship.

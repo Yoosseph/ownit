@@ -1,0 +1,12 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "rate": "-8%",
+  "pitch": "-2Hz",
+  "scenes": [
+    {"id": "intro", "minimum_seconds": 3.5, "speech": "Make your change. Push your code."},
+    {"id": "debrief", "minimum_seconds": 4.5, "speech": "Own it asks a short question about the change."},
+    {"id": "answer", "minimum_seconds": 7.0, "speech": "Why retry failed payments? So a temporary error doesn't lose the sale."},
+    {"id": "verified", "minimum_seconds": 3.5, "speech": "Explain it. Own it."},
+    {"id": "close", "minimum_seconds": 4.0, "speech": "Own the code you ship."}
+  ]
+}

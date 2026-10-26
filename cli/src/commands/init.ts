@@ -1,6 +1,6 @@
 import type { Writable } from 'node:stream';
 import { parseArgs } from 'node:util';
-import { createApi } from '../api.js';
+import { ApiError, createApi } from '../api.js';
 import { git, githubRepo } from '../git.js';
 import { hookLocation, installHook, MANAGED_SNIPPET, uninstallHook } from '../hooks.js';
 import { errorMessage, paint, sentence } from '../ui.js';
@@ -46,6 +46,14 @@ async function registerRepo(repo: string, out: Writable): Promise<number> {
     out.write(`\nAdd the badge to your README (run "ownit badge" to see this again):\n  ${badgeMarkdown(origin, registered.repo)}\n`);
   } catch (error) {
     out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${sentence(errorMessage(error))}\n`);
+    if (error instanceof ApiError && error.code === 'app_not_installed') {
+      out.write('Git pushes still work, but Ownit cannot record debriefs until the GitHub App is enabled for this repo.\n');
+      out.write('Ask the repository owner to install the Ownit GitHub App and select this repository (or select your fork if that is where you push).\n');
+      const url = error.body.install_url;
+      if (typeof url === 'string' && url) out.write(`  ${url}\n`);
+      out.write('Then run "ownit init" again in this repo.\n');
+      return 1;
+    }
     out.write('Run "ownit init" again once that is fixed.\n');
     return 1;
   }

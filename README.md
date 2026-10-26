@@ -1,5 +1,14 @@
 # Ownit
 
+![Ownit campaign artwork: tangled code paths resolve into three illuminated checkpoints.](docs/assets/ownit-hero.png)
+
+## Own the code you ship.
+
+**A short debrief for the code you just pushed.** Ownit asks one to three questions about
+your change, right in your terminal. Build understanding alongside your AI coding workflow.
+
+[Watch the 30-second ad](media/ownit-ad-1080p.mp4) · [Get started](#setup) · [See how it works](docs/DETAILS.md)
+
 [![Ownit](https://ownit.ownit-worker.workers.dev/badge/Yoosseph/ownit.svg)](https://ownit.ownit-worker.workers.dev/Yoosseph/ownit)
 [![CI](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/getownit?logo=npm&color=CB3837)](https://www.npmjs.com/package/getownit)
@@ -11,9 +20,17 @@
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Own the code you ship.** After each `git push`, Ownit asks you one to three short questions about
-the change, right in your terminal: why you made it, how it works, and what could come next.
-NVIDIA Nemotron (on Nebius or NVIDIA) writes the questions and grades your answers.
+When you run `git push`, Ownit's pre-push hook offers a debrief: why you made the change,
+how it works, and what could come next. NVIDIA Nemotron (on Nebius or NVIDIA) writes the
+questions and grades your answers. Debrief now or return later with `ownit interview`.
+
+| Push | Explain | Build your record |
+| --- | --- | --- |
+| Use your normal Git workflow. | Answer 1–3 short questions about the change. | Passing debriefs mark commits as verified on GitHub and your repo page. |
+
+![Illustrative Ownit terminal session showing a retry explanation and a verified push.](docs/assets/ownit-terminal-demo.png)
+
+*Illustrative session, based on the example below. Questions and grading vary with your change.*
 
 ```text
 $ git push
@@ -38,6 +55,15 @@ Coding agents let you ship code faster than you can read it. Ownit makes underst
 code a habit: a two-minute check while the change is still fresh. Rough answers are fine. A miss
 gets a hint and a new question, and you can always stop and finish later.
 
+![Three illuminated glass forms represent purpose, understanding, and the path ahead.](docs/assets/ownit-understanding.png)
+
+| Why | How | Next |
+| --- | --- | --- |
+| Explain the purpose of the change. | Describe the approach and how it works. | Consider a limitation, risk, or improvement. |
+
+Small pushes get one question; larger ones get two or three. Ownit is a learning tool:
+a passed debrief records understanding at the keyboard, not proof of authorship or code correctness.
+
 ## Setup
 
 You need Node 20+, a GitHub repo and an API key from [Nebius Token Factory](https://tokenfactory.nebius.com/)
@@ -53,6 +79,8 @@ ownit init        # installs the pre-push hook
 ```
 
 Then install the Ownit GitHub App on the repo. `ownit init` prints the link.
+
+On Windows, use Git Bash in Windows Terminal for the interactive debrief.
 
 ## Use
 
@@ -120,6 +148,9 @@ Releases are listed on the [releases page](https://github.com/Yoosseph/ownit/rel
 key and repo setup are kept across updates.
 
 ## More
+
+The [launch campaign](media/README.md) includes the ad video, poster, captions, artwork prompts,
+and source renderer.
 
 Privacy, self-hosting, how it works and limitations: [docs/DETAILS.md](docs/DETAILS.md).
 Overview of the code: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

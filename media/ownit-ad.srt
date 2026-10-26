@@ -1,0 +1,23 @@
+1
+00:00:00,280 --> 00:00:03,780
+You shipped the code. Can you explain it?
+
+2
+00:00:04,280 --> 00:00:07,780
+Ownit. 1–3 short questions about your change, right in your terminal.
+
+3
+00:00:08,280 --> 00:00:13,780
+Start with why. Explain the purpose of your change.
+
+4
+00:00:14,280 --> 00:00:19,780
+Explain how it works. Pass the debrief to verify the push.
+
+5
+00:00:20,280 --> 00:00:24,780
+A small habit. A clearer understanding. Debrief now or come back later.
+
+6
+00:00:25,280 --> 00:00:30,000
+Own the code you ship. Install getownit. Setup in the README.

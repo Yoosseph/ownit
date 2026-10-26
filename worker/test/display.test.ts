@@ -159,6 +159,21 @@ describe('public page', () => {
     expect(text).not.toContain('By author');
   });
 
+  it('names each author who still owes a debrief, most waiting first', async () => {
+    const text = (await call(seededRepo(), 'GET', '/octo/shop')).text.replace(/\s+/g, ' ');
+    expect(text).toContain('Waiting on a debrief');
+    const bob = text.indexOf('<strong>bob</strong> <span class="meta">4 commits not debriefed yet</span>');
+    const alice = text.indexOf('<strong>alice</strong> <span class="meta">3 commits not debriefed yet</span>');
+    expect(bob).toBeGreaterThan(-1);
+    expect(alice).toBeGreaterThan(bob);
+  });
+
+  it('leaves out the waiting list when everything is debriefed', async () => {
+    const env = testEnv();
+    seedPush(env, { status: 'verified', author: 'alice', n: 2 });
+    expect((await call(env, 'GET', '/octo/shop')).text).not.toContain('Waiting on a debrief');
+  });
+
   it('says when older pushes are left out', async () => {
     const env = testEnv();
     for (let i = 0; i < 31; i++) seedPush(env, { status: 'verified', author: 'alice', n: 1, createdAgo: HOUR + i });

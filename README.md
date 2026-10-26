@@ -78,7 +78,12 @@ cd your-repo
 ownit init        # installs the pre-push hook
 ```
 
-Then install the Ownit GitHub App on the repo. `ownit init` prints the link.
+The repository owner must also [install the Ownit GitHub App](https://github.com/apps/ownit-app/installations/new)
+and select this repository. Signing in with `ownit login` does not install it. If you push to a
+fork, select that fork. After installing the App, run `ownit init` again.
+
+If setup says the GitHub App is missing, Git pushes still work, but Ownit cannot record debriefs
+until the App covers the repo named in the message. You do not need to download a desktop app.
 
 On Windows, use Git Bash in Windows Terminal for the interactive debrief.
 

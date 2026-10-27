@@ -61,10 +61,12 @@ export function isMergeButtonCommit(commit: PushedCommit): boolean {
   return commit.committer?.username === WEB_FLOW && MERGE_MESSAGE.test(commit.message ?? '');
 }
 
+const isBot = (login: string | null | undefined) => Boolean(login?.endsWith('[bot]'));
+
 /** Bots (Dependabot, Renovate, ...) cannot debrief, so whoever pushed or merged their commit owes it. */
 export function commitAuthor(commit: PushedCommit, sender: string | undefined): string | null {
   const author = commit.author?.username ?? commit.author?.name ?? null;
-  return author?.endsWith('[bot]') && sender ? sender : author;
+  return isBot(author) && sender ? sender : author;
 }
 
 interface Landing {
@@ -132,6 +134,8 @@ webhook.post('/github', async (c) => {
   const repo = await getRepo(c.env.DB, owner, payload.repository.name);
   if (!repo) return c.json({ ignored: 'repo not registered' });
   if (payload.deleted || ZERO.test(payload.after)) return c.json({ ignored: 'branch deleted' });
+  // A bot pushing its own branch owes nothing; its commits count once a person merges or pushes them.
+  if (isBot(payload.sender?.login)) return c.json({ ignored: 'pushed by a bot' });
 
   const db = c.env.DB;
   await setRepoInstallation(db, repo.id, payload.installation?.id ?? repo.installation_id, payload.repository.private);

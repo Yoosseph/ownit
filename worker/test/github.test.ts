@@ -129,6 +129,14 @@ describe('push webhook', () => {
     expect(env.DB.raw.prepare('SELECT author_login FROM commits WHERE sha = ?').get(sha(3))).toEqual({ author_login: 'mona' });
   });
 
+  it('ignores a bot pushing its own branch', async () => {
+    const env = env4();
+    const bump = { id: sha(3), message: 'Bump actions/checkout from 6 to 7', author: { username: 'dependabot[bot]' } };
+    const res = await deliver(env, pushEvent({ sender: { id: 49699333, login: 'dependabot[bot]' }, commits: [bump] }));
+    expect(res.json).toEqual({ ignored: 'pushed by a bot' });
+    expect(env.DB.raw.prepare('SELECT count(*) AS n FROM pushes').get()).toEqual({ n: 0 });
+  });
+
   it('handles a large push in a constant number of queries', async () => {
     const env = env4();
     const shas = Array.from({ length: 120 }, (_, i) => sha(1000 + i));

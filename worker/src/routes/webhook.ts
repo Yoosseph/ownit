@@ -61,6 +61,12 @@ export function isMergeButtonCommit(commit: PushedCommit): boolean {
   return commit.committer?.username === WEB_FLOW && MERGE_MESSAGE.test(commit.message ?? '');
 }
 
+/** Bots (Dependabot, Renovate, ...) cannot debrief, so whoever pushed or merged their commit owes it. */
+export function commitAuthor(commit: PushedCommit, sender: string | undefined): string | null {
+  const author = commit.author?.username ?? commit.author?.name ?? null;
+  return author?.endsWith('[bot]') && sender ? sender : author;
+}
+
 interface Landing {
   /** Every push whose commits this event touched. */
   touched: Set<number>;
@@ -80,7 +86,7 @@ async function recordLanding(db: D1Database, repo: RepoRow, event: PushEvent): P
     .filter((commit) => !isMergeButtonCommit(commit))
     .map((commit) => ({
       sha: commit.id,
-      author: commit.author?.username ?? commit.author?.name ?? null,
+      author: commitAuthor(commit, event.sender?.login),
     }));
   const touched = new Set<number>();
 

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ownit</title>
+<meta name="description" content="Ownit asks one to three questions about the code you just pushed, right in your terminal.">
+<style>
+  :root {
+    --bg: #fafaf9; --fg: #1c1917; --muted: #57534e; --line: #e7e5e4;
+    --code-bg: #1c1917; --code-fg: #e7e5e4; --dim: #a8a29e;
+    --green: #16a34a; --cyan: #0891b2; --yellow: #ca8a04; --accent: #16a34a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0a09; --fg: #e7e5e4; --muted: #a8a29e; --line: #292524;
+      --code-bg: #1c1917; --green: #4ade80; --cyan: #22d3ee; --yellow: #facc15; --accent: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 56px 16px 72px; }
+  h1 { font-size: 2.4rem; line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.02em; }
+  h2 { font-size: 1.25rem; margin: 48px 0 12px; }
+  p { margin: 0 0 14px; }
+  .lede { font-size: 1.15rem; color: var(--muted); }
+  a { color: inherit; text-underline-offset: 3px; }
+  .links { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; font-size: 0.95rem; }
+  code, pre { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: 0.88rem; }
+  :not(pre) > code { background: var(--line); padding: 1px 5px; border-radius: 4px; }
+  pre {
+    background: var(--code-bg); color: var(--code-fg); padding: 16px 18px; border-radius: 8px;
+    overflow-x: auto; line-height: 1.5; margin: 0 0 14px;
+  }
+  .install { font-size: 1rem; margin-top: 24px; }
+  .d { color: var(--dim); } .g { color: #4ade80; } .c { color: #22d3ee; font-weight: 600; } .y { color: #facc15; }
+  ol, ul { padding-left: 22px; margin: 0 0 14px; }
+  li { margin-bottom: 6px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 0; padding: 0; list-style: none; }
+  .steps li { border-top: 2px solid var(--accent); padding-top: 10px; margin: 0; }
+  .steps b { display: block; }
+  .steps span { color: var(--muted); font-size: 0.95rem; }
+  @media (max-width: 600px) { .steps { grid-template-columns: 1fr; } h1 { font-size: 2rem; } }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Own the code you ship.</h1>
+<p class="lede">Ownit asks one to three short questions about the code you just pushed, right in your terminal. If you can explain it, the push is verified.</p>
+<pre class="install">npm i -g getownit</pre>
+<div class="links">
+  <a href="https://github.com/Yoosseph/ownit">GitHub</a>
+  <a href="https://www.npmjs.com/package/getownit">npm</a>
+  <a href="https://github.com/Yoosseph/ownit#setup">Setup guide</a>
+</div>
+
+<h2>What it does</h2>
+<ul class="steps">
+  <li><b>Push</b><span>Use git as usual. A pre-push hook offers a debrief.</span></li>
+  <li><b>Explain</b><span>Answer 1–3 questions: why, how, and what's next.</span></li>
+  <li><b>Verify</b><span>Passing marks the commits verified on GitHub and your badge.</span></li>
+</ul>
+
+<h2>Example</h2>
+<pre><span class="d">$</span> git push
+Ownit <span class="d">(2 commits to octo/shop)</span> Debrief now? [Y/n] y
+
+<span class="c">Question 1/2</span> <span class="d">(why)</span>
+Why does checkout now retry some failed card payments instead of failing the order right away?
+<span class="d">&gt;</span> so temporary card errors dont lose the sale
+<span class="g">✓ Passed.</span>
+
+<span class="c">Question 2/2</span> <span class="d">(how)</span>
+How does the retry decide when to give up?
+<span class="d">&gt;</span> it retries
+<span class="y">Not quite yet.</span>
+You said it retries, but not when it stops.
+<span class="d">Here's another angle on the same topic:</span>
+
+<span class="c">Question 2/2</span> <span class="d">(how, follow-up)</span>
+Which payment errors are never retried?
+<span class="d">&gt;</span> permanent declines like a stolen card fail right away
+<span class="g">✓ Passed.</span>
+
+<span class="g">✓ Push verified.</span> <span class="d">2 commits owned. Nice work.</span></pre>
+<p>Rough answers are fine. A miss gets a hint and a new question. Type <code>s</code> to stop and finish later with <code>ownit interview</code>. Your push always goes through.</p>
+
+<h2>Why use it</h2>
+<p>Coding agents let you ship code faster than you can read it. Ownit turns understanding your own changes into a two-minute habit, while the change is still fresh.</p>
+<ul>
+  <li>Catch the parts of a change you merged but never really understood.</li>
+  <li>See who on a team still owes a debrief, on the repo page and as a GitHub check.</li>
+  <li>Show it with a README badge: verified vs. unverified commits.</li>
+</ul>
+<p>It is a learning tool. A passed debrief records understanding at the keyboard, not proof of authorship or correctness.</p>
+
+<h2>Setup</h2>
+<pre>npm i -g getownit
+ownit login       <span class="d"># sign in with GitHub</span>
+ownit key set     <span class="d"># Nebius or NVIDIA API key, stays on your machine</span>
+cd your-repo
+ownit init        <span class="d"># installs the hook, then the GitHub App</span></pre>
+<p>Needs Node 20+ and an API key from <a href="https://tokenfactory.nebius.com/">Nebius Token Factory</a> or <a href="https://build.nvidia.com/">NVIDIA</a>. Questions are written and graded by NVIDIA Nemotron.</p>
+
+<footer>MIT licensed · <a href="https://github.com/Yoosseph/ownit">github.com/Yoosseph/ownit</a></footer>
+
+</main>
+</body>
+</html>

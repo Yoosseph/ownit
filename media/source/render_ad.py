@@ -1,4 +1,4 @@
-"""Render a continuous laptop-to-CLI Ownit demo from captured application output."""
+"""Render terminal-only Ownit examples and a narrated CLI demo."""
 
 import argparse
 from functools import lru_cache
@@ -31,11 +31,6 @@ def clamp(x):
 
 def ease(x):
     return 1 - (1 - clamp(x)) ** 4
-
-
-def smooth(x):
-    x = clamp(x)
-    return x * x * (3 - 2 * x)
 
 
 @lru_cache(maxsize=64)
@@ -75,22 +70,7 @@ def reveal(image, value, x, y, size, elapsed, delay=0, color=WHITE, style="regul
 
 
 BASE = Image.new("RGB", (W, H), "#0d1117")
-PLATE_ORIGINAL = Image.open(ROOT / "docs/assets/ownit-laptop.png").convert("RGB")
-PLATE = PLATE_ORIGINAL.resize((W, H), Image.Resampling.LANCZOS)
-PLATE_SPEC = json.loads((SOURCE / "laptop-plate.json").read_text(encoding="utf-8"))
-QUAD = np.array(PLATE_SPEC["screenCornersOriginal"], dtype=float)
-QUAD *= np.array([W / PLATE_ORIGINAL.width, H / PLATE_ORIGINAL.height])
-FULL = np.array([[0, 0], [W, 0], [W, H], [0, H]], dtype=float)
 DEMO = json.loads((SOURCE / "cli-demo.json").read_text(encoding="utf-8"))
-
-
-def perspective(destination, source):
-    """Pillow's inverse homography: destination pixel -> source pixel."""
-    a, b = [], []
-    for (x, y), (u, v) in zip(destination, source):
-        a.extend([[x, y, 1, 0, 0, 0, -u*x, -u*y], [0, 0, 0, x, y, 1, -v*x, -v*y]])
-        b.extend([u, v])
-    return tuple(np.linalg.solve(np.asarray(a), np.asarray(b)))
 
 
 def mono(im, value, x, y, size=29, color=WHITE):
@@ -103,18 +83,10 @@ def mono(im, value, x, y, size=29, color=WHITE):
     put(im, value, x, y, size, color, "mono")
 
 
-def color_code(im, line, x, y, size=29):
-    import re
-    pieces = re.split(r"(\b(?:export|async|function|const|for|let|try|return|await|catch|if|throw)\b|\b\d+\b)", line)
-    keywords = {"export", "async", "function", "const", "for", "let", "try", "return", "await", "catch", "if", "throw"}
-    for part in pieces:
-        color = "#c9a7ff" if part in keywords else "#ecc48d" if part.isdigit() else "#cbd5df"
-        mono(im, part, x, y, size, color)
-        x += font(size, "mono").getlength(part)
-
-
 def terminal_text(t):
     # Shell entry is staged; all debrief output below comes from the actual CLI.
+    if t < 1.7:
+        return "$ git show --stat --oneline HEAD\n7ac4e21 Retry temporary payment failures\n src/checkout.ts | 14 ++++++++++----\n\n$ "
     command = "git push"[:max(0, int((t - 1.70) * 18))]
     text = "$ " + command
     if t >= 3.0:
@@ -130,7 +102,7 @@ def terminal_text(t):
 def screen(t):
     im = BASE.copy()
     d = ImageDraw.Draw(im)
-    # One persistent editor window: the terminal expands within it.
+    # One persistent terminal window throughout the demo.
     d.rectangle((0, 0, W, 57), fill="#1a2029")
     for i, c in enumerate(["#ff6a65", "#eabb55", "#5acb81"]):
         d.ellipse((24+i*27, 21, 36+i*27, 33), fill=c)
@@ -139,41 +111,14 @@ def screen(t):
     d.rectangle((0, H-32, W, H), fill="#182d27")
     put(im, "main     1 commit ready to push", 23, H-24, 17, "#a0b8af")
     put(im, "TypeScript     UTF-8", W-24, H-24, 17, "#a0b8af", align="right")
-    expand = smooth((t - 2.65) / 1.05)
-    terminal_y = round(657 - 546 * expand)
-    if terminal_y > 150:
-        editor = Image.new("RGB", (W, 600), "#0d1117")
-        ed = ImageDraw.Draw(editor)
-        ed.rectangle((0, 0, 245, 600), fill="#111820")
-        put(editor, "EXPLORER", 30, 28, 19, "#8d9baa")
-        for i, label in enumerate(["SHOP", "  src", "    checkout.ts", "    payments.ts", "  test", "  package.json"]):
-            if i == 2:
-                ed.rectangle((0, 102+i*39, 244, 137+i*39), fill="#203028")
-            put(editor, label, 26, 105+i*39, 22, MINT if i == 2 else "#a7b3bf")
-        ed.rectangle((245, 0, W, 55), fill="#151d26")
-        put(editor, "TS   checkout.ts", 275, 16, 23, "#d2dce6")
-        ed.line((245, 0, 490, 0), fill=MINT, width=3)
-        put(editor, "src  /  checkout.ts  /  chargeWithRetry", 280, 76, 20, "#6f8395")
-        for i, line in enumerate(DEMO["code"]):
-            y = 125 + i * 34
-            if i == 1:
-                ed.rectangle((266, y-5, W-30, y+29), fill="#162b22")
-                line = line[:min(len(line), max(0, int((t - .15) * 37)))]
-                if t < 1.0:
-                    cursor = 345 + font(29, "mono").getlength(line)
-                    ed.rectangle((cursor, y, cursor+2, y+27), fill=MINT)
-            mono(editor, str(i+1).rjust(2), 278, y, 24, "#516577")
-            color_code(editor, line, 345, y, 29)
-        visible = terminal_y - 57
-        im.paste(editor.crop((0, 0, W, visible)), (0, 57))
+    terminal_y = 111
     d.rectangle((0, terminal_y, W, H-33), fill="#0c1218")
     d.line((0, terminal_y, W, terminal_y), fill="#344337", width=2)
     put(im, "TERMINAL", 35, terminal_y+20, 19, WHITE)
     d.line((35, terminal_y+48, 145, terminal_y+48), fill=MINT, width=2)
     put(im, "zsh  ·  ~/shop", W-40, terminal_y+20, 19, "#81968d", align="right")
-    if expand > .98:
-        put(im, "checkout.ts", 30, 76, 19, "#81968d")
-        put(im, "Ownit / push debrief", W-40, 76, 19, MINT, align="right")
+    put(im, "checkout.ts", 30, 76, 19, "#81968d")
+    put(im, "Ownit / push debrief", W-40, 76, 19, MINT, align="right")
     body_y = terminal_y + 82
     raw = terminal_text(t)
     lines = raw.split("\n")
@@ -204,19 +149,44 @@ def screen(t):
 
 
 def frame(t):
-    ui = screen(t)
-    if t >= 1.75:
-        return ui
-    # A single perspective camera move, not a crossfade to another shot.
-    p = smooth((t - .18) / 1.57)
-    destination = QUAD * (1 - p) + FULL * p
-    camera = PLATE.transform((W, H), Image.Transform.PERSPECTIVE,
-        perspective(destination, QUAD), Image.Resampling.BICUBIC)
-    display = ui.transform((W, H), Image.Transform.PERSPECTIVE,
-        perspective(destination, FULL), Image.Resampling.BICUBIC)
-    mask = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(mask).polygon([tuple(point) for point in destination], fill=255)
-    return Image.composite(display, camera, mask)
+    return screen(t)
+
+
+def example(title, subtitle, lines):
+    """Readable, deterministic terminal artwork; commands are illustrative."""
+    im = BASE.copy()
+    d = ImageDraw.Draw(im)
+    put(im, "OWNIT / TERMINAL GUIDE", 100, 65, 24, MINT, "mono")
+    put(im, title, 100, 125, 64, WHITE, "bold")
+    put(im, subtitle, 100, 220, 30, MUTED)
+    d.rounded_rectangle((90, 305, W-90, 955), radius=18, fill="#0c1218", outline="#344337", width=2)
+    put(im, "~/shop   —   illustrative session", 125, 330, 23, MUTED, "mono")
+    d.line((90, 382, W-90, 382), fill="#344337", width=2)
+    for i, line in enumerate(lines):
+        mono(im, line, 130, 415+i*43, 29, MINT if line.startswith("$ ") else WHITE)
+    put(im, "Own the code you ship.", 100, 995, 25, MUTED)
+    return im
+
+
+def readme_images():
+    example("From setup to your first push.",
+            "Install once. Connect your repo. Debrief right in your terminal.", [
+        "$ npm i -g getownit", "$ ownit login",
+        "$ ownit key set", "$ ownit init", "",
+        "$ git push", "Ownit (1 commit to demo/shop) Debrief now? [Y/n] y", "",
+        "Question 1/1 (why)", "  Why retry temporary payment failures?",
+        "> So a temporary error doesn't lose the sale.",
+        "✓ Push verified. 1 commit owned. Nice work.",
+    ]).save(ROOT / "docs/assets/ownit-hero.png")
+    example("Push now. Explain it later.",
+            "Pending commits stay waiting until you finish their debrief.", [
+        "$ git push", "Ownit (1 commit to demo/shop) Debrief now? [Y/n] n", "",
+        "# Later, when you are ready:", "$ ownit interview", "",
+        "# Pick a waiting push and answer in your own words.",
+        "Question 1/1 (why)", "  Why retry temporary payment failures?",
+        "> So a temporary error doesn't lose the sale.", "✓ Passed.",
+        "✓ Push verified. 1 commit owned. Nice work.",
+    ]).save(ROOT / "docs/assets/ownit-understanding.png")
 
 
 def audio_mix(ffmpeg):
@@ -292,9 +262,10 @@ def main():
     args = parser.parse_args()
     TMP.mkdir(parents=True, exist_ok=True)
     captions()
+    readme_images()
     for scene in SCENES:
         frame(scene["start"] + scene["duration"] - .7).save(TMP / (scene["id"] + ".png"))
-    frame(0.10).save(OUT / "ownit-ad-poster.jpg", quality=95)
+    frame(15.0).save(OUT / "ownit-ad-poster.jpg", quality=95)
     frame(15.0).save(ROOT / "docs/assets/ownit-terminal-demo.png")
     if args.stills_only:
         return

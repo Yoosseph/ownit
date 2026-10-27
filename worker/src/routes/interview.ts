@@ -2,7 +2,7 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../app';
 import { attachCommits, creditEarlierWork, createPush, findPushForCommits, getPush, getRepoById, isVerified, recordAttempt, replaceQuestions, setPushStatus, type PushRow, type RepoRow } from '../db';
-import { judgeAnswer, MAX_ANSWER_CHARS, writeQuestions, type Question, type Verdict } from '../debrief';
+import { judgeAnswer, MAX_ANSWER_CHARS, writeDebrief, type Question, type Verdict } from '../debrief';
 import { cappedDemoModel, LIMITS, rateLimit } from '../limits';
 import { log, type LogFields } from '../log';
 import { GitHubError } from '../github';
@@ -179,8 +179,9 @@ interview.post('/start', async (c) => {
 
   const n = questionCount(Math.max(body.changed_lines, countChangedLines(body.diff)));
   let questions: Question[];
+  let summary: string | undefined;
   try {
-    questions = await writeQuestions(modelFor(c), n, { commits: body.commits, diff: body.diff, truncated: body.diff_truncated });
+    ({ questions, summary } = await writeDebrief(modelFor(c), n, { commits: body.commits, diff: body.diff, truncated: body.diff_truncated }));
   } catch (error) {
     return providerFailure(c, error, push.id, 'interview.start', { repo: body.repo }, started);
   }
@@ -202,6 +203,8 @@ interview.post('/start', async (c) => {
     total: n,
     session: await sealState(c, state),
     questions: questions.map(publicQuestion),
+    // One sentence on what the push changed, so the developer knows which work this is.
+    summary: summary ?? null,
     // The CLI tells the developer before they answer.
     answers_public: showsAnswers(repo),
   });

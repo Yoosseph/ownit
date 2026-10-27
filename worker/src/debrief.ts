@@ -11,6 +11,7 @@ const questionSchema = z.object({
   reference: z.string().trim().min(10).max(2000),
 });
 export const questionsReplySchema = z.object({ questions: z.array(questionSchema).min(1) });
+const summarySchema = z.object({ summary: z.string().trim().min(1).max(300) });
 export const gradeReplySchema = z.object({ pass: z.boolean(), feedback: z.string().trim().min(1).max(800) });
 
 export type Question = z.infer<typeof questionSchema>;
@@ -62,8 +63,22 @@ export function validateGrade(value: unknown): Grade | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
-export function writeQuestions(model: ChatModel, n: number, push: PushContext): Promise<Question[]> {
-  return callJson(model, questionWriterPrompt(n, push), 4000, (v) => validateQuestions(v, n));
+/** The model's one-sentence summary of the push, or undefined when it wrote none worth showing. */
+export function summaryOf(value: unknown): string | undefined {
+  const parsed = summarySchema.safeParse(value);
+  return parsed.success ? parsed.data.summary : undefined;
+}
+
+/** The questions for a push, plus a one-sentence summary of it when the model wrote one. */
+export function writeDebrief(model: ChatModel, n: number, push: PushContext): Promise<{ questions: Question[]; summary?: string }> {
+  return callJson(model, questionWriterPrompt(n, push), 4000, (v) => {
+    const questions = validateQuestions(v, n);
+    return questions && { questions, summary: summaryOf(v) };
+  });
+}
+
+export async function writeQuestions(model: ChatModel, n: number, push: PushContext): Promise<Question[]> {
+  return (await writeDebrief(model, n, push)).questions;
 }
 
 export async function gradeAnswer(model: ChatModel, question: Question, answer: string): Promise<Grade> {

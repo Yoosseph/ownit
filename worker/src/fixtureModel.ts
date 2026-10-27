@@ -61,7 +61,7 @@ export const fixtureModel: ChatModel = {
         return followUp(between(prompt.user, 'missed_question'));
       case 'questions':
         // All three kinds; the caller keeps as many as it asked for.
-        return JSON.stringify({ questions: KINDS.map((kind) => ({ kind, ...QUESTIONS[kind] })) });
+        return JSON.stringify({ summary: 'Changes how order totals are calculated.', questions: KINDS.map((kind) => ({ kind, ...QUESTIONS[kind] })) });
     }
   },
 };

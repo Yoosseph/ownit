@@ -11,5 +11,7 @@ If the push only changes documentation, comments, wording, or configuration, ask
 
 For each question, also write a reference: one to three sentences on the main idea a good answer touches. It lists acceptable directions, any ONE of which is enough; it is never a checklist. For a "why" question, you cannot know the developer's real reason, so list likely reasons and say that any honest reason that fits the change is fine. For a "next" question, list two or three acceptable directions.
 
+Also write a summary: one plain sentence saying what this push changes, so a developer who has forgotten which commit this was recognizes it, such as "Removes the duplicate install step from the README's setup section." Name the feature or area, not file paths.
+
 Reply with JSON only:
-{"questions":[{"kind":"why|how|next","question":"...","reference":"..."}]}
+{"summary":"...","questions":[{"kind":"why|how|next","question":"...","reference":"..."}]}

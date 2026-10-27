@@ -183,6 +183,9 @@ describe('public page', () => {
   it('404s for untracked repos and leaves API routes alone', async () => {
     expect((await call(testEnv(), 'GET', '/octo/nope')).status).toBe(404);
     expect((await call(testEnv(), 'GET', '/healthz')).json).toEqual({ ok: true });
+    const icon = await call(testEnv(), 'GET', '/favicon.ico');
+    expect(icon.status).toBe(200);
+    expect(icon.headers.get('content-type')).toBe('image/svg+xml');
   });
 
   it('escapes HTML', () => {

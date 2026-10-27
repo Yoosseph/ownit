@@ -1,4 +1,5 @@
 import type { PushStatus, RepoRow } from './db';
+import { FAVICON_LINK } from './favicon';
 import { badgeImageUrl, repoPageUrl } from './links';
 import type { RepoStats, Stats } from './stats';
 
@@ -244,6 +245,7 @@ export function renderRepoPage(origin: string, repo: RepoRow, stats: RepoStats, 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(full)} · Ownit</title>
+${FAVICON_LINK}
 <meta name="description" content="How much of ${esc(full)} its developers have debriefed with Ownit.">
 <style>
 ${STYLES}

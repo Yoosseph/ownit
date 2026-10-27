@@ -122,6 +122,13 @@ describe('push webhook', () => {
     expect(env.DB.raw.prepare('SELECT status, head_sha FROM pushes').get()).toEqual({ status: 'pending', head_sha: sha(3) });
   });
 
+  it('credits a bot commit to whoever pushed or merged it', async () => {
+    const env = env4();
+    const bump = { id: sha(3), message: 'Bump actions/checkout from 6 to 7', author: { username: 'dependabot[bot]', name: 'dependabot[bot]' } };
+    await deliver(env, pushEvent({ commits: [bump] }));
+    expect(env.DB.raw.prepare('SELECT author_login FROM commits WHERE sha = ?').get(sha(3))).toEqual({ author_login: 'mona' });
+  });
+
   it('handles a large push in a constant number of queries', async () => {
     const env = env4();
     const shas = Array.from({ length: 120 }, (_, i) => sha(1000 + i));

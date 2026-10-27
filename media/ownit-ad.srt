@@ -1,33 +1,58 @@
 1
-00:00:00,559 --> 00:00:01,460
-Make your change.
+00:00:00,550 --> 00:00:06,913
+You know that feeling when your coding
+agent finishes a change, and it works, but
+you couldn't quite explain it yet?
 
 2
-00:00:01,822 --> 00:00:02,547
-Push your code.
+00:00:08,380 --> 00:00:09,822
+That's why we made Ownit.
 
 3
-00:00:03,889 --> 00:00:06,421
-Ownit asks a short question about the
-change.
+00:00:10,106 --> 00:00:15,141
+When you push, it asks a few short
+questions about what changed, right in
+your terminal.
 
 4
-00:00:08,389 --> 00:00:10,051
-Why retry failed payments?
+00:00:16,180 --> 00:00:18,175
+Say you added payment retries.
 
 5
-00:00:10,400 --> 00:00:13,054
+00:00:18,459 --> 00:00:19,112
+Why?
+
+6
+00:00:19,393 --> 00:00:22,072
 So a temporary error doesn't lose the
 sale.
 
-6
-00:00:15,389 --> 00:00:16,073
-Explain it.
-
 7
-00:00:16,421 --> 00:00:16,820
-Ownit.
+00:00:22,354 --> 00:00:24,414
+Just explain it in your own words.
 
 8
-00:00:18,889 --> 00:00:19,967
-Own the code you ship.
+00:00:25,480 --> 00:00:30,027
+You get feedback, and a passing debrief
+marks those commits as verified.
+
+9
+00:00:30,312 --> 00:00:31,241
+Busy right now?
+
+10
+00:00:31,522 --> 00:00:33,201
+You can always come back later.
+
+11
+00:00:34,247 --> 00:00:36,162
+Keep building with your coding agent.
+
+12
+00:00:36,447 --> 00:00:39,455
+Give yourself a moment to understand what
+you're shipping.
+
+13
+00:00:39,736 --> 00:00:40,678
+That's Ownit.

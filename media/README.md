@@ -4,8 +4,9 @@
 
 ![Ownit terminal showing a completed debrief](ownit-ad-poster.jpg)
 
-A 22.5-second terminal-only product demo with a brief, smooth male narrator. It opens
-on a commit summary, then types `git push`; Ownit's prompt appears at three seconds.
+A 41.3-second terminal-only product demo with a conversational female voiceover. The pitch
+starts with shipping an AI-assisted change you cannot yet explain, then shows how Ownit helps.
+It opens on a commit summary, then types `git push`; Ownit's prompt appears around 6.5 seconds.
 One terminal session follows a question, typed answer, and verified result. Quiet original
 music sits under the narration. The closing installation command appears over the terminal.
 There are no people, photographs, or laptop shots.
@@ -17,12 +18,13 @@ The mix targets -16 LUFS with a -1 dBTP ceiling. Captions follow the spoken word
 
 | Time | Picture |
 | --- | --- |
-| 0–1.75s | Terminal shows the example commit summary. |
-| 1.75–3.7s | `git push`, then the Ownit prompt; the same terminal stays in view. |
-| 3.7–8s | Captured CLI output introduces the debrief and its question. |
-| 8–15s | An answer is typed, checked, and marked verified. |
-| 15–18.5s | The result holds while the narrator says, “Explain it. Own it.” |
-| 18.5–22.5s | “Own the code you ship,” installation command, and repository URL. |
+| 0–8s | Commit summary, `git push`, and the Ownit prompt introduce the problem. |
+| 8–15.8s | Captured CLI output introduces the debrief and its question. |
+| 15.8–25.1s | The payment-retry answer is typed and checked. |
+| 25.1–33.9s | The verified result holds while the voice explains feedback and returning later. |
+| 33.9–41.3s | “Own the code you ship,” installation command, and repository URL close the pitch. |
+
+Terminal animation follows the generated speech timeline, leaving more time to read each step.
 
 ## Demo provenance
 
@@ -47,7 +49,7 @@ steps; follow the README setup instructions for GitHub sign-in and App installat
 Historical image prompts and the unused laptop plate remain in source assets but are not
 used by the README or video renderer.
 
-The voice is AI-generated with Microsoft's `en-US-AndrewNeural` voice at `-8%` rate and `-2Hz`
+The voice is AI-generated with Microsoft's `en-US-AvaNeural` voice at `-5%` rate and `+0Hz`
 pitch through [edge-tts](https://github.com/rany2/edge-tts). The script spells “Own it” for
 pronunciation; captions display “Ownit.” No person's voice was cloned. The original score uses
 synthesized tones, with no external recordings or samples.

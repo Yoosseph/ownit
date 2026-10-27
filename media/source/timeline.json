@@ -1,231 +1,566 @@
 {
-  "voice": "en-US-AndrewNeural",
-  "rate": "-8%",
-  "pitch": "-2Hz",
-  "duration": 22.5,
+  "voice": "en-US-AvaNeural",
+  "rate": "-5%",
+  "pitch": "+0Hz",
+  "duration": 41.333333,
   "scenes": [
     {
       "id": "intro",
-      "minimum_seconds": 3.5,
-      "speech": "Make your change. Push your code.",
+      "minimum_seconds": 8.0,
+      "speech": "You know that feeling when your coding agent finishes a change, and it works, but you couldn't quite explain it yet?",
       "start": 0.0,
-      "duration": 3.5,
+      "duration": 8.0,
       "words": [
         {
-          "text": "Make",
-          "start": 0.558708,
-          "end": 0.721749
+          "text": "You",
+          "start": 0.55,
+          "end": 0.773666
+        },
+        {
+          "text": "know",
+          "start": 0.786833,
+          "end": 0.944708
+        },
+        {
+          "text": "that",
+          "start": 0.957875,
+          "end": 1.15525
+        },
+        {
+          "text": "feeling",
+          "start": 1.168416,
+          "end": 1.536832
+        },
+        {
+          "text": "when",
+          "start": 1.55,
+          "end": 1.681583
         },
         {
           "text": "your",
-          "start": 0.735333,
-          "end": 0.844041
+          "start": 1.69475,
+          "end": 1.8395
+        },
+        {
+          "text": "coding",
+          "start": 1.852625,
+          "end": 2.3
+        },
+        {
+          "text": "agent",
+          "start": 2.313166,
+          "end": 2.642124
+        },
+        {
+          "text": "finishes",
+          "start": 2.65525,
+          "end": 3.089458
+        },
+        {
+          "text": "a",
+          "start": 3.102625,
+          "end": 3.181583
         },
         {
           "text": "change",
-          "start": 0.857625,
-          "end": 1.360333
+          "start": 3.19475,
+          "end": 3.786875
         },
         {
-          "text": "Push",
-          "start": 1.822291,
-          "end": 1.971749
+          "text": "and",
+          "start": 3.931583,
+          "end": 4.089458
         },
         {
-          "text": "your",
-          "start": 1.985333,
-          "end": 2.107624
+          "text": "it",
+          "start": 4.102625,
+          "end": 4.19475
         },
         {
-          "text": "code",
-          "start": 2.121208,
-          "end": 2.447291
+          "text": "works",
+          "start": 4.207875,
+          "end": 4.707875
+        },
+        {
+          "text": "but",
+          "start": 4.94475,
+          "end": 5.155291
+        },
+        {
+          "text": "you",
+          "start": 5.181583,
+          "end": 5.260541
+        },
+        {
+          "text": "couldn't",
+          "start": 5.273666,
+          "end": 5.576291
+        },
+        {
+          "text": "quite",
+          "start": 5.589458,
+          "end": 5.905249
+        },
+        {
+          "text": "explain",
+          "start": 5.918416,
+          "end": 6.365791
+        },
+        {
+          "text": "it",
+          "start": 6.378958,
+          "end": 6.497374
+        },
+        {
+          "text": "yet",
+          "start": 6.510541,
+          "end": 6.813166
         }
       ]
     },
     {
       "id": "debrief",
-      "minimum_seconds": 4.5,
-      "speech": "Own it asks a short question about the change.",
-      "start": 3.5,
-      "duration": 4.5,
+      "minimum_seconds": 7.0,
+      "speech": "That's why we made Own it. When you push, it asks a few short questions about what changed, right in your terminal.",
+      "start": 8.0,
+      "duration": 7.8,
       "words": [
         {
+          "text": "That's",
+          "start": 8.38,
+          "end": 8.722125
+        },
+        {
+          "text": "why",
+          "start": 8.73525,
+          "end": 8.88
+        },
+        {
+          "text": "we",
+          "start": 8.893166,
+          "end": 9.024749
+        },
+        {
+          "text": "made",
+          "start": 9.037875,
+          "end": 9.287875
+        },
+        {
           "text": "Own",
-          "start": 3.888708,
-          "end": 4.051749
+          "start": 9.301041,
+          "end": 9.445791
         },
         {
           "text": "it",
-          "start": 4.065333,
-          "end": 4.174041
+          "start": 9.458958,
+          "end": 9.722124
+        },
+        {
+          "text": "When",
+          "start": 10.106333,
+          "end": 10.329999
+        },
+        {
+          "text": "you",
+          "start": 10.343166,
+          "end": 10.435291
+        },
+        {
+          "text": "push",
+          "start": 10.448416,
+          "end": 10.856291
+        },
+        {
+          "text": "it",
+          "start": 11.014208,
+          "end": 11.093166
         },
         {
           "text": "asks",
-          "start": 4.187625,
-          "end": 4.59525
+          "start": 11.106333,
+          "end": 11.422124
         },
         {
           "text": "a",
-          "start": 4.608791,
-          "end": 4.663124
+          "start": 11.448416,
+          "end": 11.566832
+        },
+        {
+          "text": "few",
+          "start": 11.58,
+          "end": 11.843166
         },
         {
           "text": "short",
-          "start": 4.67675,
-          "end": 5.016416
+          "start": 11.856333,
+          "end": 12.172124
         },
         {
-          "text": "question",
-          "start": 5.03,
-          "end": 5.464791
+          "text": "questions",
+          "start": 12.18525,
+          "end": 12.658916
         },
         {
           "text": "about",
-          "start": 5.478375,
-          "end": 5.69575
+          "start": 12.672125,
+          "end": 12.922125
         },
         {
-          "text": "the",
-          "start": 5.709333,
-          "end": 5.777249
+          "text": "what",
+          "start": 12.93525,
+          "end": 13.132625
         },
         {
-          "text": "change",
-          "start": 5.790875,
-          "end": 6.32075
+          "text": "changed",
+          "start": 13.145791,
+          "end": 13.685249
+        },
+        {
+          "text": "right",
+          "start": 14.093166,
+          "end": 14.316832
+        },
+        {
+          "text": "in",
+          "start": 14.33,
+          "end": 14.408958
+        },
+        {
+          "text": "your",
+          "start": 14.422125,
+          "end": 14.51425
+        },
+        {
+          "text": "terminal",
+          "start": 14.527375,
+          "end": 15.040541
         }
       ]
     },
     {
       "id": "answer",
-      "minimum_seconds": 7.0,
-      "speech": "Why retry failed payments? So a temporary error doesn't lose the sale.",
-      "start": 8.0,
-      "duration": 7.0,
+      "minimum_seconds": 8.0,
+      "speech": "Say you added payment retries. Why? So a temporary error doesn't lose the sale. Just explain it in your own words.",
+      "start": 15.8,
+      "duration": 9.3,
       "words": [
         {
+          "text": "Say",
+          "start": 16.18,
+          "end": 16.548416
+        },
+        {
+          "text": "you",
+          "start": 16.561583,
+          "end": 16.679999
+        },
+        {
+          "text": "added",
+          "start": 16.693166,
+          "end": 16.982624
+        },
+        {
+          "text": "payment",
+          "start": 16.995791,
+          "end": 17.390541
+        },
+        {
+          "text": "retries",
+          "start": 17.403666,
+          "end": 18.074707
+        },
+        {
           "text": "Why",
-          "start": 8.388708,
-          "end": 8.565333
-        },
-        {
-          "text": "retry",
-          "start": 8.578916,
-          "end": 9.027291
-        },
-        {
-          "text": "failed",
-          "start": 9.040875,
-          "end": 9.339791
-        },
-        {
-          "text": "payments",
-          "start": 9.353375,
-          "end": 9.951208
+          "start": 18.458958,
+          "end": 19.011583
         },
         {
           "text": "So",
-          "start": 10.399583,
-          "end": 10.549041
+          "start": 19.393166,
+          "end": 19.708957
         },
         {
           "text": "a",
-          "start": 10.562625,
-          "end": 10.616958
+          "start": 19.722125,
+          "end": 19.801083
         },
         {
           "text": "temporary",
-          "start": 10.630541,
-          "end": 11.187624
+          "start": 19.814208,
+          "end": 20.419458
         },
         {
           "text": "error",
-          "start": 11.201208,
-          "end": 11.554458
+          "start": 20.432625,
+          "end": 20.801041
         },
         {
           "text": "doesn't",
-          "start": 11.75825,
-          "end": 12.1115
+          "start": 20.814208,
+          "end": 21.143166
         },
         {
           "text": "lose",
-          "start": 12.125125,
-          "end": 12.383291
+          "start": 21.156333,
+          "end": 21.340541
         },
         {
           "text": "the",
-          "start": 12.396833,
-          "end": 12.491958
+          "start": 21.353666,
+          "end": 21.445791
         },
         {
           "text": "sale",
-          "start": 12.505541,
-          "end": 12.953916
+          "start": 21.458958,
+          "end": 21.972124
+        },
+        {
+          "text": "Just",
+          "start": 22.353666,
+          "end": 22.695791
+        },
+        {
+          "text": "explain",
+          "start": 22.708958,
+          "end": 23.129999
+        },
+        {
+          "text": "it",
+          "start": 23.143166,
+          "end": 23.287916
+        },
+        {
+          "text": "in",
+          "start": 23.301041,
+          "end": 23.393166
+        },
+        {
+          "text": "your",
+          "start": 23.406333,
+          "end": 23.537916
+        },
+        {
+          "text": "own",
+          "start": 23.551041,
+          "end": 23.735249
+        },
+        {
+          "text": "words",
+          "start": 23.748416,
+          "end": 24.314207
         }
       ]
     },
     {
       "id": "verified",
-      "minimum_seconds": 3.5,
-      "speech": "Explain it. Own it.",
-      "start": 15.0,
-      "duration": 3.5,
+      "minimum_seconds": 7.0,
+      "speech": "You get feedback, and a passing debrief marks those commits as verified. Busy right now? You can always come back later.",
+      "start": 25.1,
+      "duration": 8.766666666666667,
       "words": [
         {
-          "text": "Explain",
-          "start": 15.388708,
-          "end": 15.809916
+          "text": "You",
+          "start": 25.48,
+          "end": 25.690541
         },
         {
-          "text": "it",
-          "start": 15.823458,
-          "end": 15.972916
+          "text": "get",
+          "start": 25.703666,
+          "end": 25.887874
         },
         {
-          "text": "Own",
-          "start": 16.421291,
-          "end": 16.570749
+          "text": "feedback",
+          "start": 25.901041,
+          "end": 26.493166
         },
         {
-          "text": "it",
-          "start": 16.584333,
-          "end": 16.720208
+          "text": "and",
+          "start": 26.611583,
+          "end": 26.756333
+        },
+        {
+          "text": "a",
+          "start": 26.782625,
+          "end": 26.848416
+        },
+        {
+          "text": "passing",
+          "start": 26.861583,
+          "end": 27.387916
+        },
+        {
+          "text": "debrief",
+          "start": 27.401041,
+          "end": 27.927374
+        },
+        {
+          "text": "marks",
+          "start": 27.940541,
+          "end": 28.308957
+        },
+        {
+          "text": "those",
+          "start": 28.322125,
+          "end": 28.558958
+        },
+        {
+          "text": "commits",
+          "start": 28.572125,
+          "end": 29.006333
+        },
+        {
+          "text": "as",
+          "start": 29.019458,
+          "end": 29.164208
+        },
+        {
+          "text": "verified",
+          "start": 29.177375,
+          "end": 29.927375
+        },
+        {
+          "text": "Busy",
+          "start": 30.311583,
+          "end": 30.614208
+        },
+        {
+          "text": "right",
+          "start": 30.627375,
+          "end": 30.811583
+        },
+        {
+          "text": "now",
+          "start": 30.82475,
+          "end": 31.140541
+        },
+        {
+          "text": "You",
+          "start": 31.522125,
+          "end": 31.7195
+        },
+        {
+          "text": "can",
+          "start": 31.732625,
+          "end": 31.903666
+        },
+        {
+          "text": "always",
+          "start": 31.916833,
+          "end": 32.245791
+        },
+        {
+          "text": "come",
+          "start": 32.258958,
+          "end": 32.443166
+        },
+        {
+          "text": "back",
+          "start": 32.456333,
+          "end": 32.679999
+        },
+        {
+          "text": "later",
+          "start": 32.693166,
+          "end": 33.101041
         }
       ]
     },
     {
       "id": "close",
-      "minimum_seconds": 4.0,
-      "speech": "Own the code you ship.",
-      "start": 18.5,
-      "duration": 4.0,
+      "minimum_seconds": 6.0,
+      "speech": "Keep building with your coding agent. Give yourself a moment to understand what you're shipping. That's Own it.",
+      "start": 33.866667,
+      "duration": 7.466666666666667,
       "words": [
         {
+          "text": "Keep",
+          "start": 34.246667,
+          "end": 34.549292
+        },
+        {
+          "text": "building",
+          "start": 34.562458,
+          "end": 34.904583
+        },
+        {
+          "text": "with",
+          "start": 34.917708,
+          "end": 35.049291
+        },
+        {
+          "text": "your",
+          "start": 35.062458,
+          "end": 35.180874
+        },
+        {
+          "text": "coding",
+          "start": 35.194042,
+          "end": 35.549292
+        },
+        {
+          "text": "agent",
+          "start": 35.562458,
+          "end": 36.062458
+        },
+        {
+          "text": "Give",
+          "start": 36.446667,
+          "end": 36.670333
+        },
+        {
+          "text": "yourself",
+          "start": 36.6835,
+          "end": 37.07825
+        },
+        {
+          "text": "a",
+          "start": 37.091417,
+          "end": 37.144042
+        },
+        {
+          "text": "moment",
+          "start": 37.157208,
+          "end": 37.617749
+        },
+        {
+          "text": "to",
+          "start": 37.630875,
+          "end": 37.749291
+        },
+        {
+          "text": "understand",
+          "start": 37.762458,
+          "end": 38.472999
+        },
+        {
+          "text": "what",
+          "start": 38.486125,
+          "end": 38.617708
+        },
+        {
+          "text": "you're",
+          "start": 38.630875,
+          "end": 38.749291
+        },
+        {
+          "text": "shipping",
+          "start": 38.762458,
+          "end": 39.354583
+        },
+        {
+          "text": "That's",
+          "start": 39.736125,
+          "end": 40.104541
+        },
+        {
           "text": "Own",
-          "start": 18.888708,
-          "end": 18.997416
+          "start": 40.117708,
+          "end": 40.288749
         },
         {
-          "text": "the",
-          "start": 19.010958,
-          "end": 19.092499
-        },
-        {
-          "text": "code",
-          "start": 19.106083,
-          "end": 19.377833
-        },
-        {
-          "text": "you",
-          "start": 19.391416,
-          "end": 19.472957
-        },
-        {
-          "text": "ship",
-          "start": 19.486541,
-          "end": 19.866957
+          "text": "it",
+          "start": 40.301917,
+          "end": 40.57825
         }
       ]
     }

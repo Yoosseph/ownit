@@ -1,12 +1,12 @@
 {
-  "voice": "en-US-AndrewNeural",
-  "rate": "-8%",
-  "pitch": "-2Hz",
+  "voice": "en-US-AvaNeural",
+  "rate": "-5%",
+  "pitch": "+0Hz",
   "scenes": [
-    {"id": "intro", "minimum_seconds": 3.5, "speech": "Make your change. Push your code."},
-    {"id": "debrief", "minimum_seconds": 4.5, "speech": "Own it asks a short question about the change."},
-    {"id": "answer", "minimum_seconds": 7.0, "speech": "Why retry failed payments? So a temporary error doesn't lose the sale."},
-    {"id": "verified", "minimum_seconds": 3.5, "speech": "Explain it. Own it."},
-    {"id": "close", "minimum_seconds": 4.0, "speech": "Own the code you ship."}
+    {"id": "intro", "minimum_seconds": 8.0, "speech": "You know that feeling when your coding agent finishes a change, and it works, but you couldn't quite explain it yet?"},
+    {"id": "debrief", "minimum_seconds": 7.0, "speech": "That's why we made Own it. When you push, it asks a few short questions about what changed, right in your terminal."},
+    {"id": "answer", "minimum_seconds": 8.0, "speech": "Say you added payment retries. Why? So a temporary error doesn't lose the sale. Just explain it in your own words."},
+    {"id": "verified", "minimum_seconds": 7.0, "speech": "You get feedback, and a passing debrief marks those commits as verified. Busy right now? You can always come back later."},
+    {"id": "close", "minimum_seconds": 6.0, "speech": "Keep building with your coding agent. Give yourself a moment to understand what you're shipping. That's Own it."}
   ]
 }

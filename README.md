@@ -1,6 +1,6 @@
 # Ownit
 
-![A developer thinking through her work at a laptop in a naturally lit home office.](docs/assets/ownit-hero.png)
+![Illustrative terminal walkthrough from installing Ownit to a verified push.](docs/assets/ownit-hero.png)
 
 ## Own the code you ship.
 
@@ -30,7 +30,7 @@ questions and grades your answers. Debrief now or return later with `ownit inter
 
 ![Illustrative Ownit terminal session showing a retry explanation and a verified push.](docs/assets/ownit-terminal-demo.png)
 
-*Illustrative session, based on the example below. Questions and grading vary with your change.*
+*Illustrative terminal examples. The image uses a one-question demo; the transcript below shows a two-question push. Setup includes browser sign-in and GitHub App installation. Questions and grading vary with your change.*
 
 ```text
 $ git push
@@ -55,7 +55,7 @@ Coding agents let you ship code faster than you can read it. Ownit makes underst
 code a habit: a two-minute check while the change is still fresh. Rough answers are fine. A miss
 gets a hint and a new question, and you can always stop and finish later.
 
-![Two developers discussing a change together at a desk with a laptop and notebook.](docs/assets/ownit-understanding.png)
+![Illustrative terminal session showing how to skip a debrief and return with ownit interview.](docs/assets/ownit-understanding.png)
 
 | Why | How | Next |
 | --- | --- | --- |
@@ -184,7 +184,7 @@ key and repo setup are kept across updates.
 
 ## More
 
-The [launch campaign](media/README.md) includes the ad video, poster, captions, artwork prompts,
+The [launch campaign](media/README.md) includes the ad video, poster, captions, terminal examples,
 and source renderer.
 
 Privacy, self-hosting, how it works and limitations: [docs/DETAILS.md](docs/DETAILS.md).

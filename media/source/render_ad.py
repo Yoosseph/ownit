@@ -149,7 +149,10 @@ def screen(t):
 
 
 def frame(t):
-    return screen(t)
+    # Follow the spoken sections while preserving the captured CLI event order.
+    spoken = [scene["start"] for scene in SCENES] + [DURATION]
+    demo = [0, 3.7, 8.9, 12.4, 18.5, 22.5]
+    return screen(float(np.interp(t, spoken, demo)))
 
 
 def example(title, subtitle, lines):
@@ -265,8 +268,8 @@ def main():
     readme_images()
     for scene in SCENES:
         frame(scene["start"] + scene["duration"] - .7).save(TMP / (scene["id"] + ".png"))
-    frame(15.0).save(OUT / "ownit-ad-poster.jpg", quality=95)
-    frame(15.0).save(ROOT / "docs/assets/ownit-terminal-demo.png")
+    screen(15.0).save(OUT / "ownit-ad-poster.jpg", quality=95)
+    screen(15.0).save(ROOT / "docs/assets/ownit-terminal-demo.png")
     if args.stills_only:
         return
     if not args.ffmpeg:

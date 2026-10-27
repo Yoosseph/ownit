@@ -109,7 +109,7 @@ async function registerRepo(repo: string, out: Writable): Promise<number> {
     if (registered.page_url) out.write(`\nYour repo's page: ${registered.page_url}\n`);
     // The page URL carries the server's public origin, which can differ from the API address.
     const origin = registered.page_url ? new URL(registered.page_url).origin : api.server;
-    out.write(`\nAdd the badge to your README (run "ownit badge" to see this again):\n  ${badgeMarkdown(origin, registered.repo)}\n`);
+    out.write(`\nAdd the badge to your README.md (a README.txt will not show it; run "ownit badge" to see this again):\n  ${badgeMarkdown(origin, registered.repo)}\n`);
   } catch (error) {
     out.write(`${c.yellow('Ownit:')} the hook is installed, but registering ${repo} failed: ${sentence(errorMessage(error))}\n`);
     out.write('Run "ownit init" again once that is fixed.\n');

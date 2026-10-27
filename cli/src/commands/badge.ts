@@ -15,7 +15,7 @@ export function badgeCommand(): number {
     process.stderr.write('Ownit: no GitHub remote found. Run this in a repo set up with "ownit init".\n');
     return 1;
   }
-  process.stderr.write(`Add this to your README to show ${repo}'s Ownit badge:\n\n`);
+  process.stderr.write(`Add this to your README.md to show ${repo}'s Ownit badge (a README.txt will not show it):\n\n`);
   process.stdout.write(`${badgeMarkdown(serverUrl(readConfig()), repo)}\n`);
   return 0;
 }

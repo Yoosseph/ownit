@@ -8,7 +8,6 @@
 your change, right in your terminal. Build understanding alongside your AI coding workflow.
 
 [Watch the narrated ad](media/ownit-ad-1080p.mp4) · [Get started](#setup) · [See how it works](docs/DETAILS.md)
-
 [![Ownit](https://ownit.ownit-worker.workers.dev/badge/Yoosseph/ownit.svg)](https://ownit.ownit-worker.workers.dev/Yoosseph/ownit)
 [![CI](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/getownit?logo=npm&color=CB3837)](https://www.npmjs.com/package/getownit)

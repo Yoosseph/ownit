@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { badgeSvg, repoBadge } from '../badge';
 import { getRepo, listQuestionsForPushes, listRecentPushes } from '../db';
+import { FAVICON_LINK } from '../favicon';
 import { withoutTrailingSlash } from '../links';
 import { renderRepoPage, type PagePush } from '../page';
 import { repoStats } from '../stats';
@@ -27,7 +28,7 @@ publicPages.get('/:owner/:repo', async (c) => {
   const name = c.req.param('repo');
   if (!NAME.test(owner) || !NAME.test(name)) return c.notFound();
   const repo = await getRepo(c.env.DB, owner, name);
-  if (!repo) return c.html('<!doctype html><title>Not tracked · Ownit</title><p>This repo is not tracked by Ownit.</p>', 404);
+  if (!repo) return c.html(`<!doctype html><title>Not tracked · Ownit</title>${FAVICON_LINK}<p>This repo is not tracked by Ownit.</p>`, 404);
 
   const stats = await repoStats(c.env.DB, repo.id);
   const recent = await listRecentPushes(c.env.DB, repo.id);

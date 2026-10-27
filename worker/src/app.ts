@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Env } from './env';
 import { createGitHub, type GitHub } from './github';
+import { FAVICON_SVG } from './favicon';
 import { log } from './log';
 import { PROVIDERS } from './model';
 import { auth } from './routes/auth';
@@ -33,6 +34,10 @@ export function createApp(deps: Deps = {}) {
 
   app.get('/', (c) => c.text('Ownit: debrief the code you ship.\n'));
   app.get('/healthz', (c) => c.json({ ok: true }));
+  // Browsers ask for /favicon.ico on their own; both paths serve the SVG.
+  for (const path of ['/favicon.svg', '/favicon.ico']) {
+    app.get(path, (c) => c.body(FAVICON_SVG, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=86400' }));
+  }
   // Which model each provider runs on this server, for `ownit model`. Public: it holds no secrets.
   app.get('/models', (c) =>
     c.json({

@@ -22,6 +22,9 @@ export interface DebriefOutcome {
 const MAX_ANSWER_CHARS = 2000;
 export const RESUME_HINT = 'Run "ownit interview" when you\'re ready.';
 
+/** At most this many commits are listed before "and N more". */
+const MAX_LISTED_COMMITS = 5;
+
 const KIND_LABEL = { why: 'why', how: 'how', next: "what's next" } as const;
 
 /** What every request in one debrief shares. The sealed session token changes with each answer. */
@@ -77,6 +80,18 @@ async function withRetry<T>(prompter: Prompter, request: () => Promise<T>): Prom
       if (again === null || /^n/i.test(again.trim())) throw error;
     }
   }
+}
+
+/** Lists the commits under debrief, newest first, so the developer knows which work the questions are about. */
+function printCommits(out: Writable, commits: Commit[]) {
+  const c = paint(out);
+  const newestFirst = [...commits].reverse();
+  for (const commit of newestFirst.slice(0, MAX_LISTED_COMMITS)) {
+    const subject = commit.message.split('\n')[0]!.trim();
+    out.write(`  ${c.yellow(commit.sha.slice(0, 7))} ${subject}\n`);
+  }
+  const more = commits.length - MAX_LISTED_COMMITS;
+  if (more > 0) out.write(c.dim(`  …and ${more} more ${plural(more, 'commit')}\n`));
 }
 
 function printQuestion(out: Writable, question: PublicQuestion, total: number, followUp: boolean) {
@@ -149,6 +164,7 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
   const c = paint(out);
   const commitWord = plural(target.commits.length, 'commit');
   out.write(`\n${c.bold('Ownit debrief')} ${c.dim(`· ${target.repo} · ${target.commits.length} ${commitWord} · ${target.diff.changedLines} changed ${plural(target.diff.changedLines, 'line')}`)}\n`);
+  printCommits(out, target.commits);
 
   const payload = {
     commits: target.commits,
@@ -174,6 +190,7 @@ export async function runDebrief(api: ApiClient, prompter: Prompter, target: Deb
     return failure(out, error);
   }
 
+  if (start.summary) out.write(`\n${c.bold('What changed:')} ${start.summary}\n`);
   out.write(c.dim(`Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to stop and finish later.\n`));
   if (start.answers_public) out.write(c.yellow('Note: this repo shows passing answers on its public Ownit page.\n'));
   const debrief: Debrief = { api, prompter, total: start.total, payload, session: start.session, earlierCredited: 0 };

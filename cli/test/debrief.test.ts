@@ -82,6 +82,17 @@ describe('runDebrief', () => {
     expect(answers[0]!.body.diff).toBe(target.diff.diff);
   });
 
+  it('names the commits and summarizes the change before the first question', async () => {
+    const { api } = fakeApi({
+      '/api/interview/start': () => ({ ...start, total: 1, questions: [start.questions[0]], summary: 'Rounds order totals to cents.' }),
+      '/api/interview/answer': () => ({ pass: true, feedback: 'Right.', done: true, status: 'verified', followup: null, session: 's1' }),
+    });
+    const { text } = await run(api, 'Totals drifted by fractions of a cent.\n');
+    expect(text).toContain('bbbbbbb Round totals');
+    expect(text).toContain('What changed: Rounds order totals to cents.');
+    expect(text.indexOf('What changed:')).toBeLessThan(text.indexOf('Question 1/1'));
+  });
+
   it('stops for later on "s", without recording anything', async () => {
     const { api, calls } = fakeApi({ '/api/interview/start': () => start });
     const { outcome, text } = await run(api, 's\n');

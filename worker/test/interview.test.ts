@@ -10,6 +10,7 @@ describe('POST /api/interview/start', () => {
     expect(res.json.total).toBe(1);
     expect(res.json.questions).toEqual([{ idx: 0, kind: 'why', text: expect.any(String) }]);
     expect(JSON.stringify(res.json)).not.toContain('reference');
+    expect(res.json.summary).toBe('Changes how order totals are calculated.');
 
     const push = env.DB.raw.prepare('SELECT * FROM pushes').get() as any;
     expect(push).toMatchObject({ status: 'pending', question_count: 1, head_sha: sha(3) });

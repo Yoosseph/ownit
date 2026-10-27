@@ -17,6 +17,8 @@ export interface StartResponse {
   questions: PublicQuestion[];
   /** Whether passing answers appear on the repo's public page. Older servers omit it. */
   answers_public?: boolean;
+  /** One sentence on what the push changed. Older servers omit it. */
+  summary?: string | null;
 }
 
 export interface AnswerResponse {

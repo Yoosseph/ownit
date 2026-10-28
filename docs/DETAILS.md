@@ -19,7 +19,8 @@ How a push becomes a debrief:
    It sends the diff, the commit messages, and your API key to the Ownit worker.
 3. The worker makes the model calls and records the push and its questions.
 4. When GitHub's push webhook arrives, the worker matches the landed commits to the debrief by
-   SHA and sets the check run: **Ownit: verified**, **skipped**, or **pending**. Commits that
+   SHA and sets the check run. It always completes green, titled **Ownit: verified** or
+   **Ownit: not debriefed yet**, so it never blocks a merge. Commits that
    landed without a debrief become a pending push. The merge commit GitHub's **Merge pull request**
    or **Update branch** button makes is ignored, because it adds no code of its own.
 5. Nothing expires. Unverified pushes wait in `ownit interview`, which lists them by commit

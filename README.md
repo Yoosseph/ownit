@@ -124,7 +124,8 @@ Each push is **verified** (all questions passed) or **pending** (not done yet). 
 count as unverified, with no deadline. Run `ownit interview` whenever you like: it lists the
 waiting pushes by commit message, and you pick which one to debrief. Its commits then become
 verified. During a debrief, type `s` to stop and come back to it later.
-GitHub shows the result as a check on the commit.
+GitHub shows an **Ownit** check on the commit. It is always green, so Ownit never blocks a merge;
+the badge and repo page show what is still unverified.
 
 ### Who owes the debrief
 
@@ -163,7 +164,8 @@ change; until then its commits count as unverified.
 
 ### Where to see your record
 
-- **GitHub:** each commit gets an **Ownit** check: verified or pending.
+- **GitHub:** each push's newest commit gets a green **Ownit** check, titled **Ownit: verified** or
+  **Ownit: not debriefed yet**. It never shows as pending or blocks a merge.
 - **Repo page:** `https://ownit.ownit-worker.workers.dev/<owner>/<repo>` lists recent pushes, stats, and who still owes a debrief. It shows the debrief questions unless the repo's admins hide them,
   and passing answers only if they turn that on.
 - **Badge:** like `Ownit | Verified 55% | Unverified 45%`, linking to the repo page. `ownit init` prints the code to paste

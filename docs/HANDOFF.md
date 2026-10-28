@@ -51,7 +51,7 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 - `MODEL_BACKEND = "fixture"` switches to an offline fake model (`worker/src/fixtureModel.ts`).
 - Extra columns beyond the spec's data model: `repos.private`, `pushes.check_run_id`, plus `sessions`, `rate_limits`, `demo_usage` tables.
 - Repos must be registered (`POST /api/repos`, called by `ownit init`) before debrief routes accept them. Until milestone 6, API routes have no auth.
-- Check runs: verified = success, skipped = neutral, pending and provider_error = in_progress. They are created only after the webhook confirms the head commit landed (`commits.pushed_at`).
+- Check runs (since 2026-10-28, user's request): always `completed` / `success`, so no orange "in progress" dot and nothing blocks a merge; verified is titled "Ownit: verified", every other status "Ownit: not debriefed yet". Unverified work shows on the badge and repo page. Earlier: verified = success, skipped = neutral, pending and provider_error = in_progress. They are created only after the webhook confirms the head commit landed (`commits.pushed_at`).
 - Unmatched commits in a push webhook become a new pending push owned by the sender.
 - Stats count only commits GitHub confirmed (`pushed_at` set, on or after `tracked_since`), so a repo without the App shows "no pushes yet". provider_error pushes never expire; only pending ones do.
 - Private repos: the public page hides question text (stats and statuses still show), and page settings are refused.

@@ -220,11 +220,10 @@ interview.post('/answer', async (c) => {
   if (question.passed) return c.json({ error: 'already_passed', message: 'That question is already passed.' }, 409);
   const started = Date.now();
 
-  const model = modelFor(c);
   const push = { commits: body.commits, diff: body.diff, truncated: body.diff_truncated };
   let verdict: Verdict;
   try {
-    verdict = await judgeAnswer(model, push, question, body.answer);
+    verdict = await judgeAnswer(modelFor(c), push, question, body.answer);
   } catch (error) {
     return providerFailure(c, error, state.pushId, 'interview.answer', {}, started);
   }

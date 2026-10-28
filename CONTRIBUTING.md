@@ -11,13 +11,14 @@ Thanks for helping. Bug reports, prompt improvements, docs fixes and code are al
 
 ## Set up
 
-You need Node 22.5 or newer (the worker tests use `node:sqlite`) and git.
+You need Node 22.5 or newer (the worker tests use `node:sqlite`) and git. `npm test` runs the
+worker and CLI tests, fully offline.
 
 ```sh
 git clone https://github.com/Yoosseph/ownit.git
 cd ownit
 npm install
-npm test              # worker + CLI, fully offline
+npm test
 npm run typecheck
 ```
 

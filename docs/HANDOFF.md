@@ -29,7 +29,8 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 - Grading softened 2026-10-22 after a real debrief failed a fair README answer: one-thing questions, docs-only pushes get a simple purpose question, a pass gets one short line, follow-ups get easier. Live check covers that answer (8/8 passing). Deployed 2026-10-22 (version 55af83e0).
 - Open-source files added 2026-10-22: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY (private vulnerability reporting is enabled on the repo), issue/PR templates, CI (`.github/workflows/ci.yml`, Node 22 and 24, green).
 
-- Refactor for readability (2026-10-22, merged to main and deployed as worker version 4b4df03d): behavior kept identical, checked by the test suites plus a temporary golden capture of every route, log line, command output and real hook push, compared against the pre-refactor code. Layout rules are in CONTRIBUTING ("Code conventions"). Found while reading, deliberately not changed: `POST /api/interview/answer` calls `modelFor` outside its try, so a missing or unknown key there returns 500 instead of the 502 `provider_error` that `/start` returns.
+- Refactor for readability (2026-10-22, merged to main and deployed as worker version 4b4df03d): behavior kept identical, checked by the test suites plus a temporary golden capture of every route, log line, command output and real hook push, compared against the pre-refactor code. Layout rules are in CONTRIBUTING ("Code conventions"). Found while reading and fixed in the 2026-10-28 pass below: `POST /api/interview/answer` called `modelFor` outside its try, so a missing or unknown key returned 500 instead of the 502 `provider_error` that `/start` returns.
+- Hand-in pass (2026-10-28, branch `refactor-hand-in`): the `/answer` key fix above (with a test), helpers only their own module uses are no longer exported (knip clean), `vite` declared as a worker dev dependency, `npm audit fix` for dev tooling (0 advisories; `allowScripts` follows the new workerd), and doc commands no longer carry inline `#` comments. Not changed: nothing prunes expired `sessions`, old `rate_limits` rows or past `demo_usage` days (no cron since the expiry job was removed).
 
 - Stats model changed 2026-10-22 (user's request, departs from SPEC.md): the badge reads `Ownit | Verified N% | Unverified M%`, verified commits over all tracked commits. Skipped, pending and provider_error commits are all unverified, and every non-verified push stays debriefable (`/api/pushes/open` includes skipped; only `verified` is final). The 24-hour expiry cron is gone (`crons = []` in wrangler.toml unregisters it). The CLI hook now re-asks for skipped pushes; that part needs a new `getownit` release, but older CLIs already get the catch-up list from the server.
 - Merge-button commits ignored 2026-10-23 (PR #2): the webhook drops commits by `web-flow` whose message starts `Merge pull request #N from ` or `Merge branch '…' into `. Squash/rebase merges still count (open question). Stats model and this fix deployed 2026-10-23 as worker version ed173947. The pending push for merge commit b088a21 (from before the fix) is still open in production. `getownit@0.1.1` (hook re-asks for skipped pushes) published by the user 2026-10-23. 0.1.2 adds a "Did you mean" hint for mistyped commands, and `prepublishOnly` now builds and tests before every `npm publish`.
@@ -67,16 +68,44 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 
 ## Running locally
 
+At the repo root (npm workspaces), install and create `.env`, then fill in `SESSION_SECRET`:
+
 ```sh
-npm install                      # at the repo root (npm workspaces)
-cp .env.example .env            # then fill in SESSION_SECRET
-cd worker && npx wrangler d1 migrations apply ownit --local
-npm run dev -- --test-scheduled  # add --var MODEL_BACKEND:fixture for the offline fake model
-# in another terminal:
-cd worker && node scripts/dev-login.mjs yourlogin | node ../cli/dist/index.js login --with-token --server http://127.0.0.1:8787
-cd ../cli && npm run build
-node dist/index.js init --repo you/test-repo   # in a test repo
-node dist/index.js interview --range HEAD~1..HEAD
-npx wrangler d1 execute ownit --local --file seed/demo.sql   # optional demo data (repo demo/seeded)
-npm test                         # at the root: worker + cli
+npm install
+cp .env.example .env
+```
+
+Apply the migrations and start the worker. Add `--var MODEL_BACKEND:fixture` to `npm run dev` for the offline fake model.
+
+```sh
+cd worker
+npx wrangler d1 migrations apply ownit --local
+npm run dev
+```
+
+In another terminal, build the CLI and log it in to the local worker:
+
+```sh
+cd cli
+npm run build
+node ../worker/scripts/dev-login.mjs yourlogin | node dist/index.js login --with-token --server http://127.0.0.1:8787
+```
+
+Then, inside a test repo, set it up and debrief the last commit:
+
+```sh
+node path/to/ownit/cli/dist/index.js init --repo you/test-repo
+node path/to/ownit/cli/dist/index.js interview --range HEAD~1..HEAD
+```
+
+Optional demo data (repo `demo/seeded`), from `worker/`:
+
+```sh
+npx wrangler d1 execute ownit --local --file seed/demo.sql
+```
+
+Run every test from the repo root:
+
+```sh
+npm test
 ```

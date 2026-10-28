@@ -170,14 +170,25 @@ To push once without the prompt, use `OWNIT_SKIP=1 git push`. The push then show
 
 ## Self-hosting
 
-The server is one Cloudflare Worker with a D1 database.
+The server is one Cloudflare Worker with a D1 database. Clone and install, then create the
+database:
 
 ```sh
 git clone https://github.com/<you>/ownit && cd ownit && npm install
 cd worker
-npx wrangler d1 create ownit              # paste the database_id into wrangler.toml
+npx wrangler d1 create ownit
+```
+
+Paste the `database_id` it prints into `wrangler.toml`, then apply the migrations:
+
+```sh
 npx wrangler d1 migrations apply ownit --remote
-npx wrangler secret put SESSION_SECRET     # e.g. openssl rand -hex 32
+```
+
+Set the session secret (any long random string, for example from `openssl rand -hex 32`) and deploy:
+
+```sh
+npx wrangler secret put SESSION_SECRET
 npx wrangler deploy
 ```
 
@@ -209,10 +220,17 @@ For local development, see [docs/HANDOFF.md](HANDOFF.md#running-locally). `MODEL
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup and how to send a change. You need Node 22.5+.
 
+Run the worker and CLI tests offline (fixture model, `node:sqlite` D1 shim):
+
 ```sh
 npm install
-npm test                          # worker + CLI, offline (fixture model, node:sqlite D1 shim)
-scripts/live-injection-check      # live injection checks against Nemotron (needs a Nebius or NVIDIA key)
+npm test
+```
+
+Run the live prompt-injection checks against Nemotron (needs a Nebius or NVIDIA key):
+
+```sh
+scripts/live-injection-check
 ```
 
 The layout: `cli/` is the `getownit` npm package, `worker/` is the Cloudflare Worker, and `docs/`

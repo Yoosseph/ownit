@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import ignore from 'ignore';
 import { EMPTY_TREE, git, tryGit } from './git.js';
 
-export const DIFF_CHAR_CAP = 60_000;
+const DIFF_CHAR_CAP = 60_000;
 
 export interface FileDiff {
   path: string;
@@ -170,7 +170,7 @@ export function prepareDiff(raw: string, check: IgnoreCheck, cap = DIFF_CHAR_CAP
 }
 
 /** Reads .ownitignore from the pushed commit, falling back to the working tree. */
-export function readOwnitignore(head: string, cwd = process.cwd()): string {
+function readOwnitignore(head: string, cwd = process.cwd()): string {
   const committed = tryGit(['show', `${head}:.ownitignore`], cwd);
   if (committed !== null) return committed;
   const root = tryGit(['rev-parse', '--show-toplevel'], cwd)?.trim();

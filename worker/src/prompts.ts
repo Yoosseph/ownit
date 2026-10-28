@@ -5,9 +5,9 @@ import followUpWriter from '../../prompts/follow-up-writer.txt';
 import grader from '../../prompts/grader.txt';
 import questionWriter from '../../prompts/question-writer.txt';
 
-export const QUESTION_WRITER_SYSTEM = questionWriter.trim();
-export const GRADER_SYSTEM = grader.trim();
-export const FOLLOWUP_WRITER_SYSTEM = followUpWriter.trim();
+const QUESTION_WRITER_SYSTEM = questionWriter.trim();
+const GRADER_SYSTEM = grader.trim();
+const FOLLOWUP_WRITER_SYSTEM = followUpWriter.trim();
 
 const DATA_TAGS = ['commits', 'diff', 'answer', 'question', 'reference', 'missed_question', 'feedback'];
 const TAG_PATTERN = new RegExp(`<(/?)(${DATA_TAGS.join('|')})(?=[\\s>/])`, 'gi');
@@ -20,7 +20,7 @@ export function neutralize(text: string): string {
   return text.replace(TAG_PATTERN, (_match, slash: string, name: string) => `&lt;${slash}${name}`);
 }
 
-export function tag(name: string, content: string): string {
+function tag(name: string, content: string): string {
   return `<${name}>\n${neutralize(content)}\n</${name}>`;
 }
 

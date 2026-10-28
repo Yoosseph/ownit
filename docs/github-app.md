@@ -59,12 +59,12 @@ PUBLIC_URL = "https://ownit.<your-subdomain>.workers.dev"
 ```
 
 Set the secrets. GitHub's key is PKCS#1 (`BEGIN RSA PRIVATE KEY`), and the worker accepts it
-as is:
+as is. The second command asks you to paste the webhook secret:
 
 ```sh
 cd worker
 npx wrangler secret put GITHUB_APP_PRIVATE_KEY < path/to/ownit.private-key.pem
-npx wrangler secret put GITHUB_WEBHOOK_SECRET    # paste the webhook secret
+npx wrangler secret put GITHUB_WEBHOOK_SECRET
 ```
 
 For `wrangler dev`, put them in the repo's `.env` instead (see `.env.example`). Write the key on

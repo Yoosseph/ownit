@@ -10,9 +10,9 @@ const questionSchema = z.object({
   question: z.string().trim().min(10).max(600),
   reference: z.string().trim().min(10).max(2000),
 });
-export const questionsReplySchema = z.object({ questions: z.array(questionSchema).min(1) });
+const questionsReplySchema = z.object({ questions: z.array(questionSchema).min(1) });
 const summarySchema = z.object({ summary: z.string().trim().min(1).max(300) });
-export const gradeReplySchema = z.object({ pass: z.boolean(), feedback: z.string().trim().min(1).max(800) });
+const gradeReplySchema = z.object({ pass: z.boolean(), feedback: z.string().trim().min(1).max(800) });
 
 export type Question = z.infer<typeof questionSchema>;
 export type Grade = z.infer<typeof gradeReplySchema>;
@@ -64,7 +64,7 @@ export function validateGrade(value: unknown): Grade | undefined {
 }
 
 /** The model's one-sentence summary of the push, or undefined when it wrote none worth showing. */
-export function summaryOf(value: unknown): string | undefined {
+function summaryOf(value: unknown): string | undefined {
   const parsed = summarySchema.safeParse(value);
   return parsed.success ? parsed.data.summary : undefined;
 }

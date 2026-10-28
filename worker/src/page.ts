@@ -50,7 +50,7 @@ export interface Visibility {
   note: string | null;
 }
 
-export function pageVisibility(repo: RepoRow): Visibility {
+function pageVisibility(repo: RepoRow): Visibility {
   if (repo.private) return { questions: false, answers: false, note: 'This repo is private, so debrief questions are hidden.' };
   if (!repo.show_questions) return { questions: false, answers: false, note: "This repo's admins keep debrief questions private." };
   return { questions: true, answers: Boolean(repo.show_answers), note: null };

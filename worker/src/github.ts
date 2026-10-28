@@ -54,7 +54,7 @@ function der(tag: number, content: Uint8Array): Uint8Array {
 }
 
 /** Wraps a PKCS#1 RSAPrivateKey (what GitHub hands out) in a PKCS#8 PrivateKeyInfo for WebCrypto. */
-export function pkcs1ToPkcs8(pkcs1: Uint8Array): Uint8Array {
+function pkcs1ToPkcs8(pkcs1: Uint8Array): Uint8Array {
   const version = new Uint8Array([0x02, 0x01, 0x00]);
   const rsaAlgorithm = new Uint8Array([0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00]);
   return der(0x30, new Uint8Array([...version, ...rsaAlgorithm, ...der(0x04, pkcs1)]));

@@ -48,7 +48,7 @@ function requestedKey(c: Context<AppEnv>): { key: string | undefined; provider: 
 }
 
 /** The request's own key on its chosen provider, else the capped demo key, else a provider error. */
-export function modelFor(c: Context<AppEnv>): ChatModel {
+function modelFor(c: Context<AppEnv>): ChatModel {
   const { key, provider } = requestedKey(c);
   if (key || c.env.MODEL_BACKEND === 'fixture') {
     if (!isProvider(provider)) throw new ProviderError('unknown_provider');
@@ -109,7 +109,7 @@ async function openState(c: Context<AppEnv>, token: string): Promise<DebriefStat
   return state;
 }
 
-export const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
+const publicQuestion = (q: Question, idx: number) => ({ idx, kind: q.kind, text: q.question });
 
 /**
  * Once a push is verified in a repo that allows backfill, its commits from
@@ -220,11 +220,10 @@ interview.post('/answer', async (c) => {
   if (question.passed) return c.json({ error: 'already_passed', message: 'That question is already passed.' }, 409);
   const started = Date.now();
 
-  const model = modelFor(c);
   const push = { commits: body.commits, diff: body.diff, truncated: body.diff_truncated };
   let verdict: Verdict;
   try {
-    verdict = await judgeAnswer(model, push, question, body.answer);
+    verdict = await judgeAnswer(modelFor(c), push, question, body.answer);
   } catch (error) {
     return providerFailure(c, error, state.pushId, 'interview.answer', {}, started);
   }

@@ -6,13 +6,13 @@ import { gitCommonDir, gitConfigGet, repoRoot } from './git.js';
 // parthh01/sphinx (MIT): keep the user's hook and run it first, and find the
 // directory git actually uses before installing.
 
-export const HOOK_MARKER = '# ownit-managed-hook';
+const HOOK_MARKER = '# ownit-managed-hook';
 
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 const shPath = (value: string) => (process.platform === 'win32' ? value.replaceAll('\\', '/') : value);
 
 /** The absolute node binary and CLI entry used when `ownit` is not on PATH (e.g. GUI clients). */
-export function launcher(): { node: string; cli: string } {
+function launcher(): { node: string; cli: string } {
   const entry = process.argv[1] ? realpathSync(process.argv[1]) : '';
   return { node: shPath(process.execPath), cli: shPath(entry) };
 }

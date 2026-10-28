@@ -5,7 +5,7 @@ const NARROW = new Set("iljI.,:;'!|() ");
 const WIDE = new Set('mwMW%@');
 
 /** Rough Verdana 11px text width, close enough to size the badge. */
-export function textWidth(text: string): number {
+function textWidth(text: string): number {
   let width = 0;
   for (const ch of text) width += NARROW.has(ch) ? 3.8 : WIDE.has(ch) ? 10.2 : /[A-Z0-9]/.test(ch) ? 7.5 : 6.6;
   return Math.ceil(width);

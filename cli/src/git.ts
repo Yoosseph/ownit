@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 export const ZERO_SHA = /^0+$/;
 export const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
-export class GitError extends Error {}
+class GitError extends Error {}
 
 /** Runs git and returns stdout. Throws GitError with stderr on a non-zero exit. */
 export function git(args: string[], cwd = process.cwd()): string {
@@ -58,7 +58,7 @@ export function listCommits(revs: string[], cwd = process.cwd()): Commit[] {
 }
 
 /** "owner/name" from a GitHub remote URL, or null for other hosts. */
-export function parseGitHubRemote(url: string): string | null {
+function parseGitHubRemote(url: string): string | null {
   const match = url.trim().match(/github\.com[:/]+([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/i);
   return match ? `${match[1]}/${match[2]}` : null;
 }

@@ -64,7 +64,7 @@ export function isMergeButtonCommit(commit: PushedCommit): boolean {
 const isBot = (login: string | null | undefined) => Boolean(login?.endsWith('[bot]'));
 
 /** Bots (Dependabot, Renovate, ...) cannot debrief, so whoever pushed or merged their commit owes it. */
-export function commitAuthor(commit: PushedCommit, sender: string | undefined): string | null {
+function commitAuthor(commit: PushedCommit, sender: string | undefined): string | null {
   const author = commit.author?.username ?? commit.author?.name ?? null;
   return isBot(author) && sender ? sender : author;
 }

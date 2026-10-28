@@ -18,13 +18,13 @@ export interface Config {
 }
 
 // The hosted Ownit server. Self-hosters point the CLI elsewhere with `ownit login --server`.
-export const DEFAULT_SERVER = 'https://ownit.ownit-worker.workers.dev';
+const DEFAULT_SERVER = 'https://ownit.ownit-worker.workers.dev';
 
-export function configDir(env: NodeJS.ProcessEnv = process.env): string {
+function configDir(env: NodeJS.ProcessEnv = process.env): string {
   return env.OWNIT_HOME || join(homedir(), '.ownit');
 }
 
-export function configPath(env: NodeJS.ProcessEnv = process.env): string {
+function configPath(env: NodeJS.ProcessEnv = process.env): string {
   return join(configDir(env), 'config.json');
 }
 
@@ -38,7 +38,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
 }
 
 /** Writes atomically with owner-only permissions, since the file holds secrets. */
-export function writeConfig(config: Config, env: NodeJS.ProcessEnv = process.env) {
+function writeConfig(config: Config, env: NodeJS.ProcessEnv = process.env) {
   const dir = configDir(env);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const file = configPath(env);

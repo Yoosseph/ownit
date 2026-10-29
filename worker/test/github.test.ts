@@ -94,14 +94,14 @@ describe('push webhook', () => {
     expect((env.DB.raw.prepare('SELECT check_run_id FROM pushes').get() as any).check_run_id).toBe(1);
   });
 
-  it('marks unmatched commits as a new pending push with an in-progress check', async () => {
+  it('marks unmatched commits as a new pending push with a green check', async () => {
     const env = env4();
     await deliver(env, pushEvent());
     const push = env.DB.raw.prepare('SELECT * FROM pushes').get() as any;
     expect(push).toMatchObject({ status: 'pending', user_github_id: 42, base_sha: sha(1), head_sha: sha(3) });
     expect(push.created_at).toEqual(expect.any(String));
     expect(env.DB.raw.prepare('SELECT count(*) AS n FROM commits WHERE push_id = ? AND pushed_at IS NOT NULL').get(push.id)).toEqual({ n: 2 });
-    expect(env.github.checkRuns[0]).toMatchObject({ status: 'in_progress', output: { title: 'Ownit: pending' } });
+    expect(env.github.checkRuns[0]).toMatchObject({ status: 'completed', conclusion: 'success', output: { title: 'Ownit: not debriefed yet' } });
     expect(env.DB.raw.prepare('SELECT login FROM users WHERE github_id = 42').get()).toEqual({ login: 'mona' });
   });
 
@@ -154,17 +154,17 @@ describe('push webhook', () => {
     const env = env4();
     await call(env, 'POST', '/api/pushes', { repo: 'octo/shop', base_sha: sha(1), head_sha: sha(3), commits: [{ sha: sha(2) }, { sha: sha(3) }], status: 'pending' });
     await deliver(env, pushEvent());
-    expect(env.github.checkRuns[0]!.status).toBe('in_progress');
+    expect(env.github.checkRuns[0]).toMatchObject({ conclusion: 'success', output: { title: 'Ownit: not debriefed yet' } });
     await verifiedPush(env);
     expect(env.github.checkRuns).toHaveLength(1);
-    expect(env.github.checkRuns[0]).toMatchObject({ status: 'completed', conclusion: 'success' });
+    expect(env.github.checkRuns[0]).toMatchObject({ status: 'completed', conclusion: 'success', output: { title: 'Ownit: verified' } });
   });
 
-  it('skips create a neutral check run', async () => {
+  it('gives skipped pushes a green check too', async () => {
     const env = env4();
     await call(env, 'POST', '/api/pushes', { repo: 'octo/shop', base_sha: sha(1), head_sha: sha(3), commits: [{ sha: sha(2) }, { sha: sha(3) }], status: 'skipped' });
     await deliver(env, pushEvent());
-    expect(env.github.checkRuns[0]).toMatchObject({ conclusion: 'neutral', output: { title: 'Ownit: skipped' } });
+    expect(env.github.checkRuns[0]).toMatchObject({ conclusion: 'success', output: { title: 'Ownit: not debriefed yet' } });
   });
 
   it('does not create a check run before the head commit lands', async () => {
@@ -203,8 +203,11 @@ describe('check run bodies', () => {
     expect(body.details_url).toBe('https://ownit.test/octo/shop');
   });
 
-  it('keeps provider errors pending', () => {
-    expect(checkRunBody(push('provider_error'), repo, [], '')).toMatchObject({ status: 'in_progress', details_url: undefined });
+  it('never leaves a check in progress: every status completes green', () => {
+    for (const status of ['verified', 'pending', 'skipped', 'provider_error']) {
+      expect(checkRunBody(push(status), repo, [], '')).toMatchObject({ status: 'completed', conclusion: 'success', completed_at: expect.any(String) });
+    }
+    expect(checkRunBody(push('provider_error'), repo, [], '')).toMatchObject({ output: { title: 'Ownit: not debriefed yet' }, details_url: undefined });
   });
 });
 

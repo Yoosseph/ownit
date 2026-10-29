@@ -4,46 +4,38 @@ import type { CheckRunBody, GitHub } from './github';
 import { repoPageUrl } from './links';
 import { log } from './log';
 
+/**
+ * The check run for a push. It is always completed and green: Ownit never
+ * blocks a merge or leaves a commit marked in progress. The title tells a
+ * verified push from one still waiting, and the badge and repo page count
+ * the waiting ones as unverified.
+ */
 export function checkRunBody(push: PushRow, repo: RepoRow, questions: string[], publicUrl: string): CheckRunBody {
   const details = publicUrl ? repoPageUrl(publicUrl, repo) : undefined;
-  const base = { name: 'Ownit', head_sha: push.head_sha, external_id: String(push.id), details_url: details };
-  const asked = questions.length ? `\n\nQuestions:\n${questions.map((q) => `- ${q}`).join('\n')}` : '';
-  switch (push.status) {
-    case 'verified':
-      return {
-        ...base,
-        status: 'completed',
-        conclusion: 'success',
-        completed_at: new Date().toISOString(),
-        output: { title: 'Ownit: verified', summary: `The pusher debriefed this push and passed.${asked}` },
-      };
-    case 'skipped':
-      return {
-        ...base,
-        status: 'completed',
-        conclusion: 'neutral',
-        completed_at: new Date().toISOString(),
-        output: { title: 'Ownit: skipped', summary: 'Skipped for now. These commits count as unverified until you run `ownit interview` and pass the debrief.' },
-      };
-    case 'provider_error':
-      return {
-        ...base,
-        status: 'in_progress',
-        output: {
-          title: 'Ownit: pending',
-          summary: 'The debrief hit a model provider error (key, credit, or availability). Run `ownit interview` to retry. These commits count as unverified until then.',
-        },
-      };
-    default:
-      return {
-        ...base,
-        status: 'in_progress',
-        output: {
-          title: 'Ownit: pending',
-          summary: 'Waiting for a debrief. Run `ownit interview` any time; these commits count as unverified until then.',
-        },
-      };
+  const base = {
+    name: 'Ownit',
+    head_sha: push.head_sha,
+    external_id: String(push.id),
+    details_url: details,
+    status: 'completed',
+    conclusion: 'success',
+    completed_at: new Date().toISOString(),
+  } as const;
+  if (push.status === 'verified') {
+    const asked = questions.length ? `\n\nQuestions:\n${questions.map((q) => `- ${q}`).join('\n')}` : '';
+    return { ...base, output: { title: 'Ownit: verified', summary: `The pusher debriefed this push and passed.${asked}` } };
   }
+  const why =
+    push.status === 'provider_error'
+      ? 'The debrief hit a model provider error (key, credit, or availability).'
+      : 'Nobody has debriefed this push yet.';
+  return {
+    ...base,
+    output: {
+      title: 'Ownit: not debriefed yet',
+      summary: `${why} Run \`ownit interview\` any time. These commits count as unverified on the badge and repo page until the debrief passes.`,
+    },
+  };
 }
 
 /**

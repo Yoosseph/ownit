@@ -7,7 +7,7 @@
 **A short debrief for the code you just pushed.** Ownit asks one to three questions about
 your change, right in your terminal. Build understanding alongside your AI coding workflow.
 
-[Watch the narrated ad](media/ownit-ad-1080p.mp4) · [Get started](#setup) · [See how it works](docs/DETAILS.md)
+[Watch the narrated ad](media/ownit-ad-1080p.mp4) · [Get started](#setup) · [How Ownit uses Nemotron on Nebius](#how-ownit-uses-nemotron-on-nebius) · [See how it works](docs/DETAILS.md)
 [![Ownit](https://ownit.ownit-worker.workers.dev/badge/Yoosseph/ownit.svg)](https://ownit.ownit-worker.workers.dev/Yoosseph/ownit)
 [![CI](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/getownit?logo=npm&color=CB3837)](https://www.npmjs.com/package/getownit)
@@ -62,6 +62,43 @@ gets a hint and a new question, and you can always stop and finish later.
 
 Small pushes get one question; larger ones get two or three. Ownit is a learning tool:
 a passed debrief records understanding at the keyboard, not proof of authorship or code correctness.
+
+## How Ownit uses Nemotron on Nebius
+
+Every question and every grade in Ownit comes from **NVIDIA Nemotron Super** (120B parameters,
+12B active), model `nvidia/nemotron-3-super-120b-a12b`, served by
+**[Nebius Token Factory](https://tokenfactory.nebius.com/)** through its OpenAI-compatible API at
+`https://api.tokenfactory.nebius.com/v1/`. Nebius is the default provider. Users who have no Nebius
+account can use a key from NVIDIA instead (`nvidia/nemotron-3.5-super-vl-120b-a12b` on
+`build.nvidia.com`). Either way, the model is Nemotron.
+
+A debrief makes three kinds of Nemotron call, all from the Cloudflare Worker
+(`worker/src/debrief.ts`):
+
+| Call | What Nemotron gets | What it returns |
+| --- | --- | --- |
+| **Question writer** | The push's commit messages and diff, and how many questions to ask (1–3, by push size). | Why / how / next questions, a hidden reference answer for each, and a one-line summary of the push. |
+| **Grader** | One question, its reference answer and your answer. It never sees the code. | Pass or fail, plus short feedback. |
+| **Follow-up writer** | The diff, the question you missed and the grader's feedback. | One easier question on the same topic, for another try. |
+
+How it works:
+
+- **Bring your own key.** `ownit key set` stores your Nebius key on your machine. The CLI sends it
+  with each debrief request, and the worker calls Nebius with it and then drops it, so you pay
+  Nebius directly (usually under a cent per debrief). The key is never stored or logged.
+- **Structured output.** Each call asks for JSON (`response_format: json_object`). The worker
+  validates the reply with zod and retries once if it is malformed. The grader runs at
+  temperature 0 and the writers at 0.3.
+- **Prompt-injection resistant.** Code, commit messages and answers go in tagged data blocks,
+  separate from the instructions. The grader only sees the question, its reference and the answer.
+  `scripts/live-injection-check` tests the real model against injected answers.
+- **Sealed answer keys.** Reference answers travel between requests inside an encrypted token that
+  only the server can open, so the CLI can't read them.
+- **Code is never stored.** The diff goes to Nemotron on your account and is then discarded.
+  Answers are discarded too, unless a public repo's admins choose to show passing answers.
+
+All three system prompts are in [prompts/](prompts/), and the provider code is
+`worker/src/model.ts`. [docs/DETAILS.md](docs/DETAILS.md#bring-your-own-key) has the full details.
 
 ## Setup
 

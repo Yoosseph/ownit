@@ -207,4 +207,12 @@ describe('provider choice', () => {
     expect(calledUrl).toBe(url);
     expect(JSON.parse(init.body as string).model).toBe(model);
   });
+
+  it.each(['nvidia', 'nebius'] as const)('turns thinking off on %s', async (provider) => {
+    const fetcher = vi.fn(async () => Response.json({ choices: [{ message: { content: '{}' } }] }));
+    vi.stubGlobal('fetch', fetcher);
+    await createModel(env, 'key-123', provider).complete(prompt, 10);
+    const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string).chat_template_kwargs).toEqual({ enable_thinking: false });
+  });
 });

@@ -85,14 +85,18 @@ function openAiCompatible(name: string, endpoint: (env: Env) => { baseUrl: strin
  * one: an entry here, one in the CLI's providers.ts, and its endpoint and model
  * in wrangler.toml. A provider with a different API needs its own client.
  */
+// Both providers serve Nemotron 3.5 Super. Thinking off keeps its JSON whole.
+const THINKING_OFF = { chat_template_kwargs: { enable_thinking: false } };
+
 export const PROVIDERS = {
-  nebius: openAiCompatible('Nebius', (env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL })),
-  // NVIDIA's free endpoint serves Nemotron 3.5 Super. It usually answers in about a second but
-  // sometimes stalls for a minute or fails with a 5xx, so copies go out at 3s and 6s (or at once
-  // after a failure) and nothing waits past 10s (measured 2026-10-23 with one copy at 3s: 20/20
-  // answered, median 0.9s, max 4.9s). Thinking off keeps the JSON whole.
+  nebius: openAiCompatible('Nebius', (env) => ({ baseUrl: env.NEBIUS_BASE_URL, model: env.NEBIUS_MODEL }), {
+    extraBody: THINKING_OFF,
+  }),
+  // NVIDIA's free endpoint usually answers in about a second but sometimes stalls for a minute
+  // or fails with a 5xx, so copies go out at 3s and 6s (or at once after a failure) and nothing
+  // waits past 10s (measured 2026-10-23 with one copy at 3s: 20/20 answered, median 0.9s, max 4.9s).
   nvidia: openAiCompatible('NVIDIA', (env) => ({ baseUrl: env.NVIDIA_BASE_URL, model: env.NVIDIA_MODEL }), {
-    extraBody: { chat_template_kwargs: { enable_thinking: false } },
+    extraBody: THINKING_OFF,
     hedgesMs: [3_000, 6_000],
     timeoutMs: 10_000,
   }),

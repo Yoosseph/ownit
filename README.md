@@ -12,7 +12,7 @@ your change, right in your terminal. Build understanding alongside your AI codin
 [![CI](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoosseph/ownit/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/getownit?logo=npm&color=CB3837)](https://www.npmjs.com/package/getownit)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![NVIDIA Nemotron](https://img.shields.io/badge/NVIDIA-Nemotron-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b)
+[![NVIDIA Nemotron](https://img.shields.io/badge/NVIDIA-Nemotron-76B900?logo=nvidia&logoColor=white)](https://build.nvidia.com/nvidia/nemotron-3.5-super-vl-120b-a12b)
 [![Nebius Token Factory](https://img.shields.io/badge/Nebius-Token%20Factory-052B42)](https://tokenfactory.nebius.com/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -65,12 +65,13 @@ a passed debrief records understanding at the keyboard, not proof of authorship 
 
 ## How Ownit uses Nemotron on Nebius
 
-Every question and every grade in Ownit comes from **NVIDIA Nemotron Super** (120B parameters,
-12B active), model `nvidia/nemotron-3-super-120b-a12b`, served by
+Every question and every grade in Ownit comes from **NVIDIA Nemotron 3.5 Super** (120B parameters,
+12B active), model `nvidia/Nemotron-3.5-Super-VL`, served by
 **[Nebius Token Factory](https://tokenfactory.nebius.com/)** through its OpenAI-compatible API at
 `https://api.tokenfactory.nebius.com/v1/`. Nebius is the default provider. Users who have no Nebius
 account can use a key from NVIDIA instead (`nvidia/nemotron-3.5-super-vl-120b-a12b` on
-`build.nvidia.com`). Either way, the model is Nemotron.
+`build.nvidia.com`), which runs the same model. The server picks the model, so the CLI never needs
+an update when it changes.
 
 A debrief makes three kinds of Nemotron call, all from the Cloudflare Worker
 (`worker/src/debrief.ts`):

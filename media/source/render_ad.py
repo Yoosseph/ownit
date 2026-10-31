@@ -177,8 +177,8 @@ def readme_images():
         "$ npm i -g getownit", "$ ownit login",
         "$ ownit key set", "$ ownit init", "",
         "$ git push", "Ownit (1 commit to demo/shop) Debrief now? [Y/n] y", "",
-        "Question 1/1 (why)", "  Why retry temporary payment failures?",
-        "> So a temporary error doesn't lose the sale.",
+        "Question 1/1 (why)", "  Why did you add a search box to the shop?",
+        "> So customers can quickly find the product they want.",
         "✓ Push verified. 1 commit owned. Nice work.",
     ]).save(ROOT / "docs/assets/ownit-hero.png")
     example("Push now. Explain it later.",

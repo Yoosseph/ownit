@@ -3,10 +3,12 @@
   "rate": "-5%",
   "pitch": "+0Hz",
   "scenes": [
-    {"id": "intro", "minimum_seconds": 8.0, "speech": "You know that feeling when your coding agent finishes a change, and it works, but you couldn't quite explain it yet?"},
-    {"id": "debrief", "minimum_seconds": 7.0, "speech": "That's why we made Own it. When you push, it asks a few short questions about what changed, right in your terminal."},
-    {"id": "answer", "minimum_seconds": 8.0, "speech": "Say you added payment retries. Why? So a temporary error doesn't lose the sale. Just explain it in your own words."},
-    {"id": "verified", "minimum_seconds": 7.0, "speech": "You get feedback, and a passing debrief marks those commits as verified. Busy right now? You can always come back later."},
-    {"id": "close", "minimum_seconds": 6.0, "speech": "Keep building with your coding agent. Give yourself a moment to understand what you're shipping. That's Own it."}
+    {"id": "install", "minimum_seconds": 7.0, "speech": "Install Own it. Then run the login command and sign in with GitHub in your browser."},
+    {"id": "key", "minimum_seconds": 6.0, "speech": "Run the key command. Choose Nebius or NVIDIA, and paste your API key at the hidden prompt."},
+    {"id": "repo", "minimum_seconds": 7.0, "speech": "In your project, run Own it init. Install the GitHub app for that repo when prompted. Setup is done."},
+    {"id": "push", "minimum_seconds": 5.0, "speech": "You've added a search box to your shop. Push your code, and choose yes to start the interview."},
+    {"id": "why", "minimum_seconds": 9.0, "speech": "Why did you add a search box to the shop? So customers can quickly find the product they want."},
+    {"id": "how", "minimum_seconds": 9.0, "speech": "What happens when someone searches for shoes? The shop only shows products with shoes in the name."},
+    {"id": "verified", "minimum_seconds": 5.0, "speech": "Both answers passed. Your push is verified. Two short answers to explain the code you ship."}
   ]
 }

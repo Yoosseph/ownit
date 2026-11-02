@@ -2,565 +2,678 @@
   "voice": "en-US-AvaNeural",
   "rate": "-5%",
   "pitch": "+0Hz",
-  "duration": 41.333333,
+  "duration": 54.733333,
   "scenes": [
     {
-      "id": "intro",
-      "minimum_seconds": 8.0,
-      "speech": "You know that feeling when your coding agent finishes a change, and it works, but you couldn't quite explain it yet?",
-      "start": 0.0,
-      "duration": 8.0,
-      "words": [
-        {
-          "text": "You",
-          "start": 0.55,
-          "end": 0.773666
-        },
-        {
-          "text": "know",
-          "start": 0.786833,
-          "end": 0.944708
-        },
-        {
-          "text": "that",
-          "start": 0.957875,
-          "end": 1.15525
-        },
-        {
-          "text": "feeling",
-          "start": 1.168416,
-          "end": 1.536832
-        },
-        {
-          "text": "when",
-          "start": 1.55,
-          "end": 1.681583
-        },
-        {
-          "text": "your",
-          "start": 1.69475,
-          "end": 1.8395
-        },
-        {
-          "text": "coding",
-          "start": 1.852625,
-          "end": 2.3
-        },
-        {
-          "text": "agent",
-          "start": 2.313166,
-          "end": 2.642124
-        },
-        {
-          "text": "finishes",
-          "start": 2.65525,
-          "end": 3.089458
-        },
-        {
-          "text": "a",
-          "start": 3.102625,
-          "end": 3.181583
-        },
-        {
-          "text": "change",
-          "start": 3.19475,
-          "end": 3.786875
-        },
-        {
-          "text": "and",
-          "start": 3.931583,
-          "end": 4.089458
-        },
-        {
-          "text": "it",
-          "start": 4.102625,
-          "end": 4.19475
-        },
-        {
-          "text": "works",
-          "start": 4.207875,
-          "end": 4.707875
-        },
-        {
-          "text": "but",
-          "start": 4.94475,
-          "end": 5.155291
-        },
-        {
-          "text": "you",
-          "start": 5.181583,
-          "end": 5.260541
-        },
-        {
-          "text": "couldn't",
-          "start": 5.273666,
-          "end": 5.576291
-        },
-        {
-          "text": "quite",
-          "start": 5.589458,
-          "end": 5.905249
-        },
-        {
-          "text": "explain",
-          "start": 5.918416,
-          "end": 6.365791
-        },
-        {
-          "text": "it",
-          "start": 6.378958,
-          "end": 6.497374
-        },
-        {
-          "text": "yet",
-          "start": 6.510541,
-          "end": 6.813166
-        }
-      ]
-    },
-    {
-      "id": "debrief",
+      "id": "install",
       "minimum_seconds": 7.0,
-      "speech": "That's why we made Own it. When you push, it asks a few short questions about what changed, right in your terminal.",
-      "start": 8.0,
-      "duration": 7.8,
+      "speech": "Install Own it. Then run the login command and sign in with GitHub in your browser.",
+      "start": 0.0,
+      "duration": 7.0,
       "words": [
         {
-          "text": "That's",
-          "start": 8.38,
-          "end": 8.722125
-        },
-        {
-          "text": "why",
-          "start": 8.73525,
-          "end": 8.88
-        },
-        {
-          "text": "we",
-          "start": 8.893166,
-          "end": 9.024749
-        },
-        {
-          "text": "made",
-          "start": 9.037875,
-          "end": 9.287875
+          "text": "Install",
+          "start": 0.55,
+          "end": 1.207875
         },
         {
           "text": "Own",
-          "start": 9.301041,
-          "end": 9.445791
+          "start": 1.221041,
+          "end": 1.378916
         },
         {
           "text": "it",
-          "start": 9.458958,
-          "end": 9.722124
+          "start": 1.392125,
+          "end": 1.655291
         },
         {
-          "text": "When",
-          "start": 10.106333,
-          "end": 10.329999
+          "text": "Then",
+          "start": 2.039458,
+          "end": 2.368416
         },
         {
-          "text": "you",
-          "start": 10.343166,
-          "end": 10.435291
+          "text": "run",
+          "start": 2.381583,
+          "end": 2.592124
         },
         {
-          "text": "push",
-          "start": 10.448416,
-          "end": 10.856291
+          "text": "the",
+          "start": 2.60525,
+          "end": 2.7105
         },
         {
-          "text": "it",
-          "start": 11.014208,
-          "end": 11.093166
+          "text": "login",
+          "start": 2.723666,
+          "end": 3.078916
         },
         {
-          "text": "asks",
-          "start": 11.106333,
-          "end": 11.422124
+          "text": "command",
+          "start": 3.092125,
+          "end": 3.592125
         },
         {
-          "text": "a",
-          "start": 11.448416,
-          "end": 11.566832
+          "text": "and",
+          "start": 3.60525,
+          "end": 3.789458
         },
         {
-          "text": "few",
-          "start": 11.58,
-          "end": 11.843166
-        },
-        {
-          "text": "short",
-          "start": 11.856333,
-          "end": 12.172124
-        },
-        {
-          "text": "questions",
-          "start": 12.18525,
-          "end": 12.658916
-        },
-        {
-          "text": "about",
-          "start": 12.672125,
-          "end": 12.922125
-        },
-        {
-          "text": "what",
-          "start": 12.93525,
-          "end": 13.132625
-        },
-        {
-          "text": "changed",
-          "start": 13.145791,
-          "end": 13.685249
-        },
-        {
-          "text": "right",
-          "start": 14.093166,
-          "end": 14.316832
+          "text": "sign",
+          "start": 3.802625,
+          "end": 4.131583
         },
         {
           "text": "in",
-          "start": 14.33,
-          "end": 14.408958
+          "start": 4.14475,
+          "end": 4.2895
+        },
+        {
+          "text": "with",
+          "start": 4.302625,
+          "end": 4.4605
+        },
+        {
+          "text": "GitHub",
+          "start": 4.473666,
+          "end": 4.986832
+        },
+        {
+          "text": "in",
+          "start": 5.0,
+          "end": 5.078958
         },
         {
           "text": "your",
-          "start": 14.422125,
-          "end": 14.51425
+          "start": 5.092125,
+          "end": 5.197375
         },
         {
-          "text": "terminal",
-          "start": 14.527375,
-          "end": 15.040541
+          "text": "browser",
+          "start": 5.210541,
+          "end": 5.749999
         }
       ]
     },
     {
-      "id": "answer",
-      "minimum_seconds": 8.0,
-      "speech": "Say you added payment retries. Why? So a temporary error doesn't lose the sale. Just explain it in your own words.",
-      "start": 15.8,
-      "duration": 9.3,
+      "id": "key",
+      "minimum_seconds": 6.0,
+      "speech": "Run the key command. Choose Nebius or NVIDIA, and paste your API key at the hidden prompt.",
+      "start": 7.0,
+      "duration": 7.566666666666666,
       "words": [
         {
-          "text": "Say",
-          "start": 16.18,
-          "end": 16.548416
-        },
-        {
-          "text": "you",
-          "start": 16.561583,
-          "end": 16.679999
-        },
-        {
-          "text": "added",
-          "start": 16.693166,
-          "end": 16.982624
-        },
-        {
-          "text": "payment",
-          "start": 16.995791,
-          "end": 17.390541
-        },
-        {
-          "text": "retries",
-          "start": 17.403666,
-          "end": 18.074707
-        },
-        {
-          "text": "Why",
-          "start": 18.458958,
-          "end": 19.011583
-        },
-        {
-          "text": "So",
-          "start": 19.393166,
-          "end": 19.708957
-        },
-        {
-          "text": "a",
-          "start": 19.722125,
-          "end": 19.801083
-        },
-        {
-          "text": "temporary",
-          "start": 19.814208,
-          "end": 20.419458
-        },
-        {
-          "text": "error",
-          "start": 20.432625,
-          "end": 20.801041
-        },
-        {
-          "text": "doesn't",
-          "start": 20.814208,
-          "end": 21.143166
-        },
-        {
-          "text": "lose",
-          "start": 21.156333,
-          "end": 21.340541
+          "text": "Run",
+          "start": 7.38,
+          "end": 7.63
         },
         {
           "text": "the",
-          "start": 21.353666,
-          "end": 21.445791
+          "start": 7.643166,
+          "end": 7.735291
         },
         {
-          "text": "sale",
-          "start": 21.458958,
-          "end": 21.972124
+          "text": "key",
+          "start": 7.748416,
+          "end": 7.919457
         },
         {
-          "text": "Just",
-          "start": 22.353666,
-          "end": 22.695791
+          "text": "command",
+          "start": 7.932625,
+          "end": 8.603666
         },
         {
-          "text": "explain",
-          "start": 22.708958,
-          "end": 23.129999
+          "text": "Choose",
+          "start": 8.987875,
+          "end": 9.382625
         },
         {
-          "text": "it",
-          "start": 23.143166,
-          "end": 23.287916
+          "text": "Nebius",
+          "start": 9.395791,
+          "end": 10.066832
         },
         {
-          "text": "in",
-          "start": 23.301041,
-          "end": 23.393166
+          "text": "or",
+          "start": 10.093166,
+          "end": 10.264207
+        },
+        {
+          "text": "NVIDIA",
+          "start": 10.277375,
+          "end": 10.908958
+        },
+        {
+          "text": "and",
+          "start": 10.987875,
+          "end": 11.211541
+        },
+        {
+          "text": "paste",
+          "start": 11.237875,
+          "end": 11.619458
         },
         {
           "text": "your",
-          "start": 23.406333,
-          "end": 23.537916
+          "start": 11.632625,
+          "end": 11.803666
         },
         {
-          "text": "own",
-          "start": 23.551041,
-          "end": 23.735249
+          "text": "API",
+          "start": 11.83,
+          "end": 12.277375
         },
         {
-          "text": "words",
-          "start": 23.748416,
-          "end": 24.314207
+          "text": "key",
+          "start": 12.290541,
+          "end": 12.711582
+        },
+        {
+          "text": "at",
+          "start": 12.72475,
+          "end": 12.8695
+        },
+        {
+          "text": "the",
+          "start": 12.882625,
+          "end": 12.948416
+        },
+        {
+          "text": "hidden",
+          "start": 12.961583,
+          "end": 13.277374
+        },
+        {
+          "text": "prompt",
+          "start": 13.290541,
+          "end": 13.829999
+        }
+      ]
+    },
+    {
+      "id": "repo",
+      "minimum_seconds": 7.0,
+      "speech": "In your project, run Own it init. Install the GitHub app for that repo when prompted. Setup is done.",
+      "start": 14.566667,
+      "duration": 8.266666666666667,
+      "words": [
+        {
+          "text": "In",
+          "start": 14.946667,
+          "end": 15.144042
+        },
+        {
+          "text": "your",
+          "start": 15.157208,
+          "end": 15.301958
+        },
+        {
+          "text": "project",
+          "start": 15.315083,
+          "end": 15.972958
+        },
+        {
+          "text": "run",
+          "start": 16.420333,
+          "end": 16.617708
+        },
+        {
+          "text": "Own",
+          "start": 16.630875,
+          "end": 16.775625
+        },
+        {
+          "text": "it",
+          "start": 16.788792,
+          "end": 16.86775
+        },
+        {
+          "text": "init",
+          "start": 16.880875,
+          "end": 17.275625
+        },
+        {
+          "text": "Install",
+          "start": 17.659833,
+          "end": 18.186166
+        },
+        {
+          "text": "the",
+          "start": 18.199292,
+          "end": 18.304542
+        },
+        {
+          "text": "GitHub",
+          "start": 18.317708,
+          "end": 18.725583
+        },
+        {
+          "text": "app",
+          "start": 18.738792,
+          "end": 18.923
+        },
+        {
+          "text": "for",
+          "start": 18.936125,
+          "end": 19.067708
+        },
+        {
+          "text": "that",
+          "start": 19.080875,
+          "end": 19.291416
+        },
+        {
+          "text": "repo",
+          "start": 19.304542,
+          "end": 19.73875
+        },
+        {
+          "text": "when",
+          "start": 19.751917,
+          "end": 19.949292
+        },
+        {
+          "text": "prompted",
+          "start": 19.962458,
+          "end": 20.567708
+        },
+        {
+          "text": "Setup",
+          "start": 20.949292,
+          "end": 21.501917
+        },
+        {
+          "text": "is",
+          "start": 21.515083,
+          "end": 21.633499
+        },
+        {
+          "text": "done",
+          "start": 21.646667,
+          "end": 22.054542
+        }
+      ]
+    },
+    {
+      "id": "push",
+      "minimum_seconds": 5.0,
+      "speech": "You've added a search box to your shop. Push your code, and choose yes to start the interview.",
+      "start": 22.833333,
+      "duration": 6.466666666666667,
+      "words": [
+        {
+          "text": "You've",
+          "start": 23.213333,
+          "end": 23.463333
+        },
+        {
+          "text": "added",
+          "start": 23.489666,
+          "end": 23.726499
+        },
+        {
+          "text": "a",
+          "start": 23.739666,
+          "end": 23.805457
+        },
+        {
+          "text": "search",
+          "start": 23.818583,
+          "end": 24.160708
+        },
+        {
+          "text": "box",
+          "start": 24.173874,
+          "end": 24.489665
+        },
+        {
+          "text": "to",
+          "start": 24.502791,
+          "end": 24.594916
+        },
+        {
+          "text": "your",
+          "start": 24.608083,
+          "end": 24.726499
+        },
+        {
+          "text": "shop",
+          "start": 24.739666,
+          "end": 25.160707
+        },
+        {
+          "text": "Push",
+          "start": 25.544916,
+          "end": 25.847541
+        },
+        {
+          "text": "your",
+          "start": 25.860708,
+          "end": 25.979124
+        },
+        {
+          "text": "code",
+          "start": 25.992291,
+          "end": 26.387041
+        },
+        {
+          "text": "and",
+          "start": 26.505458,
+          "end": 26.715999
+        },
+        {
+          "text": "choose",
+          "start": 26.729124,
+          "end": 27.031749
+        },
+        {
+          "text": "yes",
+          "start": 27.044916,
+          "end": 27.373874
+        },
+        {
+          "text": "to",
+          "start": 27.386999,
+          "end": 27.505415
+        },
+        {
+          "text": "start",
+          "start": 27.518583,
+          "end": 27.808041
+        },
+        {
+          "text": "the",
+          "start": 27.821208,
+          "end": 27.886999
+        },
+        {
+          "text": "interview",
+          "start": 27.900166,
+          "end": 28.531749
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "minimum_seconds": 9.0,
+      "speech": "Why did you add a search box to the shop? So customers can quickly find the product they want.",
+      "start": 29.3,
+      "duration": 9.0,
+      "words": [
+        {
+          "text": "Why",
+          "start": 29.68,
+          "end": 29.890541
+        },
+        {
+          "text": "did",
+          "start": 29.903666,
+          "end": 30.048416
+        },
+        {
+          "text": "you",
+          "start": 30.061583,
+          "end": 30.166833
+        },
+        {
+          "text": "add",
+          "start": 30.18,
+          "end": 30.32475
+        },
+        {
+          "text": "a",
+          "start": 30.337875,
+          "end": 30.3905
+        },
+        {
+          "text": "search",
+          "start": 30.403666,
+          "end": 30.719457
+        },
+        {
+          "text": "box",
+          "start": 30.732625,
+          "end": 31.03525
+        },
+        {
+          "text": "to",
+          "start": 31.048416,
+          "end": 31.140541
+        },
+        {
+          "text": "the",
+          "start": 31.153666,
+          "end": 31.245791
+        },
+        {
+          "text": "shop",
+          "start": 31.258958,
+          "end": 31.693166
+        },
+        {
+          "text": "So",
+          "start": 32.077375,
+          "end": 32.406333
+        },
+        {
+          "text": "customers",
+          "start": 32.419458,
+          "end": 33.064208
+        },
+        {
+          "text": "can",
+          "start": 33.077375,
+          "end": 33.261583
+        },
+        {
+          "text": "quickly",
+          "start": 33.27475,
+          "end": 33.6695
+        },
+        {
+          "text": "find",
+          "start": 33.682625,
+          "end": 33.98525
+        },
+        {
+          "text": "the",
+          "start": 33.998416,
+          "end": 34.077374
+        },
+        {
+          "text": "product",
+          "start": 34.090541,
+          "end": 34.537916
+        },
+        {
+          "text": "they",
+          "start": 34.551041,
+          "end": 34.669457
+        },
+        {
+          "text": "want",
+          "start": 34.682625,
+          "end": 35.103666
+        }
+      ]
+    },
+    {
+      "id": "how",
+      "minimum_seconds": 9.0,
+      "speech": "What happens when someone searches for shoes? The shop only shows products with shoes in the name.",
+      "start": 38.3,
+      "duration": 9.0,
+      "words": [
+        {
+          "text": "What",
+          "start": 38.68,
+          "end": 38.890541
+        },
+        {
+          "text": "happens",
+          "start": 38.903666,
+          "end": 39.285249
+        },
+        {
+          "text": "when",
+          "start": 39.298416,
+          "end": 39.429999
+        },
+        {
+          "text": "someone",
+          "start": 39.443166,
+          "end": 39.732624
+        },
+        {
+          "text": "searches",
+          "start": 39.745791,
+          "end": 40.127374
+        },
+        {
+          "text": "for",
+          "start": 40.140541,
+          "end": 40.272124
+        },
+        {
+          "text": "shoes",
+          "start": 40.28525,
+          "end": 40.798416
+        },
+        {
+          "text": "The",
+          "start": 41.182625,
+          "end": 41.3405
+        },
+        {
+          "text": "shop",
+          "start": 41.353666,
+          "end": 41.748416
+        },
+        {
+          "text": "only",
+          "start": 41.840541,
+          "end": 42.090541
+        },
+        {
+          "text": "shows",
+          "start": 42.103666,
+          "end": 42.406291
+        },
+        {
+          "text": "products",
+          "start": 42.419458,
+          "end": 42.932624
+        },
+        {
+          "text": "with",
+          "start": 42.945791,
+          "end": 43.103666
+        },
+        {
+          "text": "shoes",
+          "start": 43.116833,
+          "end": 43.458958
+        },
+        {
+          "text": "in",
+          "start": 43.472125,
+          "end": 43.537916
+        },
+        {
+          "text": "the",
+          "start": 43.551041,
+          "end": 43.616832
+        },
+        {
+          "text": "name",
+          "start": 43.63,
+          "end": 44.090541
         }
       ]
     },
     {
       "id": "verified",
-      "minimum_seconds": 7.0,
-      "speech": "You get feedback, and a passing debrief marks those commits as verified. Busy right now? You can always come back later.",
-      "start": 25.1,
-      "duration": 8.766666666666667,
+      "minimum_seconds": 5.0,
+      "speech": "Both answers passed. Your push is verified. Two short answers to explain the code you ship.",
+      "start": 47.3,
+      "duration": 7.433333333333334,
       "words": [
         {
-          "text": "You",
-          "start": 25.48,
-          "end": 25.690541
+          "text": "Both",
+          "start": 47.68,
+          "end": 47.995791
         },
         {
-          "text": "get",
-          "start": 25.703666,
-          "end": 25.887874
+          "text": "answers",
+          "start": 48.008958,
+          "end": 48.482624
         },
         {
-          "text": "feedback",
-          "start": 25.901041,
-          "end": 26.493166
+          "text": "passed",
+          "start": 48.495791,
+          "end": 49.035249
         },
         {
-          "text": "and",
-          "start": 26.611583,
-          "end": 26.756333
+          "text": "Your",
+          "start": 49.419458,
+          "end": 49.643124
         },
         {
-          "text": "a",
-          "start": 26.782625,
-          "end": 26.848416
+          "text": "push",
+          "start": 49.656333,
+          "end": 50.024749
         },
         {
-          "text": "passing",
-          "start": 26.861583,
-          "end": 27.387916
-        },
-        {
-          "text": "debrief",
-          "start": 27.401041,
-          "end": 27.927374
-        },
-        {
-          "text": "marks",
-          "start": 27.940541,
-          "end": 28.308957
-        },
-        {
-          "text": "those",
-          "start": 28.322125,
-          "end": 28.558958
-        },
-        {
-          "text": "commits",
-          "start": 28.572125,
-          "end": 29.006333
-        },
-        {
-          "text": "as",
-          "start": 29.019458,
-          "end": 29.164208
+          "text": "is",
+          "start": 50.064208,
+          "end": 50.208958
         },
         {
           "text": "verified",
-          "start": 29.177375,
-          "end": 29.927375
+          "start": 50.222125,
+          "end": 50.998458
         },
         {
-          "text": "Busy",
-          "start": 30.311583,
-          "end": 30.614208
+          "text": "Two",
+          "start": 51.38,
+          "end": 51.695791
         },
         {
-          "text": "right",
-          "start": 30.627375,
-          "end": 30.811583
+          "text": "short",
+          "start": 51.708958,
+          "end": 52.011583
         },
         {
-          "text": "now",
-          "start": 30.82475,
-          "end": 31.140541
-        },
-        {
-          "text": "You",
-          "start": 31.522125,
-          "end": 31.7195
-        },
-        {
-          "text": "can",
-          "start": 31.732625,
-          "end": 31.903666
-        },
-        {
-          "text": "always",
-          "start": 31.916833,
-          "end": 32.245791
-        },
-        {
-          "text": "come",
-          "start": 32.258958,
-          "end": 32.443166
-        },
-        {
-          "text": "back",
-          "start": 32.456333,
-          "end": 32.679999
-        },
-        {
-          "text": "later",
-          "start": 32.693166,
-          "end": 33.101041
-        }
-      ]
-    },
-    {
-      "id": "close",
-      "minimum_seconds": 6.0,
-      "speech": "Keep building with your coding agent. Give yourself a moment to understand what you're shipping. That's Own it.",
-      "start": 33.866667,
-      "duration": 7.466666666666667,
-      "words": [
-        {
-          "text": "Keep",
-          "start": 34.246667,
-          "end": 34.549292
-        },
-        {
-          "text": "building",
-          "start": 34.562458,
-          "end": 34.904583
-        },
-        {
-          "text": "with",
-          "start": 34.917708,
-          "end": 35.049291
-        },
-        {
-          "text": "your",
-          "start": 35.062458,
-          "end": 35.180874
-        },
-        {
-          "text": "coding",
-          "start": 35.194042,
-          "end": 35.549292
-        },
-        {
-          "text": "agent",
-          "start": 35.562458,
-          "end": 36.062458
-        },
-        {
-          "text": "Give",
-          "start": 36.446667,
-          "end": 36.670333
-        },
-        {
-          "text": "yourself",
-          "start": 36.6835,
-          "end": 37.07825
-        },
-        {
-          "text": "a",
-          "start": 37.091417,
-          "end": 37.144042
-        },
-        {
-          "text": "moment",
-          "start": 37.157208,
-          "end": 37.617749
+          "text": "answers",
+          "start": 52.02475,
+          "end": 52.485291
         },
         {
           "text": "to",
-          "start": 37.630875,
-          "end": 37.749291
+          "start": 52.498416,
+          "end": 52.616832
         },
         {
-          "text": "understand",
-          "start": 37.762458,
-          "end": 38.472999
+          "text": "explain",
+          "start": 52.63,
+          "end": 53.051041
         },
         {
-          "text": "what",
-          "start": 38.486125,
-          "end": 38.617708
+          "text": "the",
+          "start": 53.064208,
+          "end": 53.143166
         },
         {
-          "text": "you're",
-          "start": 38.630875,
-          "end": 38.749291
+          "text": "code",
+          "start": 53.156333,
+          "end": 53.419499
         },
         {
-          "text": "shipping",
-          "start": 38.762458,
-          "end": 39.354583
+          "text": "you",
+          "start": 53.432625,
+          "end": 53.52475
         },
         {
-          "text": "That's",
-          "start": 39.736125,
-          "end": 40.104541
-        },
-        {
-          "text": "Own",
-          "start": 40.117708,
-          "end": 40.288749
-        },
-        {
-          "text": "it",
-          "start": 40.301917,
-          "end": 40.57825
+          "text": "ship",
+          "start": 53.537875,
+          "end": 53.972083
         }
       ]
     }

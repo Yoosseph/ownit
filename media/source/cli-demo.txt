@@ -1,13 +1,21 @@
 
-Ownit debrief · demo/shop · 1 commit · 14 changed lines
+Ownit debrief · demo/shop · 1 commit · 6 changed lines
+  bbbbbbb Add product search to the shop
 Nemotron is reading your push…
 Answer in your own words, up to 5 sentences. Rough is fine. Type "s" to stop and finish later.
 
-Question 1/1 (why)
-  Why retry temporary payment failures?
-> So a temporary error doesn't lose the sale.
+Question 1/2 (why)
+  Why did you add a search box to the shop?
+> So customers can quickly find the product they want.
 Checking your answer…
 ✓ Passed.
-  Nice, you covered the main idea.
+  Customers can find products faster.
+
+Question 2/2 (how)
+  What happens when someone searches for shoes?
+> The shop only shows products with shoes in the name.
+Checking your answer…
+✓ Passed.
+  Yes, the search matches product names.
 
 ✓ Push verified. 1 commit owned. Nice work.

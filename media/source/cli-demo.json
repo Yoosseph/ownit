@@ -1,25 +1,23 @@
 {
   "provenance": "Output captured by running cli/src/debrief.ts with controlled offline demo API replies. Shell command and hook prompt are staged. No live model or remote push.",
   "code": [
-    "export async function chargeWithRetry(pay) {",
-    "  const maxAttempts = 3;",
-    "  for (let attempt = 1; attempt <= maxAttempts; attempt++) {",
-    "    try {",
-    "      return await pay();",
-    "    } catch (error) {",
-    "      if (!error.temporary || attempt === maxAttempts) {",
-    "        throw error;",
-    "      }",
-    "      await sleep(250 * attempt);",
-    "    }",
-    "  }",
+    "export function searchProducts(products, query) {",
+    "  const search = query.trim().toLowerCase();",
+    "  return products.filter(product =>",
+    "    product.name.toLowerCase().includes(search)",
+    "  );",
     "}"
   ],
   "events": [
     {
       "time": 3.7,
       "kind": "output",
-      "text": "\nOwnit debrief · demo/shop · 1 commit · 14 changed lines\n"
+      "text": "\nOwnit debrief · demo/shop · 1 commit · 6 changed lines\n"
+    },
+    {
+      "time": 3.7,
+      "kind": "output",
+      "text": "  bbbbbbb Add product search to the shop\n"
     },
     {
       "time": 3.7,
@@ -34,12 +32,12 @@
     {
       "time": 4.35,
       "kind": "output",
-      "text": "\nQuestion 1/1 (why)\n"
+      "text": "\nQuestion 1/2 (why)\n"
     },
     {
       "time": 4.35,
       "kind": "output",
-      "text": "  Why retry temporary payment failures?\n"
+      "text": "  Why did you add a search box to the shop?\n"
     },
     {
       "time": 4.35,
@@ -64,37 +62,37 @@
     {
       "time": 9.071,
       "kind": "input",
-      "text": "a"
+      "text": "c"
     },
     {
       "time": 9.128,
       "kind": "input",
-      "text": " "
+      "text": "u"
     },
     {
       "time": 9.185,
       "kind": "input",
-      "text": "t"
+      "text": "s"
     },
     {
       "time": 9.242,
       "kind": "input",
-      "text": "e"
+      "text": "t"
     },
     {
       "time": 9.299,
       "kind": "input",
-      "text": "m"
+      "text": "o"
     },
     {
       "time": 9.356,
       "kind": "input",
-      "text": "p"
+      "text": "m"
     },
     {
       "time": 9.413,
       "kind": "input",
-      "text": "o"
+      "text": "e"
     },
     {
       "time": 9.47,
@@ -104,107 +102,107 @@
     {
       "time": 9.527,
       "kind": "input",
-      "text": "a"
+      "text": "s"
     },
     {
       "time": 9.584,
       "kind": "input",
-      "text": "r"
+      "text": " "
     },
     {
       "time": 9.641,
       "kind": "input",
-      "text": "y"
+      "text": "c"
     },
     {
       "time": 9.698,
       "kind": "input",
-      "text": " "
+      "text": "a"
     },
     {
       "time": 9.755,
       "kind": "input",
-      "text": "e"
+      "text": "n"
     },
     {
       "time": 9.812,
       "kind": "input",
-      "text": "r"
+      "text": " "
     },
     {
       "time": 9.869,
       "kind": "input",
-      "text": "r"
+      "text": "q"
     },
     {
       "time": 9.926,
       "kind": "input",
-      "text": "o"
+      "text": "u"
     },
     {
       "time": 9.983,
       "kind": "input",
-      "text": "r"
+      "text": "i"
     },
     {
       "time": 10.04,
       "kind": "input",
-      "text": " "
+      "text": "c"
     },
     {
       "time": 10.097,
       "kind": "input",
-      "text": "d"
+      "text": "k"
     },
     {
       "time": 10.154,
       "kind": "input",
-      "text": "o"
+      "text": "l"
     },
     {
       "time": 10.211,
       "kind": "input",
-      "text": "e"
+      "text": "y"
     },
     {
       "time": 10.268,
       "kind": "input",
-      "text": "s"
+      "text": " "
     },
     {
       "time": 10.325,
       "kind": "input",
-      "text": "n"
+      "text": "f"
     },
     {
       "time": 10.382,
       "kind": "input",
-      "text": "'"
+      "text": "i"
     },
     {
       "time": 10.439,
       "kind": "input",
-      "text": "t"
+      "text": "n"
     },
     {
       "time": 10.496,
       "kind": "input",
-      "text": " "
+      "text": "d"
     },
     {
       "time": 10.553,
       "kind": "input",
-      "text": "l"
+      "text": " "
     },
     {
       "time": 10.61,
       "kind": "input",
-      "text": "o"
+      "text": "t"
     },
     {
       "time": 10.667,
       "kind": "input",
-      "text": "s"
+      "text": "h"
     },
     {
       "time": 10.724,
@@ -219,65 +217,400 @@
     {
       "time": 10.838,
       "kind": "input",
-      "text": "t"
+      "text": "p"
     },
     {
       "time": 10.895,
       "kind": "input",
-      "text": "h"
+      "text": "r"
     },
     {
       "time": 10.952,
       "kind": "input",
-      "text": "e"
+      "text": "o"
     },
     {
       "time": 11.009,
       "kind": "input",
-      "text": " "
+      "text": "d"
     },
     {
       "time": 11.066,
       "kind": "input",
-      "text": "s"
+      "text": "u"
     },
     {
       "time": 11.123,
       "kind": "input",
-      "text": "a"
+      "text": "c"
     },
     {
       "time": 11.18,
       "kind": "input",
-      "text": "l"
+      "text": "t"
     },
     {
       "time": 11.237,
       "kind": "input",
-      "text": "e"
+      "text": " "
     },
     {
       "time": 11.294,
       "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 11.351,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 11.408,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 11.465,
+      "kind": "input",
+      "text": "y"
+    },
+    {
+      "time": 11.522,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 11.579,
+      "kind": "input",
+      "text": "w"
+    },
+    {
+      "time": 11.636,
+      "kind": "input",
+      "text": "a"
+    },
+    {
+      "time": 11.693,
+      "kind": "input",
+      "text": "n"
+    },
+    {
+      "time": 11.75,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 11.807,
+      "kind": "input",
       "text": "."
     },
     {
-      "time": 11.444,
+      "time": 11.957,
       "kind": "input",
       "text": "\n"
     },
     {
-      "time": 11.444,
+      "time": 11.957,
       "kind": "output",
       "text": "Checking your answer…\n"
     },
     {
       "time": 12.4,
       "kind": "output",
-      "text": "✓ Passed.\n  Nice, you covered the main idea.\n"
+      "text": "✓ Passed.\n  Customers can find products faster.\n"
     },
     {
-      "time": 12.4,
+      "time": 14,
+      "kind": "output",
+      "text": "\nQuestion 2/2 (how)\n"
+    },
+    {
+      "time": 14,
+      "kind": "output",
+      "text": "  What happens when someone searches for shoes?\n"
+    },
+    {
+      "time": 14,
+      "kind": "output",
+      "text": "> "
+    },
+    {
+      "time": 18,
+      "kind": "input",
+      "text": "T"
+    },
+    {
+      "time": 18.057,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 18.114,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 18.171,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 18.228,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 18.285,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 18.342,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 18.399,
+      "kind": "input",
+      "text": "p"
+    },
+    {
+      "time": 18.456,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 18.513,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 18.57,
+      "kind": "input",
+      "text": "n"
+    },
+    {
+      "time": 18.627,
+      "kind": "input",
+      "text": "l"
+    },
+    {
+      "time": 18.684,
+      "kind": "input",
+      "text": "y"
+    },
+    {
+      "time": 18.741,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 18.798,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 18.855,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 18.912,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 18.969,
+      "kind": "input",
+      "text": "w"
+    },
+    {
+      "time": 19.026,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 19.083,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 19.14,
+      "kind": "input",
+      "text": "p"
+    },
+    {
+      "time": 19.197,
+      "kind": "input",
+      "text": "r"
+    },
+    {
+      "time": 19.254,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 19.311,
+      "kind": "input",
+      "text": "d"
+    },
+    {
+      "time": 19.368,
+      "kind": "input",
+      "text": "u"
+    },
+    {
+      "time": 19.425,
+      "kind": "input",
+      "text": "c"
+    },
+    {
+      "time": 19.482,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 19.539,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 19.596,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 19.653,
+      "kind": "input",
+      "text": "w"
+    },
+    {
+      "time": 19.71,
+      "kind": "input",
+      "text": "i"
+    },
+    {
+      "time": 19.767,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 19.824,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 19.881,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 19.938,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 19.995,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 20.052,
+      "kind": "input",
+      "text": "o"
+    },
+    {
+      "time": 20.109,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 20.166,
+      "kind": "input",
+      "text": "s"
+    },
+    {
+      "time": 20.223,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 20.28,
+      "kind": "input",
+      "text": "i"
+    },
+    {
+      "time": 20.337,
+      "kind": "input",
+      "text": "n"
+    },
+    {
+      "time": 20.394,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 20.451,
+      "kind": "input",
+      "text": "t"
+    },
+    {
+      "time": 20.508,
+      "kind": "input",
+      "text": "h"
+    },
+    {
+      "time": 20.565,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 20.622,
+      "kind": "input",
+      "text": " "
+    },
+    {
+      "time": 20.679,
+      "kind": "input",
+      "text": "n"
+    },
+    {
+      "time": 20.736,
+      "kind": "input",
+      "text": "a"
+    },
+    {
+      "time": 20.793,
+      "kind": "input",
+      "text": "m"
+    },
+    {
+      "time": 20.85,
+      "kind": "input",
+      "text": "e"
+    },
+    {
+      "time": 20.907,
+      "kind": "input",
+      "text": "."
+    },
+    {
+      "time": 21.057,
+      "kind": "input",
+      "text": "\n"
+    },
+    {
+      "time": 21.057,
+      "kind": "output",
+      "text": "Checking your answer…\n"
+    },
+    {
+      "time": 22,
+      "kind": "output",
+      "text": "✓ Passed.\n  Yes, the search matches product names.\n"
+    },
+    {
+      "time": 22,
       "kind": "output",
       "text": "\n✓ Push verified. 1 commit owned. Nice work.\n"
     }

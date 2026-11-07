@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
 # The server, not the client, picks the model endpoint and model. The user picks the provider
-# (Nebius or NVIDIA) with `ownit key set`. Both run NVIDIA's Nemotron 3.5 Super (120B, 12B active).
+# with `ownit key set`. Nebius and NVIDIA run NVIDIA's Nemotron 3.5 Super (120B, 12B active).
 # Nebius retires nemotron-3-super-120b-a12b from Serverless on 2026-11-09, and NVIDIA's free
 # endpoint answers 404 for it on newer accounts.
 # Model lists: https://tokenfactory.nebius.com/model-catalog.md and https://integrate.api.nvidia.com/v1/models
@@ -12,6 +12,12 @@ NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
 NEBIUS_MODEL = "nvidia/Nemotron-3.5-Super-VL"
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1/"
 NVIDIA_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+OPENAI_BASE_URL = "https://api.openai.com/v1/"
+OPENAI_MODEL = "gpt-4.1-mini"
+ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1/"
+ANTHROPIC_MODEL = "claude-haiku-4-5"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com/"
+DEEPSEEK_MODEL = "deepseek-flash"
 # "nebius" for real calls, "fixture" for the offline test backend.
 MODEL_BACKEND = "nebius"
 # Daily cap on model calls paid for by DEMO_NEBIUS_KEY (only used when a request carries no key).

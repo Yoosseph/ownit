@@ -201,6 +201,9 @@ describe('GET /models', () => {
     expect(res.json.providers).toEqual([
       { id: 'nebius', name: 'Nebius', model: env.NEBIUS_MODEL },
       { id: 'nvidia', name: 'NVIDIA', model: env.NVIDIA_MODEL },
+      { id: 'openai', name: 'OpenAI', model: env.OPENAI_MODEL },
+      { id: 'anthropic', name: 'Claude (Anthropic)', model: env.ANTHROPIC_MODEL },
+      { id: 'deepseek', name: 'DeepSeek', model: env.DEEPSEEK_MODEL },
     ]);
   });
 });

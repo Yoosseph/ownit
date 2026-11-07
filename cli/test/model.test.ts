@@ -15,6 +15,9 @@ const MODELS = {
   providers: [
     { id: 'nebius', name: 'Nebius', model: 'nvidia/Nemotron-3.5-Super-VL' },
     { id: 'nvidia', name: 'NVIDIA', model: 'nvidia/nemotron-3.5-super-vl-120b-a12b' },
+    { id: 'openai', name: 'OpenAI', model: 'gpt-4.1-mini' },
+    { id: 'anthropic', name: 'Claude (Anthropic)', model: 'claude-haiku-4-5' },
+    { id: 'deepseek', name: 'DeepSeek', model: 'deepseek-flash' },
   ],
 };
 
@@ -26,6 +29,16 @@ async function model(env: Record<string, string>, command = 'model') {
 }
 
 describe('ownit model', { timeout: 60_000 }, () => {
+  it.each([
+    ['OPENAI_API_KEY', 'OpenAI', 'gpt-4.1-mini'],
+    ['ANTHROPIC_API_KEY', 'Claude (Anthropic)', 'claude-haiku-4-5'],
+    ['DEEPSEEK_API_KEY', 'DeepSeek', 'deepseek-flash'],
+  ])('shows the selected model for %s', async (envVar, name, selectedModel) => {
+    const { code, output } = await model({ [envVar!]: 'test-key' });
+    expect(code).toBe(0);
+    expect(output).toContain(`Provider:  ${name}`);
+    expect(output).toContain(`Model:     ${selectedModel}`);
+  });
   it('shows the provider and the model the server runs for it', async () => {
     const { code, output } = await model({ NVIDIA_API_KEY: 'nvapi-test-1234' });
     expect(code).toBe(0);

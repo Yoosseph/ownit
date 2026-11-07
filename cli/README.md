@@ -1,8 +1,8 @@
 # getownit
 
 The `ownit` command. Right after you `git push`, it runs a short debrief in your terminal about
-what you just shipped: why, how, and what's next. NVIDIA Nemotron (on Nebius or NVIDIA) writes the questions
-and grades your answers generously.
+what you just shipped: why, how, and what's next. Choose Nemotron (on Nebius or NVIDIA), OpenAI,
+Claude (Anthropic), or DeepSeek to write the questions and grade your answers generously.
 
 Install the CLI and sign in with GitHub:
 
@@ -11,11 +11,17 @@ npm i -g getownit
 ownit login
 ```
 
-Save your key. Pick Nebius or NVIDIA, then paste it; it is stored only in `~/.ownit/config.json`.
+Save your key. Pick your provider, then paste it; it is stored only in `~/.ownit/config.json`.
 
 ```sh
 ownit key set
 ```
+
+You can name the provider: `ownit key set openai`, `ownit key set claude` (also `anthropic`),
+`ownit key set deepseek`, `ownit key set nebius`, or `ownit key set nvidia`.
+Keys are entered at a hidden prompt. `NEBIUS_API_KEY`, `NVIDIA_API_KEY`, `OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`, and `DEEPSEEK_API_KEY` also work, overriding the saved key in that order
+(first set wins). Run `ownit model` to see your provider and the server's configured model.
 
 Inside your repo, install the pre-push hook and register the repo:
 

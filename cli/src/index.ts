@@ -56,23 +56,27 @@ Find commit IDs with "git log --oneline". Keep ranges small, about the size of a
   },
   key: {
     help: [
-      ['ownit key set [nebius|nvidia]', 'Save your model API key (stored locally)'],
+      ['ownit key set [provider]', 'Save your model API key (stored locally)'],
       ['ownit key clear|status', 'Remove or show it'],
     ],
     details: `  ownit key set           asks for the provider, then the key at a hidden prompt
   ownit key set nvidia    an nvapi- key from build.nvidia.com
   ownit key set nebius    a key from tokenfactory.nebius.com
+  ownit key set openai    a key from platform.openai.com
+  ownit key set claude    an Anthropic key (also: ownit key set anthropic)
+  ownit key set deepseek  a key from platform.deepseek.com
 Never type the key after the command: it would end up in your shell history.
-NVIDIA_API_KEY or NEBIUS_API_KEY in the environment work too.`,
+NEBIUS_API_KEY, NVIDIA_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY or DEEPSEEK_API_KEY
+in the environment work too (first set variable in that order wins).`,
     run: keyCommand,
   },
   model: {
     help: [['ownit model', 'Show the provider and model your debriefs use']],
-    details: `Shows which provider your saved key is for and which Nemotron model this server runs
-for it, plus what the other provider would use. The key is saved for your user
+    details: `Shows which provider your saved key is for and which model this server runs
+for it, plus what the other providers would use. The key is saved for your user
 (~/.ownit/config.json), so it applies in every repo on this computer. Switch with
-"ownit key set nebius" or "ownit key set nvidia". NVIDIA_API_KEY or NEBIUS_API_KEY in the
-environment override it for that terminal.`,
+"ownit key set" and choose Nebius, NVIDIA, OpenAI, Claude (Anthropic), or DeepSeek.
+Provider API key environment variables override it for that terminal.`,
     run: modelCommand,
   },
   badge: {

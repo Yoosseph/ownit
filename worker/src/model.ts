@@ -23,7 +23,7 @@ export type ProviderErrorKind =
 function reason(kind: ProviderErrorKind, name: string): string {
   switch (kind) {
     case 'no_key':
-      return 'No model API key. Run "ownit key set" with a Nebius or NVIDIA key.';
+      return 'No model API key. Run "ownit key set" to choose a provider and save your key.';
     case 'unknown_provider':
       return 'The server does not support that key\'s provider. Run "ownit key set" again.';
     case 'invalid_key':
@@ -33,7 +33,7 @@ function reason(kind: ProviderErrorKind, name: string): string {
     case 'rate_limited':
       return `${name} is rate limiting this key. Try again in a minute.`;
     case 'model_unavailable':
-      return `${name} says this key's account can't use the Nemotron model. Make a key on the model's page (build.nvidia.com for NVIDIA), or switch provider with "ownit key set".`;
+      return `${name} says this key's account can't use the configured model. Check model access with your provider, or switch provider with "ownit key set".`;
     case 'unavailable':
       return `${name} is unreachable right now.`;
     case 'bad_output':
@@ -99,6 +99,15 @@ export const PROVIDERS = {
     extraBody: THINKING_OFF,
     hedgesMs: [3_000, 6_000],
     timeoutMs: 10_000,
+  }),
+  openai: openAiCompatible('OpenAI', (env) => ({ baseUrl: env.OPENAI_BASE_URL, model: env.OPENAI_MODEL })),
+  anthropic: {
+    name: 'Claude (Anthropic)',
+    model: (env: Env) => env.ANTHROPIC_MODEL,
+    create: (env: Env, apiKey: string) => anthropicModel(env.ANTHROPIC_BASE_URL, env.ANTHROPIC_MODEL, apiKey),
+  },
+  deepseek: openAiCompatible('DeepSeek', (env) => ({ baseUrl: env.DEEPSEEK_BASE_URL, model: env.DEEPSEEK_MODEL }), {
+    extraBody: { thinking: { type: 'disabled' } },
   }),
 } satisfies Record<string, ProviderSpec>;
 
@@ -233,6 +242,43 @@ export function openAiCompatibleModel(
         | { choices?: { message?: { content?: string | null } }[] }
         | null;
       return stripThinking(data?.choices?.[0]?.message?.content ?? '');
+    },
+  };
+}
+
+/** Claude uses the Messages API, with a separate system prompt and typed content blocks. */
+export function anthropicModel(baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
+  const url = new URL('messages', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
+  return {
+    async complete(prompt, maxTokens) {
+      let response: Response;
+      try {
+        response = await firstResponse((signal) => fetcher(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'anthropic-version': '2026-10-21',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            system: prompt.system,
+            messages: [{ role: 'user', content: prompt.user }],
+            max_tokens: maxTokens,
+            temperature: prompt.temperature ?? 0.3,
+          }),
+          signal,
+        }), [], 90_000);
+      } catch {
+        throw new ProviderError('unavailable', 'Claude (Anthropic)');
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new ProviderError(errorKind(response.status, body), 'Claude (Anthropic)', response.status);
+      }
+      const data = await response.json().catch(() => null) as { content?: { type: string; text?: string }[] } | null;
+      if (!Array.isArray(data?.content)) return '';
+      return data.content.filter((block) => block?.type === 'text' && typeof block.text === 'string').map((block) => block.text).join('').trim();
     },
   };
 }

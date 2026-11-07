@@ -20,8 +20,8 @@ your change, right in your terminal. Build understanding alongside your AI codin
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 When you run `git push`, Ownit's pre-push hook offers a debrief: why you made the change,
-how it works, and what could come next. NVIDIA Nemotron (on Nebius or NVIDIA) writes the
-questions and grades your answers. Debrief now or return later with `ownit interview`.
+how it works, and what could come next. Your chosen model writes the questions and grades your
+answers: Nemotron on Nebius or NVIDIA, OpenAI, Claude, or DeepSeek. Debrief now or return later with `ownit interview`.
 
 | Push | Explain | Build your record |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ a passed debrief records understanding at the keyboard, not proof of authorship 
 
 ## How Ownit uses Nemotron on Nebius
 
-Every question and every grade in Ownit comes from **NVIDIA Nemotron 3.5 Super** (120B parameters,
+By default, questions and grades in Ownit come from **NVIDIA Nemotron 3.5 Super** (120B parameters,
 12B active), model `nvidia/Nemotron-3.5-Super-VL`, served by
 **[Nebius Token Factory](https://tokenfactory.nebius.com/)** through its OpenAI-compatible API at
 `https://api.tokenfactory.nebius.com/v1/`. Nebius is the default provider. Users who have no Nebius
@@ -73,10 +73,22 @@ account can use a key from NVIDIA instead (`nvidia/nemotron-3.5-super-vl-120b-a1
 `build.nvidia.com`), which runs the same model. The server picks the model, so the CLI never needs
 an update when it changes.
 
-A debrief makes three kinds of Nemotron call, all from the Cloudflare Worker
+You can also bring an OpenAI, Claude (Anthropic), or DeepSeek API key:
+
+| Provider | Save your key | Default model | Environment variable |
+| --- | --- | --- | --- |
+| OpenAI | `ownit key set openai` | `gpt-4.1-mini` | `OPENAI_API_KEY` |
+| Claude (Anthropic) | `ownit key set claude` (or `anthropic`) | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
+| DeepSeek | `ownit key set deepseek` | `deepseek-flash` | `DEEPSEEK_API_KEY` |
+
+Paste the key at the hidden prompt. Run `ownit model` to see the models your server uses.
+Environment variables override the saved key, in this order: `NEBIUS_API_KEY`, `NVIDIA_API_KEY`,
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY` (first set wins).
+
+A debrief makes three kinds of model call, all from the Cloudflare Worker
 (`worker/src/debrief.ts`):
 
-| Call | What Nemotron gets | What it returns |
+| Call | What the model gets | What it returns |
 | --- | --- | --- |
 | **Question writer** | The push's commit messages and diff, and how many questions to ask (1–3, by push size). | Why / how / next questions, a hidden reference answer for each, and a one-line summary of the push. |
 | **Grader** | One question, its reference answer and your answer. It never sees the code. | Pass or fail, plus short feedback. |
@@ -84,10 +96,11 @@ A debrief makes three kinds of Nemotron call, all from the Cloudflare Worker
 
 How it works:
 
-- **Bring your own key.** `ownit key set` stores your Nebius key on your machine. The CLI sends it
-  with each debrief request, and the worker calls Nebius with it and then drops it, so you pay
-  Nebius directly (usually under a cent per debrief). The key is never stored or logged.
-- **Structured output.** Each call asks for JSON (`response_format: json_object`). The worker
+- **Bring your own key.** `ownit key set` stores your provider key on your machine. The CLI sends it
+  with each debrief request, and the worker calls your selected provider with it and then drops it.
+  You pay your provider directly. The worker never stores or logs the key.
+- **Structured output.** Each call asks for JSON (with `response_format: json_object` for chat-completions providers).
+  Claude uses the Messages API and the same JSON instructions. The worker
   validates the reply with zod and retries once if it is malformed. The grader runs at
   temperature 0 and the writers at 0.3.
 - **Prompt-injection resistant.** Code, commit messages and answers go in tagged data blocks,
@@ -95,7 +108,7 @@ How it works:
   `scripts/live-injection-check` tests the real model against injected answers.
 - **Sealed answer keys.** Reference answers travel between requests inside an encrypted token that
   only the server can open, so the CLI can't read them.
-- **Code is never stored.** The diff goes to Nemotron on your account and is then discarded.
+- **Code is never stored.** The diff goes to your chosen model on your account and is then discarded.
   Answers are discarded too, unless a public repo's admins choose to show passing answers.
 
 All three system prompts are in [prompts/](prompts/), and the provider code is
@@ -103,9 +116,10 @@ All three system prompts are in [prompts/](prompts/), and the provider code is
 
 ## Setup
 
-You need Node 20+, a GitHub repo and an API key from [Nebius Token Factory](https://tokenfactory.nebius.com/)
-or, if you have no Nebius account, from [NVIDIA](https://build.nvidia.com/). Both serve the same Nemotron
-model. `ownit key set` asks which one your key is for (or name it: `ownit key set nvidia`).
+You need Node 20+, a GitHub repo and an API key from [Nebius Token Factory](https://tokenfactory.nebius.com/),
+[NVIDIA](https://build.nvidia.com/), [OpenAI](https://platform.openai.com/api-keys),
+[Anthropic](https://platform.claude.com/), or [DeepSeek](https://platform.deepseek.com/api_keys).
+`ownit key set` asks which provider your key is for (or name it: `ownit key set openai`).
 
 **1. Install the CLI.**
 
@@ -119,7 +133,7 @@ npm i -g getownit
 ownit login
 ```
 
-**3. Save your API key.** Pick Nebius or NVIDIA, then paste your key at the hidden prompt. It stays on your machine.
+**3. Save your API key.** Pick your provider, then paste your key at the hidden prompt. It stays on your machine.
 
 ```sh
 ownit key set
@@ -181,7 +195,7 @@ Each pending push also says whose debrief it is waiting on.
 | `ownit interview` | List your waiting pushes (including ones an AI agent made) and debrief the one you pick. |
 | `ownit interview --all` | Debrief every waiting push in turn. |
 | `ownit interview --range A..B` | Debrief any commit range, or `--range <sha>` for one commit. |
-| `ownit key set [nebius\|nvidia]` | Save your API key. Paste it at the hidden prompt, never after the command. |
+| `ownit key set [provider]` | Save a Nebius, NVIDIA, OpenAI, Claude (`claude` or `anthropic`), or DeepSeek key. Paste it at the hidden prompt, never after the command. |
 | `ownit key status` / `ownit key clear` | Show or remove the key. |
 | `ownit badge` | Print this repo's badge Markdown to paste into your README. |
 | `ownit settings` | Show this repo's settings and page link. |

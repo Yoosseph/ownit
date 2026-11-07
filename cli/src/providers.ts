@@ -7,6 +7,9 @@ import type { Config } from './config.js';
 export const PROVIDERS = {
   nebius: { name: 'Nebius', envVar: 'NEBIUS_API_KEY', keyUrl: 'https://tokenfactory.nebius.com/', keyPrefix: undefined },
   nvidia: { name: 'NVIDIA', envVar: 'NVIDIA_API_KEY', keyUrl: 'https://build.nvidia.com/', keyPrefix: 'nvapi-' },
+  openai: { name: 'OpenAI', envVar: 'OPENAI_API_KEY', keyUrl: 'https://platform.openai.com/api-keys', keyPrefix: 'sk-proj-' },
+  anthropic: { name: 'Claude (Anthropic)', envVar: 'ANTHROPIC_API_KEY', keyUrl: 'https://platform.claude.com/', keyPrefix: 'sk-ant-' },
+  deepseek: { name: 'DeepSeek', envVar: 'DEEPSEEK_API_KEY', keyUrl: 'https://platform.deepseek.com/api_keys', keyPrefix: undefined },
 } as const satisfies Record<string, { name: string; envVar: string; keyUrl: string; keyPrefix: string | undefined }>;
 
 export type Provider = keyof typeof PROVIDERS;

@@ -4,6 +4,12 @@ export interface Env {
   NEBIUS_MODEL: string;
   NVIDIA_BASE_URL: string;
   NVIDIA_MODEL: string;
+  OPENAI_BASE_URL: string;
+  OPENAI_MODEL: string;
+  ANTHROPIC_BASE_URL: string;
+  ANTHROPIC_MODEL: string;
+  DEEPSEEK_BASE_URL: string;
+  DEEPSEEK_MODEL: string;
   MODEL_BACKEND: string;
   DEMO_DAILY_CALL_CAP: string;
   PUBLIC_URL: string;

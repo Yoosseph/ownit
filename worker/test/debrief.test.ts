@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gradeAnswer, parseJsonReply, validateGrade, validateQuestions, writeFollowUp, writeQuestions } from '../src/debrief';
-import { createModel, firstResponse, openAiCompatibleModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
+import { anthropicModel, createModel, firstResponse, openAiCompatibleModel, ProviderError, stripThinking, type ChatModel } from '../src/model';
 import { countChangedLines, questionCount } from '../src/questionCount';
 import { SAMPLE_DIFF, testEnv } from './helpers/env';
 
@@ -199,13 +199,18 @@ describe('provider choice', () => {
   it.each([
     ['nvidia', 'https://nvidia.invalid/v1/chat/completions', 'nvidia/on-nvidia'],
     ['nebius', 'https://nebius.invalid/v1/chat/completions', 'nvidia/on-nebius'],
+    ['openai', 'https://openai.invalid/v1/chat/completions', 'gpt-4.1-mini'],
+    ['deepseek', 'https://deepseek.invalid/chat/completions', 'deepseek-flash'],
   ] as const)('sends %s keys to that provider\'s endpoint and model', async (provider, url, model) => {
     const fetcher = vi.fn(async () => Response.json({ choices: [{ message: { content: '{}' } }] }));
     vi.stubGlobal('fetch', fetcher);
     await createModel(env, 'key-123', provider).complete(prompt, 10);
     const [calledUrl, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(calledUrl).toBe(url);
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer key-123');
     expect(JSON.parse(init.body as string).model).toBe(model);
+    if (provider === 'deepseek') expect(JSON.parse(init.body as string).thinking).toEqual({ type: 'disabled' });
+    if (provider === 'openai') expect(JSON.parse(init.body as string).chat_template_kwargs).toBeUndefined();
   });
 
   it.each(['nvidia', 'nebius'] as const)('turns thinking off on %s', async (provider) => {
@@ -214,5 +219,43 @@ describe('provider choice', () => {
     await createModel(env, 'key-123', provider).complete(prompt, 10);
     const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string).chat_template_kwargs).toEqual({ enable_thinking: false });
+  });
+});
+
+describe('Claude Messages client', () => {
+  const prompt = { task: 'grade' as const, system: 'Reply in JSON.', user: 'My answer', temperature: 0 };
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('uses the Anthropic endpoint and extracts only text content', async () => {
+    const fetcher = vi.fn(async () => Response.json({ content: [
+      { type: 'thinking', thinking: 'private' },
+      { type: 'text', text: '{"pass":true,' },
+      { type: 'text', text: '"feedback":"ok"}' },
+    ] }));
+    vi.stubGlobal('fetch', fetcher);
+    const model = createModel(testEnv({ MODEL_BACKEND: 'nebius' }), 'claude-key', 'anthropic');
+    expect(await model.complete(prompt, 100)).toBe('{"pass":true,"feedback":"ok"}');
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://anthropic.invalid/v1/messages');
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer claude-key', 'anthropic-version': '2026-10-21' });
+    expect(JSON.parse(init.body as string)).toEqual({ model: 'claude-haiku-4-5', system: prompt.system,
+      messages: [{ role: 'user', content: prompt.user }], max_tokens: 100, temperature: 0 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([[401, '', 'invalid_key'], [400, 'credit balance too low', 'no_credit'], [429, '', 'rate_limited'],
+    [404, '', 'model_unavailable'], [529, '', 'unavailable']] as const)('maps HTTP %i into a provider error', async (status, body, kind) => {
+    const model = anthropicModel('https://api.example/v1/', 'claude', 'secret', async () => new Response(body, { status }));
+    await expect(model.complete(prompt, 10)).rejects.toMatchObject({ kind, httpStatus: status, message: expect.stringContaining('Claude') });
+  });
+
+  it('maps network failures into a provider error', async () => {
+    const model = anthropicModel('https://api.example/v1/', 'claude', 'secret', async () => { throw new TypeError('fetch failed'); });
+    await expect(model.complete(prompt, 10)).rejects.toMatchObject({ kind: 'unavailable' });
+  });
+
+  it.each([{}, { content: {} }, { content: [{ type: 'thinking' }] }])('lets JSON validation retry missing text', async (body) => {
+    const model = anthropicModel('https://api.example/v1/', 'claude', 'secret', async () => Response.json(body));
+    expect(await model.complete(prompt, 10)).toBe('');
   });
 });

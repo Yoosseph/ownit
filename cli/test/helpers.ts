@@ -80,6 +80,7 @@ const AGENT_VARS = ['CI', 'CLAUDECODE', 'CODEX_SANDBOX', 'CODEX_CI', 'CURSOR_AGE
 export function cleanEnv(extra: Record<string, string>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, NO_COLOR: '1', GIT_TERMINAL_PROMPT: '0' };
   for (const name of AGENT_VARS) delete env[name];
+  for (const name of ['NEBIUS_API_KEY', 'NVIDIA_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY']) delete env[name];
   for (const name of Object.keys(env)) if (name.startsWith('OWNIT_')) delete env[name];
   const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH';
   env[pathKey] = (env[pathKey] ?? '')

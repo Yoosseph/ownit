@@ -239,7 +239,7 @@ describe('Claude Messages client', () => {
     expect(url).toBe('https://anthropic.invalid/v1/messages');
     expect(init.headers).toMatchObject({ Authorization: 'Bearer claude-key', 'anthropic-version': '2026-10-21' });
     expect(JSON.parse(init.body as string)).toEqual({ model: 'claude-haiku-4-5', system: prompt.system,
-      messages: [{ role: 'user', content: prompt.user }], max_tokens: 100, temperature: 0 });
+      messages: [{ role: 'user', content: prompt.user }], max_tokens: 100 });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 

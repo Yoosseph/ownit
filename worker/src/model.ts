@@ -246,7 +246,11 @@ export function openAiCompatibleModel(
   };
 }
 
-/** Claude uses the Messages API, with a separate system prompt and typed content blocks. */
+/**
+ * Claude uses the Messages API, with a separate system prompt and typed content blocks.
+ * API version 2026-10-21 rejects temperature/top_p/top_k with a 400 on every model,
+ * so prompt.temperature is not sent and Claude samples at its default.
+ */
 export function anthropicModel(baseUrl: string, model: string, apiKey: string, fetcher: typeof fetch = fetch): ChatModel {
   const url = new URL('messages', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
   return {
@@ -265,7 +269,6 @@ export function anthropicModel(baseUrl: string, model: string, apiKey: string, f
             system: prompt.system,
             messages: [{ role: 'user', content: prompt.user }],
             max_tokens: maxTokens,
-            temperature: prompt.temperature ?? 0.3,
           }),
           signal,
         }), [], 90_000);

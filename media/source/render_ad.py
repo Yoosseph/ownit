@@ -86,7 +86,7 @@ def mono(im, value, x, y, size=29, color=WHITE):
 def terminal_text(t):
     # Shell entry is staged; all debrief output below comes from the actual CLI.
     if t < 1.7:
-        return "$ git show --stat --oneline HEAD\n7ac4e21 Retry temporary payment failures\n src/checkout.ts | 14 ++++++++++----\n\n$ "
+        return "$ git show --stat --oneline HEAD\nbbbbbbb Add product search to the shop\n src/search.ts | 6 ++++++\n\n$ "
     command = "git push"[:max(0, int((t - 1.70) * 18))]
     text = "$ " + command
     if t >= 3.0:
@@ -99,7 +99,7 @@ def terminal_text(t):
     return text
 
 
-def screen(t):
+def screen(t, stage="Ownit / push debrief"):
     im = BASE.copy()
     d = ImageDraw.Draw(im)
     # One persistent terminal window throughout the demo.
@@ -109,7 +109,7 @@ def screen(t):
     put(im, "shop — Ownit", W/2, 17, 22, "#d4dbe3", align="center")
     put(im, "CLI DEMO", W-32, 20, 15, "#8c9aa9", align="right")
     d.rectangle((0, H-32, W, H), fill="#182d27")
-    put(im, "main     1 commit ready to push", 23, H-24, 17, "#a0b8af")
+    put(im, "main     " + ("1 commit verified" if t >= 22 else "1 commit ready to push"), 23, H-24, 17, "#a0b8af")
     put(im, "TypeScript     UTF-8", W-24, H-24, 17, "#a0b8af", align="right")
     terminal_y = 111
     d.rectangle((0, terminal_y, W, H-33), fill="#0c1218")
@@ -117,42 +117,66 @@ def screen(t):
     put(im, "TERMINAL", 35, terminal_y+20, 19, WHITE)
     d.line((35, terminal_y+48, 145, terminal_y+48), fill=MINT, width=2)
     put(im, "zsh  ·  ~/shop", W-40, terminal_y+20, 19, "#81968d", align="right")
-    put(im, "checkout.ts", 30, 76, 19, "#81968d")
-    put(im, "Ownit / push debrief", W-40, 76, 19, MINT, align="right")
+    put(im, "search.ts", 30, 76, 19, "#81968d")
+    put(im, stage, W-40, 76, 19, MINT, align="right")
     body_y = terminal_y + 82
     raw = terminal_text(t)
     lines = raw.split("\n")
-    available = max(1, int((H-65-body_y) / 39))
-    if t > 18.5:
-        available = min(available, 15)
+    available = max(1, int((H-65-body_y) / 32))
     lines = lines[-available:]
     for i, line in enumerate(lines):
         color = (MINT if line.startswith(("✓", "Question")) else
                  "#93a4b2" if line.startswith(("Nemotron", "Answer in", "Checking", "  Nice")) else WHITE)
-        mono(im, line, 50, body_y + i*39, 28, color)
-    if t < 12.4 and int(t*2) % 2 == 0 and lines:
+        mono(im, line, 50, body_y + i*32, 26, color)
+    if t < 22 and int(t*2) % 2 == 0 and lines:
         last = lines[-1]
-        x = 50 + font(28, "mono").getlength(last)
-        y = body_y + (len(lines)-1)*39
+        x = 50 + font(26, "mono").getlength(last)
+        y = body_y + (len(lines)-1)*32
         d.rectangle((x+3, y, x+5, y+27), fill=MINT)
-    # Keep the completed terminal on screen; the invitation joins its lower edge.
-    cta = ease((t - 18.5) / .8)
-    if cta:
-        panel = Image.new("RGBA", (W, 158), (13, 30, 24, round(255*cta)))
-        pd = ImageDraw.Draw(panel)
-        pd.line((0, 0, W, 0), fill="#345847", width=2)
-        put(panel, "Own the code you ship.", 50, 28, 43, WHITE, "bold", cta)
-        put(panel, "$ npm i -g getownit", W-50, 33, 32, MINT, "mono", cta, "right")
-        put(panel, "github.com/Yoosseph/ownit", 54, 100, 23, "#a8bdb4", alpha=cta)
-        im.paste(panel, (0, H-190), panel)
     return im
 
 
+def setup_screen(scene, elapsed):
+    content = {
+        "install": ("1. Install and sign in", "Start in your terminal. Finish sign-in in your browser.", [
+            "$ npm i -g getownit", "", "$ ownit login", "",
+            "# Sign in with GitHub in the browser.",
+        ]),
+        "key": ("2. Add your API key", "Use a Nebius or NVIDIA key. The prompt keeps it hidden.", [
+            "$ ownit key set", "", "# Choose Nebius or NVIDIA.",
+            "# Paste your API key at the hidden prompt.",
+        ]),
+        "repo": ("3. Connect your project", "Install the Ownit GitHub App for this repository when prompted.", [
+            "$ cd your-repo", "", "$ ownit init", "",
+            "# In the browser: select your repo and install the app.",
+            "# Return to the terminal and press Enter.",
+        ]),
+    }
+    title, subtitle, lines = content[scene["id"]]
+    # Reveal each command as the narrator reaches it; retain the setup context.
+    if scene["id"] == "install" and elapsed < scene["words"][4]["start"] - scene["start"]:
+        lines = lines[:1]
+    return example(title, subtitle, lines)
+
+
 def frame(t):
-    # Follow the spoken sections while preserving the captured CLI event order.
-    spoken = [scene["start"] for scene in SCENES] + [DURATION]
-    demo = [0, 3.7, 8.9, 12.4, 18.5, 22.5]
-    return screen(float(np.interp(t, spoken, demo)))
+    scene = next((s for s in reversed(SCENES) if t >= s["start"]), SCENES[0])
+    elapsed = t - scene["start"]
+    if scene["id"] in ("install", "key", "repo"):
+        return setup_screen(scene, elapsed)
+    if scene["id"] == "push":
+        demo_time = float(np.interp(elapsed, [0, scene["duration"] - .5], [0, 4.34]))
+        return screen(demo_time, "Setup complete / push your change")
+    if scene["id"] in ("why", "how"):
+        first = scene["id"] == "why"
+        answer_word = 10 if first else 7
+        answer_start = scene["words"][answer_word]["start"] - scene["start"]
+        answer_end = scene["words"][-1]["end"] - scene["start"]
+        demo_time = float(np.interp(elapsed,
+            [0, answer_start, answer_end, scene["duration"]],
+            [4.35, 8.9, 12.4, 13.9] if first else [14, 18, 22, 22]))
+        return screen(demo_time, "Question 1 of 2 / why" if first else "Question 2 of 2 / how")
+    return screen(22, "Both answers passed / push verified")
 
 
 def example(title, subtitle, lines):
@@ -268,8 +292,8 @@ def main():
     readme_images()
     for scene in SCENES:
         frame(scene["start"] + scene["duration"] - .7).save(TMP / (scene["id"] + ".png"))
-    screen(15.0).save(OUT / "ownit-ad-poster.jpg", quality=95)
-    screen(15.0).save(ROOT / "docs/assets/ownit-terminal-demo.png")
+    screen(22, "Both answers passed / push verified").save(OUT / "ownit-ad-poster.jpg", quality=95)
+    screen(22, "Both answers passed / push verified").save(ROOT / "docs/assets/ownit-terminal-demo.png")
     if args.stills_only:
         return
     if not args.ffmpeg:

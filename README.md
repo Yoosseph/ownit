@@ -27,22 +27,22 @@ questions and grades your answers. Debrief now or return later with `ownit inter
 | --- | --- | --- |
 | Use your normal Git workflow. | Answer 1–3 short questions about the change. | Passing debriefs mark commits as verified on GitHub and your repo page. |
 
-![Illustrative Ownit terminal session showing a retry explanation and a verified push.](docs/assets/ownit-terminal-demo.png)
+![Illustrative Ownit terminal session showing two search-box questions and a verified push.](docs/assets/ownit-terminal-demo.png)
 
-*Illustrative terminal examples. The image uses a one-question demo; the transcript below shows a two-question push. Setup includes browser sign-in and GitHub App installation. Questions and grading vary with your change.*
+*Illustrative terminal examples. The video and debrief image use a two-question demo. Setup includes browser sign-in and GitHub App installation. Question counts and grading vary with your change.*
 
 ```text
 $ git push
 Ownit (2 commits to octo/shop) Debrief now? [Y/n] y
 
 Question 1/2 (why)
-  Why does checkout now retry some failed card payments instead of failing the order right away?
-> so temporary card errors dont lose the sale
+  Why did you add a search box to the shop?
+> So customers can quickly find the product they want.
 ✓ Passed.
 
 Question 2/2 (how)
-  How does the retry decide when to give up?
-> permanent declines fail right away, temporary ones retry up to 3 times
+  What happens when someone searches for shoes?
+> The shop only shows products with shoes in the name.
 ✓ Passed.
 
 ✓ Push verified. 2 commits owned. Nice work.

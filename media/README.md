@@ -4,12 +4,12 @@
 
 ![Ownit terminal showing a completed debrief](ownit-ad-poster.jpg)
 
-A 41.3-second terminal-only product demo with a conversational female voiceover. The pitch
-starts with shipping an AI-assisted change you cannot yet explain, then shows how Ownit helps.
-It opens on a commit summary, then types `git push`; Ownit's prompt appears around 6.5 seconds.
-One terminal session follows a question, typed answer, and verified result. Quiet original
-music sits under the narration. The closing installation command appears over the terminal.
-There are no people, photographs, or laptop shots.
+A 54.7-second terminal-only walkthrough with a conversational female voiceover. It starts
+directly with installation, GitHub sign-in, API key setup, and connecting a repository.
+Then it shows a push and two simple interview questions about adding a shop search box:
+why customers need it, and what happens when someone searches for shoes. Each answer is
+typed, checked, and passed before the verified result. Quiet original music sits under
+the narration.
 
 The export is 1920 × 1080, 16:9, 30 fps, H.264 with AAC stereo audio and `faststart`.
 The mix targets -16 LUFS with a -1 dBTP ceiling. Captions follow the spoken words.
@@ -18,19 +18,23 @@ The mix targets -16 LUFS with a -1 dBTP ceiling. Captions follow the spoken word
 
 | Time | Picture |
 | --- | --- |
-| 0–8s | Commit summary, `git push`, and the Ownit prompt introduce the problem. |
-| 8–15.8s | Captured CLI output introduces the debrief and its question. |
-| 15.8–25.1s | The payment-retry answer is typed and checked. |
-| 25.1–33.9s | The verified result holds while the voice explains feedback and returning later. |
-| 33.9–41.3s | “Own the code you ship,” installation command, and repository URL close the pitch. |
+| 0–7s | Install Ownit and sign in with GitHub. |
+| 7–14.6s | Choose a provider and enter an API key at the hidden prompt. |
+| 14.6–22.8s | Run `ownit init` and install the GitHub App for the repository. |
+| 22.8–29.3s | Push the search-box change and accept the interview. |
+| 29.3–38.3s | Why add a search box? So customers can quickly find the product they want. |
+| 38.3–47.3s | What happens when someone searches for shoes? Show products with shoes in the name. |
+| 47.3–54.7s | Both answers passed; hold the complete interview and verified result. |
 
 Terminal animation follows the generated speech timeline, leaving more time to read each step.
 
 ## Demo provenance
 
 The debrief output comes from executing the project's actual `runDebrief` function with
-controlled offline API responses. The question, answer, and passing grade are demo fixtures,
-not a live model evaluation or a real remote push. The commit summary, typing, and initial push prompt are staged by the renderer. A verified debrief does not prove authorship
+controlled offline API responses. Both questions, answers, passing grades, and the two-question
+count are demo fixtures, not a live model evaluation or a real remote push. Real question counts
+depend on push size. Setup instructions, the commit summary, typing, and initial push prompt
+are staged by the renderer. A verified debrief does not prove authorship
 or code correctness.
 
 - [capture_cli_demo.mjs](source/capture_cli_demo.mjs): runs the real CLI debrief with fixture responses.

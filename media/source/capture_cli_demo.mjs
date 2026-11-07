@@ -21,20 +21,29 @@ const events = [];
 let time = 3.7;
 let kind = 'output';
 const out = new PassThrough();
-out.on('data', (chunk) => events.push({ time: Number(time.toFixed(4)), kind, text: chunk.toString() }));
-const answer = "So a temporary error doesn't lose the sale.";
+out.on('data', (chunk) => {
+  if (chunk.toString().includes('Question 2/2')) time = 14;
+  events.push({ time: Number(time.toFixed(4)), kind, text: chunk.toString() });
+});
+const answers = [
+  'So customers can quickly find the product they want.',
+  'The shop only shows products with shoes in the name.',
+];
+let answerIndex = 0;
 const prompter = {
   out,
   async ask(prompt) {
+    const answer = answers[answerIndex];
     out.write(prompt);
     kind = 'input';
     for (let i = 0; i < answer.length; i++) {
-      time = 8.9 + i * .057;
+      time = (answerIndex === 0 ? 8.9 : 18) + i * .057;
       out.write(answer[i]);
     }
     time += .15;
     out.write('\n');
     kind = 'output';
+    answerIndex++;
     return answer;
   },
   close() {},
@@ -44,37 +53,34 @@ const api = {
   async request(method, path, body) {
     if (path === '/api/interview/start') {
       time = 4.35;
-      return { push_id: 1, total: 1, session: 'demo-0',
-        questions: [{ idx: 0, kind: 'why', text: 'Why retry temporary payment failures?' }] };
+      return { push_id: 1, total: 2, session: 'demo-0',
+        questions: [
+          { idx: 0, kind: 'why', text: 'Why did you add a search box to the shop?' },
+          { idx: 1, kind: 'how', text: 'What happens when someone searches for shoes?' },
+        ] };
     }
-    if (path === '/api/interview/answer' && body.answer === answer) {
-      time = 12.4;
-      return { pass: true, feedback: 'Nice, you covered the main idea.', done: true,
-        status: 'verified', followup: null, session: 'demo-1' };
+    if (path === '/api/interview/answer' && body.answer === answers[body.idx]) {
+      time = body.idx === 0 ? 12.4 : 22;
+      return { pass: true, feedback: body.idx === 0 ? 'Customers can find products faster.' : 'Yes, the search matches product names.',
+        done: body.idx === 1, status: body.idx === 1 ? 'verified' : 'pending',
+        followup: null, session: `demo-${body.idx + 1}` };
     }
     throw new Error(`Unexpected demo request: ${method} ${path}`);
   },
 };
 const code = [
-  'export async function chargeWithRetry(pay) {',
-  '  const maxAttempts = 3;',
-  '  for (let attempt = 1; attempt <= maxAttempts; attempt++) {',
-  '    try {',
-  '      return await pay();',
-  '    } catch (error) {',
-  '      if (!error.temporary || attempt === maxAttempts) {',
-  '        throw error;',
-  '      }',
-  '      await sleep(250 * attempt);',
-  '    }',
-  '  }',
+  'export function searchProducts(products, query) {',
+  '  const search = query.trim().toLowerCase();',
+  '  return products.filter(product =>',
+  '    product.name.toLowerCase().includes(search)',
+  '  );',
   '}',
 ];
 const result = await runDebrief(api, prompter, {
   repo: 'demo/shop', baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40),
-  commits: [{ sha: 'b'.repeat(40), message: 'Retry temporary payment errors' }],
-  diff: { diff: 'diff --git a/checkout.ts b/checkout.ts\n' + code.map((line) => '+' + line).join('\n'),
-    truncated: false, changedLines: 14, files: 1, omitted: [] },
+  commits: [{ sha: 'b'.repeat(40), message: 'Add product search to the shop' }],
+  diff: { diff: 'diff --git a/search.ts b/search.ts\n' + code.map((line) => '+' + line).join('\n'),
+    truncated: false, changedLines: code.length, files: 1, omitted: [] },
 });
 if (result.status !== 'verified') throw new Error('Demo did not finish successfully');
 const metadata = {

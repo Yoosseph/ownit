@@ -4,6 +4,20 @@ Read this first, then [SPEC.md](SPEC.md). [ARCHITECTURE.md](ARCHITECTURE.md) has
 
 ## Progress
 
+Current local change (2026-11-07): BYOK support includes OpenAI (`gpt-4.1-mini`), Claude/Anthropic
+(`claude-haiku-4-5`), and DeepSeek (`deepseek-flash`, thinking disabled), alongside Nebius and NVIDIA.
+`ownit key set claude` and `ownit key set anthropic` both save the canonical `anthropic` provider.
+New key environment variables: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`.
+Environment priority remains Nebius, NVIDIA, then OpenAI, Anthropic, DeepSeek; first set wins over
+the saved key. Claude uses the native Messages API; other providers use chat completions.
+Validation: `npm.cmd test` passes 149 worker + 91 CLI tests, including mocked question/grade flows
+for all three new providers; `npm.cmd run typecheck`, `npm.cmd run build`, and `git diff --check` pass.
+No live API calls have been made to the new providers. Release version: `getownit@0.1.9`.
+The user authorized creating a PR and sending this live. Merge after CI passes; the Deploy
+workflow updates production on main. Verify `/models` lists all five providers before pushing
+`v0.1.9` to trigger the existing npm Trusted Publishing workflow. Live debrief verification with
+real keys for the three new providers remains outstanding.
+
 | Milestone | Status | Commit |
 | --- | --- | --- |
 | 1. Worker skeleton, D1 schema, Nebius client | Done. Live check passed 2026-10-21: curl to /api/interview/start returned a validated question from Nemotron in about 3.7 s. | c033546 |

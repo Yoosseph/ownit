@@ -3,6 +3,38 @@ import { unseal } from '../src/seal';
 import { call, sha, startBody, testEnv } from './helpers/env';
 
 describe('POST /api/interview/start', () => {
+  it.each([
+    ['openai', 'https://openai.invalid/v1/chat/completions'],
+    ['anthropic', 'https://anthropic.invalid/v1/messages'],
+    ['deepseek', 'https://deepseek.invalid/chat/completions'],
+  ])('completes a debrief with a %s key', async (provider, endpoint) => {
+    const env = testEnv({ MODEL_BACKEND: 'nebius' });
+    let calls = 0;
+    const fetcher = vi.fn(async () => {
+      const text = JSON.stringify(calls++ === 0 ? {
+        summary: 'Corrects cart totals.',
+        questions: [{ kind: 'why', question: 'Why did you change the cart total?', reference: 'Totals must include the item quantity.' }],
+      } : { pass: true, feedback: 'Correct explanation.' });
+      return Response.json(provider === 'anthropic' ? { content: [{ type: 'text', text }] } : { choices: [{ message: { content: text } }] });
+    });
+    vi.stubGlobal('fetch', fetcher);
+    try {
+      const headers = { 'x-model-key': 'user-key', 'x-model-provider': provider! };
+      const start = await call(env, 'POST', '/api/interview/start', startBody(), headers);
+      expect(start.status).toBe(200);
+      const result = await call(env, 'POST', '/api/interview/answer', answer(start.json.session, 0, 'The total must include all item quantities.'), headers);
+      expect(result.status).toBe(200);
+      expect(result.json).toMatchObject({ pass: true, done: true, status: 'verified' });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      for (const [url, init] of fetcher.mock.calls as unknown as [string, RequestInit][]) {
+        expect(url).toBe(endpoint);
+        expect((init.headers as Record<string, string>).Authorization).toBe('Bearer user-key');
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('returns validated questions and records a pending push with its commits', async () => {
     const env = testEnv();
     const res = await call(env, 'POST', '/api/interview/start', startBody());

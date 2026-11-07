@@ -11,6 +11,19 @@ import { cleanEnv, run } from './helpers.js';
 const CLI = resolve(import.meta.dirname, '..', 'dist', 'index.js');
 
 describe('model key', () => {
+  it.each([
+    ['openai', 'OPENAI_API_KEY'],
+    ['anthropic', 'ANTHROPIC_API_KEY'],
+    ['deepseek', 'DEEPSEEK_API_KEY'],
+  ] as const)('selects %s from the environment or saved config', (provider, envVar) => {
+    expect(modelKey({ apiKey: 'saved' }, { [envVar]: 'env-key' })).toEqual({ provider, key: 'env-key' });
+    expect(modelKey({ provider, apiKey: 'saved' }, {})).toEqual({ provider, key: 'saved' });
+  });
+
+  it('keeps the existing environment priority when multiple keys are set', () => {
+    expect(modelKey({}, { NEBIUS_API_KEY: 'nb', OPENAI_API_KEY: 'oa' })).toEqual({ provider: 'nebius', key: 'nb' });
+  });
+
   it('prefers a provider env var, then the saved key, then the older nebiusKey field', () => {
     expect(modelKey({ apiKey: 'saved' }, { NVIDIA_API_KEY: 'nvapi-env' })).toEqual({ provider: 'nvidia', key: 'nvapi-env' });
     expect(modelKey({ apiKey: 'saved' }, { NEBIUS_API_KEY: 'nb-env' })).toEqual({ provider: 'nebius', key: 'nb-env' });
@@ -22,6 +35,9 @@ describe('model key', () => {
 
   it('spots keys that carry another provider\'s prefix', () => {
     expect(providerByPrefix('nvapi-abc')).toBe('nvidia');
+    expect(providerByPrefix('sk-ant-test')).toBe('anthropic');
+    expect(providerByPrefix('sk-proj-test')).toBe('openai');
+    expect(providerByPrefix('sk-shared-prefix')).toBeUndefined();
     expect(providerByPrefix('eyJhbGciOi')).toBeUndefined();
     expect(describeKey({ provider: 'nvidia', key: 'nvapi-abc1a2b' })).toBe('NVIDIA, …1a2b');
   });
@@ -101,6 +117,21 @@ describe('ownit key', () => {
     const config = () => JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'));
     return { home, key, config };
   };
+
+  it.each([
+    ['openai', 'openai', 'OpenAI', 'sk-proj-secret'],
+    ['claude', 'anthropic', 'Claude (Anthropic)', 'sk-ant-secret'],
+    ['anthropic', 'anthropic', 'Claude (Anthropic)', 'sk-ant-secret'],
+    ['deepseek', 'deepseek', 'DeepSeek', 'sk-secret'],
+  ])('saves a %s key without printing it', async (arg, provider, name, secret) => {
+    const { key, config } = setup();
+    const result = await key(['set', arg!], `${secret}\n`);
+    expect(result.code).toBe(0);
+    expect(result.output).toContain(`Saved your ${name} key`);
+    expect(result.output).not.toContain(secret);
+    expect(config()).toMatchObject({ provider, apiKey: secret });
+    expect((await key(['status'])).output).toContain(name);
+  });
 
   it('saves a piped key with the provider named on the command line', async () => {
     const { key, config } = setup();

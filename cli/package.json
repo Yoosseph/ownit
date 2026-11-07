@@ -1,7 +1,7 @@
 {
   "name": "getownit",
-  "version": "0.1.8",
-  "description": "Debrief the code you just pushed, in your terminal, with NVIDIA Nemotron.",
+  "version": "0.1.9",
+  "description": "Debrief the code you just pushed, in your terminal, with your choice of AI provider.",
   "license": "MIT",
   "repository": {
     "type": "git",

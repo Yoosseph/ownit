@@ -37,16 +37,17 @@ Questions name the feature or area, never a file path or function name.
 
 ## Bring your own key
 
-Ownit runs on **your own account**. Create a key in
-[Nebius Token Factory](https://tokenfactory.nebius.com/), or at [build.nvidia.com](https://build.nvidia.com/)
-if you have no Nebius account, then run `ownit key set` and pick the provider (or name it:
-`ownit key set nebius`, `ownit key set nvidia`; piping a key needs the name). The key is
+Ownit runs on **your own account**. Create a key with Nebius, NVIDIA, OpenAI, Anthropic (Claude),
+or DeepSeek, then run `ownit key set` and pick the provider (or name it:
+`ownit key set openai`, `ownit key set claude`, `ownit key set deepseek`,
+`ownit key set nebius`, `ownit key set nvidia`; piping a key needs the name).
+`anthropic` is also accepted for Claude. The key is
 saved in `~/.ownit/config.json` (mode 600) and sent only with debrief requests. The worker uses it
-for that request and then drops it. It never stores or logs the key. A debrief usually costs
-under a cent, and a few cents at most for a large push with several follow-ups.
+for that request and then drops it. It never stores or logs the key. Cost depends on your
+provider, model, push size, and follow-ups.
 
 The server chooses the endpoint and model for each provider, and the client cannot change them.
-Both run NVIDIA's Nemotron 3.5 Super (120B parameters, 12B active) with thinking off:
+Nebius and NVIDIA run NVIDIA's Nemotron 3.5 Super (120B parameters, 12B active) with thinking off:
 `nvidia/Nemotron-3.5-Super-VL` on Nebius at `https://api.tokenfactory.nebius.com/v1/`, and
 `nvidia/nemotron-3.5-super-vl-120b-a12b` on NVIDIA at `https://integrate.api.nvidia.com/v1/`. The
 earlier 3.0 model is retired from Nebius Serverless on 2026-11-09, and NVIDIA's free endpoint no
@@ -55,7 +56,14 @@ a second but sometimes stalls, so the worker sends another copy of a request tha
 after 3 and 6 seconds (or right away after a server error), uses whichever answers first, and gives
 up after 10 seconds. If the model still doesn't answer, the CLI tries once more by itself and then
 asks before trying again, so the debrief in progress is kept.
-`NVIDIA_API_KEY` or `NEBIUS_API_KEY` in the environment overrides the saved key.
+OpenAI uses `gpt-4.1-mini` at `https://api.openai.com/v1/`, Claude uses `claude-haiku-4-5`
+at `https://api.anthropic.com/v1/`, and DeepSeek uses `deepseek-flash` at `https://api.deepseek.com/`
+with thinking disabled. All are configured in `worker/wrangler.toml`; `ownit model` reports the
+server's configuration. Claude uses the Messages API, with system instructions at the top level
+and text content blocks in the reply. All providers use the same JSON prompts and reply validation.
+
+Environment variables override the saved key: `NEBIUS_API_KEY`, `NVIDIA_API_KEY`, `OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`, then `DEEPSEEK_API_KEY` (first set wins).
 
 If a provider says your key's account can't use the model, it answered `404 ... Not found for
 account`: the key works, but its account isn't enabled for that hosted model. Make a new key from
@@ -63,9 +71,8 @@ the model's own page on build.nvidia.com, ask on NVIDIA's developer forum, or us
 provider.
 
 Adding a provider means an entry in `PROVIDERS` in both `worker/src/model.ts` and
-`cli/src/providers.ts`, plus its endpoint and model in `worker/wrangler.toml`. Both current providers
-use the OpenAI-compatible chat API, so each is one `openAiCompatible(...)` line; a provider with a
-different API (Anthropic's, for example) gets its own `create` function with its own client.
+`cli/src/providers.ts`, plus its endpoint and model in `worker/wrangler.toml` and `worker/src/env.ts`.
+Nebius, NVIDIA, OpenAI, and DeepSeek use `openAiCompatible(...)`; Anthropic uses its own Messages client.
 
 Hackathon judges can try Ownit without a key. A server may set an optional shared
 `DEMO_NEBIUS_KEY`, which has a daily cap and is used only when a request carries no key.
@@ -73,7 +80,7 @@ Hackathon judges can try Ownit without a key. A server may set an optional share
 ## Privacy
 
 - **Code is never stored.** The diff exists only for the duration of a request. It goes to the
-  model on **your** Nebius or NVIDIA account and is then discarded.
+  model on **your** selected provider account and is then discarded.
 - **Your answers are not stored by default.** Each answer goes to the grader and is then discarded.
   The one exception is a public repo whose admins turned answers on (`ownit settings answers on`):
   then the answer that passed each question is kept and shown on the repo page, and the CLI says

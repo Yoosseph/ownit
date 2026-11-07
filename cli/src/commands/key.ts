@@ -9,7 +9,7 @@ const CHOICES = PROVIDER_IDS.join('|');
 async function chooseProvider(arg: string | undefined): Promise<Provider | undefined> {
   const out = process.stderr;
   if (arg) {
-    const id = arg.toLowerCase();
+    const id = arg.toLowerCase() === 'claude' ? 'anthropic' : arg.toLowerCase();
     if (isProvider(id)) return id;
     // Never echo the argument: people paste the key itself here.
     out.write(
@@ -25,7 +25,8 @@ async function chooseProvider(arg: string | undefined): Promise<Provider | undef
   out.write('Which provider is this key for?\n');
   PROVIDER_IDS.forEach((id, i) => out.write(`  ${i + 1}) ${PROVIDERS[id].name.padEnd(8)} keys at ${PROVIDERS[id].keyUrl}\n`));
   const prompter = createPrompter(process.stdin, out);
-  const answer = ((await prompter.ask(`Choose 1-${PROVIDER_IDS.length} [1]: `)) ?? '').trim().toLowerCase();
+  const input = ((await prompter.ask(`Choose 1-${PROVIDER_IDS.length} [1]: `)) ?? '').trim().toLowerCase();
+  const answer = input === 'claude' ? 'anthropic' : input;
   prompter.close();
   if (!answer) return PROVIDER_IDS[0];
   const picked = isProvider(answer) ? answer : PROVIDER_IDS[Number(answer) - 1];
@@ -62,7 +63,7 @@ function clearKey(): number {
 
 function showKey(): number {
   const model = modelKey(readConfig());
-  process.stderr.write(model ? `API key set (${describeKey(model)}).\n` : 'No API key set. Run "ownit key set" with a Nebius or NVIDIA key.\n');
+  process.stderr.write(model ? `API key set (${describeKey(model)}).\n` : 'No API key set. Run "ownit key set" to choose a provider and save your key.\n');
   return 0;
 }
 
